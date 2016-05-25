@@ -49,6 +49,11 @@
 	$processes = shell_exec("ps aux | wc -l");
 	
 	$top = shell_exec("top -b -n 1 | head -n 30  | tail -n 30");
+	
+	$users = shell_exec("w");
+	$users = preg_replace('/^.+\n/', '', $users);
+	
+	$disks = shell_exec("df");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -123,7 +128,7 @@ $(function() {
 
 				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
-						<h3 class="panel-title">System Information<a href="?updated" target="_top" data-refresh="system-status" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+						<h3 class="panel-title">System Information<a href="?updated" target="_top" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
 					</div>
 					<div class="panel-body">
 
@@ -225,9 +230,9 @@ $(function() {
 				
 				
 				
-				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
+				<div id="top-processes" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
-						<h3 class="panel-title">Top Processes<a href="?updated" target="_top" data-href="/webmin/edit_webmincron.cgi" data-refresh="system-status" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+						<h3 class="panel-title">Top Processes</h3>
 					</div>
 					<div class="panel-body">
 
@@ -235,7 +240,6 @@ $(function() {
 						
 						
 						
-						</div>
 								
 								
 								
@@ -244,9 +248,42 @@ $(function() {
 				
 				</div>
 				
+				<div id="active-users" class="panel panel-default" style="margin-bottom: 5px">
+					<div class="panel-heading">
+						<h3 class="panel-title">Users</h3>
+					</div>
+					<div class="panel-body">
+
+						<pre><?php echo $users; ?></pre>
+						
+					</div>
+				
+				
+				</div>
+				
+				<div id="active-users" class="panel panel-default" style="margin-bottom: 5px">
+					<div class="panel-heading">
+						<h3 class="panel-title">Disks</h3>
+					</div>
+					<div class="panel-body">
+
+						<pre><?php echo $disks; ?></pre>
+						
+					</div>
+				
+				
+				</div>
+				
 				
 		
 </div>
+
+<footer class="footer">
+	<div class="container">
+		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>.</p>
+	</div>
+</footer>
+
 </body>
 </body>
 </html>

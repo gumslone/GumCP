@@ -73,6 +73,11 @@
 				
 		
 </div>
-</body>
+<footer class="footer">
+	<div class="container">
+		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>.</p>
+	</div>
+</footer>
+
 </body>
 </html>

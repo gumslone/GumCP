@@ -2,9 +2,26 @@
 	include_once('./include/config.php');
 	
 	$services = shell_exec('/usr/sbin/service --status-all');
-	$services = str_replace("\n", '<br/>', $services);
-	$services = str_replace("[ + ]", '<span class="label label-success">on</span> ', $services);
-	$services = str_replace("[ - ]", '<span class="label label-default">off</span> ', $services);
+	$service_arr = preg_split("/\\r\\n|\\r|\\n/", $services);
+
+	$active_services_arr = array();
+	$inactive_services_arr = array();
+	foreach($service_arr AS $a)
+	{
+		if(stristr($a, '[ + ]'))
+		{
+			$a = str_replace("[ + ]", '', $a);
+			if(!empty($a))$active_services_arr[] = trim($a);
+		}
+		else
+		{
+			$a = str_replace("[ - ]", '', $a);
+			if(!empty($a))$inactive_services_arr[] = trim($a);
+			
+		}
+	}
+	
+
 
 ?>
 <!DOCTYPE html>
@@ -59,26 +76,56 @@
 
 				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
-						<h3 class="panel-title">System Services<a href="?updated" target="_top" data-refresh="system-status" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+						<h3 class="panel-title">Active System Services</h3>
 					</div>
 					<div class="panel-body">
 
-						<?php echo $services; ?>
-						
-						
-						
+						<table class="table table-hover">
+						<?php
+							
+							foreach($active_services_arr AS $a)
+							{
+								echo '<tr><td>'.$a.'</td><td><form method="post" action="./actions.php" style="display:inline-block;"><input type="hidden" name="sname" value="'.$a.'"><input type="hidden" class="form-control" name="action" value="stop_sname"><button type="submit" class="btn btn-xs btn-danger" onclick="return confirm(\'Are you sure to stop '.$a.'?\')">Stop</button></form></td></tr>';
+							}
+						?>
+						</table>
 
-								
-								
-								
 					</div>
 				
 				
 				</div>
 				
 				
+				
+				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
+					<div class="panel-heading">
+						<h3 class="panel-title">Inactive System Services</h3>
+					</div>
+					<div class="panel-body">
+
+						<table class="table table-hover">
+						<?php
+							
+							foreach($inactive_services_arr AS $a)
+							{
+								echo '<tr><td>'.$a.'</td><td><form method="post" action="./actions.php" style="display:inline-block;"><input type="hidden" name="sname" value="'.$a.'"><input type="hidden" class="form-control" name="action" value="start_sname"><button type="submit" class="btn btn-xs btn-success" onclick="return confirm(\'Are you sure to start '.$a.'?\')">Start</button></form></td></tr>';
+							}
+						?>
+						</table>
+						
+					</div>
+				
+				
+				</div>
+				
+				
+				
 		
 </div>
-</body>
+<footer class="footer">
+	<div class="container">
+		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>.</p>
+	</div>
+</footer>
 </body>
 </html>
