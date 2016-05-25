@@ -75,7 +75,7 @@
 </div>
 <footer class="footer">
 	<div class="container">
-		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>.</p>
+		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>. <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N"><img src="./static/images/Donate-PayPal-green.svg"/></a></p>
 	</div>
 </footer>
 
