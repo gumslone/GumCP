@@ -29,3 +29,5 @@ open GumCP in your browser:
 
 `http://RasPi-IP/GumCP/index.php`
 
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N)
