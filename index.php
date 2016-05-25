@@ -136,7 +136,7 @@ $(function() {
 							<div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo $cpuusage; ?>">
 									<span class="percent"><?php echo $cpuusage; ?><i>%</i></span>
-									<span class="label">CPU</span>
+									<span class="label">CPU Usage</span>
 								</span>
 							</div>
 							
