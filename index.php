@@ -1,0 +1,252 @@
+<?php
+	include_once('./include/config.php');
+	
+	$temp = shell_exec('cat /sys/class/thermal/thermal_zone*/temp');
+	$temp = round($temp / 1000, 1);
+	
+	$cpuusage = 100 - shell_exec("vmstat | tail -1 | awk '{print $15}'");
+	/*$clock = shell_exec('cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq');
+	$clock = round($clock / 1000);*/
+	
+	
+	//disk usage
+	$bytes = disk_free_space("."); 
+	$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );
+	$base = 1024;
+	$class = min((int)log($bytes , $base) , count($si_prefix) - 1);
+	$disk_free =  sprintf('%1.2f' , $bytes / pow($base,$class));
+	$bytes = disk_total_space("."); 
+	$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );
+	$base = 1024;
+	$class = min((int)log($bytes , $base) , count($si_prefix) - 1);
+	$disk_total = sprintf('%1.2f' , $bytes / pow($base,$class));
+	
+	$disk_used = $disk_total - $disk_free;
+	$disk_percentage = round($disk_used / $disk_total * 100);
+	
+	
+	
+	//memory usage
+	$out = shell_exec('free -mo');
+	preg_match_all('/\s+([0-9]+)/', $out, $matches);
+	list($memory_total, $memory_used, $memory_free, $memory_shared, $memory_buffers, $memory_cached) = $matches[1];
+	$memory_percentage = round(($memory_used - $memory_buffers - $memory_cached) / $memory_total * 100);
+	
+	#$servicesArray = shell_exec('/usr/sbin/service --status-all');
+	
+	$operating_system = shell_exec('uname -a');
+	
+	$cpu_info = shell_exec('lscpu');
+	$cpu_info = str_replace("\n", '. ', $cpu_info);
+	
+	$uptime = shell_exec("cat /proc/uptime");
+	$uptime = explode(" ", $uptime);
+	$uptime = gmdate("H:i", $uptime[0]);
+	
+	
+	$load = sys_getloadavg();
+	
+	$processes = shell_exec("ps aux | wc -l");
+	
+	$top = shell_exec("top -b -n 1 | head -n 30  | tail -n 30");
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<title>GumCP Dashboard</title>
+	<link href="./static/css.php" rel="stylesheet" type="text/css">
+	<script src="./static/js.php" type="text/javascript">
+</script>
+	<script type="text/javascript">
+$(function() {
+
+		
+		
+		
+		$(".chart").easyPieChart({
+			barColor: function(b) {
+				return (b < 50 ? "#5cb85c" : b < 85 ? "#f0ad4e" : "#cb3935")
+			},
+			easing: 'easeOutBounce',
+			onStep: function(from, to, percent) {
+				//$(this.el).find('.percent').text(Math.round(percent));
+			},
+			size: 160,
+			scaleLength: 4,
+			trackWidth: 8,
+			lineWidth: (8 / 1.2),
+			lineCap: "square"
+		});
+	});
+	</script>
+</head>
+
+<body>
+<div class="container">
+	
+	<nav class="navbar navbar-default">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="./index.php"><img src="./static/images/raspberry.png" />GumCP</a>
+			</div>
+			<div id="navbar" class="navbar-collapse collapse">
+				<ul class="nav navbar-nav navbar-right">
+					<li class="active"><a href="./index.php">Dashboard</a></li>
+					<li><a href="./services.php">Services</a></li>
+					<li><a href="./processes.php">Processes</a></li>
+					<li><a href="./phpinfo.php">PHP info</a></li>
+					<li><a href="./actions.php">Actions</a></li>
+					<?php
+						if(LOGIN_REQUIRED==true)
+						{
+							echo '<li><a href="./logout.php">Logout</a></li>';
+						}
+					?>
+				</ul>
+			</div><!--/.nav-collapse -->
+		</div><!--/.container-fluid -->
+	</nav>
+
+	
+
+				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
+					<div class="panel-heading">
+						<h3 class="panel-title">System Information<a href="?updated" target="_top" data-refresh="system-status" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+					</div>
+					<div class="panel-body">
+
+						<div class="row" style="margin: 0;">
+							<div class="col-xs-6 col-sm-3 text-center">
+								<span class="chart" data-percent="<?php echo $cpuusage; ?>">
+									<span class="percent"><?php echo $cpuusage; ?><i>%</i></span>
+									<span class="label">CPU</span>
+								</span>
+							</div>
+							
+							<!--div class="col-xs-6 col-sm-3 text-center">
+								<span class="chart" data-percent="<?php echo ($clock/1000)*100; ?>">
+									<span class="percent"><?php echo $clock; ?><i>MHz</i></span>
+									<span class="label">CPU Clock</span>
+								</span>
+							</div-->
+							
+							<div class="col-xs-6 col-sm-3 text-center">
+								<span class="chart" data-percent="<?php echo $temp; ?>">
+									<span class="percent"><?php echo $temp; ?><i>°C</i></span>
+									<span class="label">Temperature</span>
+								</span>
+							</div>
+							
+							<div class="col-xs-6 col-sm-3 text-center">
+								<span class="chart" data-percent="<?php echo $disk_percentage; ?>">
+									<span class="percent"><?php echo $disk_percentage; ?><i>%</i></span>
+									<span class="label">Local disk space</span>
+								</span>
+							</div>
+							
+							<div class="col-xs-6 col-sm-3 text-center">
+								<span class="chart" data-percent="<?php echo $memory_percentage; ?>">
+									<span class="percent"><?php echo $memory_percentage; ?><i>%</i></span>
+									<span class="label">Real Memory</span>
+								</span>
+							</div>
+							
+							
+							<table class="table table-hover">
+							<tbody>
+								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>System hostname</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_host"><?php echo gethostname(); ?> (<?php echo $_SERVER['SERVER_ADDR'];?>)</span></td>
+								</tr>
+								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Operating system</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_os"><?php echo $operating_system; ?></span></td>
+								</tr>
+								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Processor information</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_kernel_arch"><?php echo $cpu_info; ?></span></td>
+								</tr>
+
+								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>System uptime</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_uptime"><?php echo $uptime; ?> (Hours:Minutes)</span></td>
+								</tr>
+								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Running processes</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_running_proc"><a href="./processes.php"><?php echo $processes; ?></a></span></td>
+								</tr>
+								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>CPU load averages</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_load"><?php echo $load[0]; ?> (1 min) <?php echo $load[1]; ?> (5 mins) <?php echo $load[2]; ?> (15 mins)</span></td>
+								</tr>
+								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Real memory</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_real_memory"><?php echo $memory_total; ?> MB total / <?php echo $memory_used; ?> MB used</span></td>
+								</tr>
+
+								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Local disk space</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><?php echo $disk_total; ?> GB total / <?php echo $disk_free; ?> GB free / <?php echo $disk_used; ?> GB used</span></td>
+								</tr>
+
+								
+</tbody></table>
+							
+							
+							
+							
+							
+							
+							
+							
+							
+						</div>
+								
+								
+								
+					</div>
+				
+				
+				</div>
+				
+				
+				
+				
+				
+				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
+					<div class="panel-heading">
+						<h3 class="panel-title">Top Processes<a href="?updated" target="_top" data-href="/webmin/edit_webmincron.cgi" data-refresh="system-status" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+					</div>
+					<div class="panel-body">
+
+						<pre><?php echo $top; ?></pre>
+						
+						
+						
+						</div>
+								
+								
+								
+					</div>
+				
+				
+				</div>
+				
+				
+		
+</div>
+</body>
+</body>
+</html>
