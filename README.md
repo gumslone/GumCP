@@ -3,6 +3,14 @@ Web Control Panel for Raspberry Pi
 
 ![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/dashboard.png)
 
+** Features **
+- system details, like cpu load, disk and memory usage, cpu temperature etc.
+- start/stop services
+- kill processes
+- change mode and value of the GPIO pins
+- system reboot
+- system update
+
 to install web server on your raspberry pi do this:
 ```
 sudo apt-get update && sudo apt-get install apache2 php5 php5-ssh2
