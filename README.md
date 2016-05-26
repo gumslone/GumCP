@@ -10,6 +10,7 @@ Web Control Panel for Raspberry Pi
 - change mode and value of the GPIO pins
 - system reboot
 - system update
+Check the screenshots folder.
 
 to install web server on your raspberry pi do this:
 ```
