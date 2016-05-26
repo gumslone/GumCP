@@ -174,7 +174,7 @@ $(document).ready(function(){
 				
 				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
-						<h3 class="panel-title">GPIO Control<a href="?updated" target="_top" data-refresh="system-status" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+						<h3 class="panel-title">GPIO Control</h3>
 					</div>
 					<div class="panel-body">
 
@@ -324,7 +324,7 @@ $(document).ready(function(){
 				
 				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
-						<h3 class="panel-title">GPIO pins<a href="?updated" target="_top" data-refresh="system-status" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+						<h3 class="panel-title">GPIO pins</h3>
 					</div>
 					<div class="panel-body">
 
@@ -341,7 +341,7 @@ $(document).ready(function(){
 				
 				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
-						<h3 class="panel-title">40 Pin connector pinout<a href="?updated" target="_top" data-refresh="system-status" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+						<h3 class="panel-title">40 Pin connector pinout</h3>
 					</div>
 					<div class="panel-body">
 
