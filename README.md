@@ -3,6 +3,8 @@ Web Control Panel for Raspberry Pi
 
 ![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/dashboard.png)
 
+More screenshots in the screenshots folder.
+
 ** Features **
 - system details, like cpu load, disk and memory usage, cpu temperature etc.
 - start/stop services
@@ -10,7 +12,7 @@ Web Control Panel for Raspberry Pi
 - change mode and value of the GPIO pins
 - system reboot
 - system update
-Check the screenshots folder.
+
 
 to install web server on your raspberry pi do this:
 ```
