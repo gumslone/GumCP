@@ -1,6 +1,8 @@
 # GumCP
 Web Control Panel for Raspberry Pi
 
+![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/dashboard.jpg)
+
 to install web server on your raspberry pi do this:
 ```
 sudo apt-get update && sudo apt-get install apache2 php5 php5-ssh2
