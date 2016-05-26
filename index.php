@@ -54,6 +54,8 @@
 	$users = preg_replace('/^.+\n/', '', $users);
 	
 	$disks = shell_exec("df");
+	
+	$date = shell_exec("date");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -113,6 +115,7 @@ $(function() {
 					<li><a href="./processes.php">Processes</a></li>
 					<li><a href="./phpinfo.php">PHP info</a></li>
 					<li><a href="./actions.php">Actions</a></li>
+					<li><a href="./gpio.php">GPIO</a></li>
 					<?php
 						if(LOGIN_REQUIRED==true)
 						{
@@ -189,6 +192,10 @@ $(function() {
 									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_uptime"><?php echo $uptime; ?> (Hours:Minutes)</span></td>
 								</tr>
 								<tr>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Current system time</strong></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><?php echo $date; ?></span></td>
+								</tr>
+								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Running processes</strong></td>
 									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_running_proc"><a href="./processes.php"><?php echo $processes; ?></a></span></td>
 								</tr>
@@ -205,6 +212,8 @@ $(function() {
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Local disk space</strong></td>
 									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><?php echo $disk_total; ?> GB total / <?php echo $disk_free; ?> GB free / <?php echo $disk_used; ?> GB used</span></td>
 								</tr>
+								
+								
 
 								
 </tbody></table>

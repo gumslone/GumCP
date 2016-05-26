@@ -1,6 +1,8 @@
 # GumCP
 Web Control Panel for Raspberry Pi
 
+![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/dashboard.png)
+
 to install web server on your raspberry pi do this:
 ```
 sudo apt-get update && sudo apt-get install apache2 php5 php5-ssh2
@@ -16,6 +18,22 @@ sudo apt-get install php5-ssh2
 restart apache:
 ```
 sudo service apache2 restart
+```
+Get the wiringPi project using this commands:
+```
+cd
+```
+```
+git clone git://git.drogon.net/wiringPi
+```
+```
+cd wiringPi
+```
+```
+git pull origin
+```
+```
+./build
 ```
 Install GumCP:
 ```

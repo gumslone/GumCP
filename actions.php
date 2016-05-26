@@ -6,7 +6,7 @@ switch ($_REQUEST['action']) {
 	case 'kill_pid':
 		if($_REQUEST['pid']>0)
 		{
-			$cmd = 'kill -9 '.$_REQUEST['pid'];
+			$cmd = 'sudo kill -9 '.$_REQUEST['pid'];
 			$message = 'Command "'.$cmd.'" executed';
 		}
 		else
@@ -17,7 +17,7 @@ switch ($_REQUEST['action']) {
 	case 'kill_pname':
 		if(!empty($_REQUEST['pname']))
 		{
-			$cmd = 'killall '.$_REQUEST['pname'];
+			$cmd = 'sudo killall '.$_REQUEST['pname'];
 			$message = 'Command "'.$cmd.'" executed';
 		}
 		else
@@ -99,6 +99,7 @@ switch ($_REQUEST['action']) {
 					<li><a href="./processes.php">Processes</a></li>
 					<li><a href="./phpinfo.php">PHP info</a></li>
 					<li class="active"><a href="./actions.php">Actions</a></li>
+					<li><a href="./gpio.php">GPIO</a></li>
 					<?php
 						if(LOGIN_REQUIRED==true)
 						{

@@ -40,6 +40,7 @@
 					<li class="active"><a href="./processes.php">Processes</a></li>
 					<li><a href="./phpinfo.php">PHP info</a></li>
 					<li><a href="./actions.php">Actions</a></li>
+					<li><a href="./gpio.php">GPIO</a></li>
 					<?php
 						if(LOGIN_REQUIRED==true)
 						{
