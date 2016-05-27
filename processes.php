@@ -1,7 +1,16 @@
 <?php
 	include_once('./include/config.php');
 	
-	$processes = shell_exec('ps aux | less');
+	$processes = shell_exec('ps aux | sort -rk 3,3 | less');
+	$rows_arr = preg_split("/\\r\\n|\\r|\\n/", $processes);
+	$process_rows = array();
+	for($i=0;$i<count($rows_arr);$i++)
+	{
+		$rows_arr[$i] = preg_replace('/\s+/', ' ', $rows_arr[$i]);
+		$cells_arr = explode(' ', $rows_arr[$i],11);
+		$process_rows[] = $cells_arr;
+	}
+	#print_r($process_rows);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -60,7 +69,37 @@
 					</div>
 					<div class="panel-body">
 
-						<pre><?php echo $processes; ?></pre>
+						
+						<table class="table table-bordered">
+							<tbody>
+								
+								<?php 
+									if(is_array($process_rows))
+									{
+										for($k=0;$k<count($process_rows);$k++)
+										{
+											echo '<tr>';
+											
+											for($i=0;$i<count($process_rows[$k]);$i++)
+											{
+												echo '<td>';
+												echo $process_rows[$k][$i];
+												echo '</td>';
+											}
+											if($process_rows[$k][1]>0)
+											{
+												echo '<td><form method="post" action="./actions.php" style="display:inline-block;"><input type="hidden" name="pid" value="'.$process_rows[$k][1].'"><input type="hidden" class="form-control" name="action" value="kill_pid"><button type="submit" class="btn btn-xs btn-success" onclick="return confirm(\'Are you sure to kill process pid '.$process_rows[$k][1].'?\')">Kill</button></form></td>';
+											}
+											else
+											{
+												echo '<td></td>';
+											}
+											echo '</tr>';
+										}
+									}
+								?>
+							</tbody>
+						</table>
 						
 
 								
