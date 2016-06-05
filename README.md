@@ -5,6 +5,11 @@ Web Control Panel for Raspberry Pi
 
 More screenshots in the screenshots folder.
 
+Video:
+[![Everything Is AWESOME](https://github.com/gumslone/GumCP/blob/master/screenshots/video.png)](https://www.youtube.com/watch?v=lEP_Bbi0HJQ "Everything Is AWESOME")
+
+
+
 ** Features **
 - system details, like cpu load, disk and memory usage, cpu temperature etc.
 - start/stop services
