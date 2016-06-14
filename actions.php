@@ -229,9 +229,6 @@ switch ($_REQUEST['action']) {
 						</form>
 						
 						
-						<div class="well well-sm">
-							Run command: <b>sudo apt-get install php5-ssh2</b> to install php ssh support, so you can execute the actions. Dont forget to run: <b>service apache2 restart</b> after ssh2 is installed.
-						</div>
 								
 					</div>
 				

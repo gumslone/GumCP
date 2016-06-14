@@ -1,40 +1,5 @@
 <?php
 	include_once('./include/config.php');
-	
-
-switch ($_REQUEST['action']) {
-	case 'mode_in':
-		$cmd = 'gpio -g mode '.intval($_REQUEST['bcm']).' in';
-		$message = 'Command "'.$cmd.'" executed';
-		
-	break;
-	case 'mode_out':
-		$cmd = 'gpio -g mode '.intval($_REQUEST['bcm']).' out';
-		$message = 'Command "'.$cmd.'" executed';
-		
-	break;
-	case 'v_high':
-		$cmd = 'gpio -g write '.intval($_REQUEST['bcm']).' 1';
-		$message = 'Command "'.$cmd.'" executed';
-		
-	break;
-	case 'v_low':
-		$cmd = 'gpio -g write '.intval($_REQUEST['bcm']).' 0';
-		$message = 'Command "'.$cmd.'" executed';
-		
-	break;
-	
-}
-	
-	
-
-	if(!empty($cmd))
-	{
-		$connection = ssh2_connect('localhost', SSH_PORT);
-		ssh2_auth_password($connection, SSH_USER, SSH_PASS);
-		$stream = ssh2_exec($connection, $cmd);
-		ssh2_exec($connection, 'exit');
-	}
 
 	
 	
@@ -64,12 +29,15 @@ switch ($_REQUEST['action']) {
 	$real_gpio_bcm = array();
 	$real_gpio_pins_full = array();
 	$real_gpio_data = array();
+	$left_bcm = array();
+	$right_bcm = array();
 	for($k=0;$k<count($gpio_rows);$k++)
 	{
 		$is_gpio = false;
 		$data = array();
 		for($i=0;$i<count($gpio_rows[$k]);$i++)
 		{
+			if($i==0)$left_bcm[] = $gpio_rows[$k][0];
 			$data[''.strtolower($gpio_rows[0][$i]).''] = strtolower($gpio_rows[$k][$i]);
 			if(stristr($gpio_rows[$k][$i], 'gpio'))
 			{
@@ -88,6 +56,7 @@ switch ($_REQUEST['action']) {
 				break;
 			}
 		}
+		
 	}
 	
 	for($k=count($gpio_rows)-1;$k>=0;$k--)
@@ -96,6 +65,7 @@ switch ($_REQUEST['action']) {
 		$data = array();
 		for($i=count($gpio_rows[$k])-1;$i>=0;$i--)
 		{
+			if($i==count($gpio_rows[$k])-1)$right_bcm[] = $gpio_rows[$k][count($gpio_rows[$k])-1];
 			$data[''.strtolower($gpio_rows[0][$i]).''] = strtolower($gpio_rows[$k][$i]);
 			if(stristr($gpio_rows[$k][$i], 'gpio'))
 			{
@@ -115,7 +85,7 @@ switch ($_REQUEST['action']) {
 			}
 		}
 	}
-
+	$right_bcm = array_reverse($right_bcm);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -130,10 +100,59 @@ switch ($_REQUEST['action']) {
 	<link href="./static/css.php" rel="stylesheet" type="text/css">
 	<script src="./static/js.php" type="text/javascript"></script>
 	<script>
-$(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip();   
-});
-</script>
+		$(document).ready(function(){
+			$('[data-toggle="tooltip"]').tooltip();
+			$('.switch-mode').bootstrapSwitch();
+			$('.switch-v').bootstrapSwitch();
+			$('.switch-mode').on('switchChange.bootstrapSwitch', function (event, state) {
+				
+				var bcm = $(this).attr("data-bcm");
+				var mode = 'in'
+				if(state)
+				{
+					mode = 'out';
+				}
+				else
+				{
+					mode = 'in';
+				}
+				
+				$.ajax({
+					type: "POST",
+					url: 'ajax.php',
+					data: {'action':'change_mode', 'mode':mode,'bcm':bcm},
+					success: function (result) {
+						alert(result);
+						location.reload();
+					}
+				});
+			}); 
+			$('.switch-v').on('switchChange.bootstrapSwitch', function (event, state) {
+				var bcm = $(this).attr("data-bcm");
+				var v = 1;
+				
+				if(state)
+				{
+					v = 1;
+				}
+				else
+				{
+					v = 0;
+				}
+				
+				$.ajax({
+					type: "POST",
+					url: 'ajax.php',
+					data: {'action':'change_v', 'v':v, 'bcm':bcm},
+					success: function (result) {
+						alert(result);
+						location.reload();
+					}
+				});
+			});
+
+		});
+	</script>
 </head>
 
 <body>
@@ -213,8 +232,34 @@ $(document).ready(function(){
 													{
 														echo '<td '.$style_color_left.$style_color_right.'>';
 													}
+													$bcm = '';
+													if($style_color_left!='')
+														$bcm = $left_bcm[$k];
+													if($style_color_right!='')
+														$bcm = $right_bcm[$k];
 													
-													if(stristr($gpio_rows[$k][$i], '|'))
+													if(strtolower($gpio_rows[0][$i])=='mode' && ($style_color_left!='' || $style_color_right!=''))
+													{
+														if(strtolower($gpio_rows[$k][$i])=='out')
+															echo '<input class="switch-mode" type="checkbox" checked data-on-text="Out" data-off-text="In" data-on-color="warning" data-size="mini" data-bcm="'.$bcm.'">';
+														else
+															echo '<input class="switch-mode" type="checkbox" data-on-text="Out" data-off-text="In" data-on-color="warning" data-size="mini" data-bcm="'.$bcm.'">';
+													}
+													elseif(strtolower($gpio_rows[0][$i])=='v' && ($style_color_left!='' || $style_color_right!=''))
+													{
+														if(strtolower($gpio_rows[$k][$i-1])=='out'||strtolower($gpio_rows[$k][$i+1])=='out')
+														{
+															if($gpio_rows[$k][$i]==1)
+																echo '<input class="switch-v" type="checkbox" checked data-on-text="High" data-off-text="Low" data-on-color="danger" data-size="mini" data-bcm="'.$bcm.'">';
+															else
+																echo '<input class="switch-v" type="checkbox" data-on-text="High" data-off-text="Low" data-on-color="danger" data-size="mini" data-bcm="'.$bcm.'">';
+														}
+														else
+														{
+															echo $gpio_rows[$k][$i];
+														}
+													}
+													elseif(stristr($gpio_rows[$k][$i], '|'))
 													{
 														$expl = explode('|', $gpio_rows[$k][$i]);
 														
@@ -222,36 +267,7 @@ $(document).ready(function(){
 														{
 															$key = array_search($expl[0], $real_gpio_pins);
 															
-															echo '<div style="text-align:right;">'.$expl[0].' <i class="fa fa-dot-circle-o" aria-hidden="true" style="color:green;"></i><br/>';
-															
-															if($real_gpio_data[$key]['mode']=='in')
-															{
-																
-																echo '<form method="post" action="./gpio.php" style="display:inline-block;"><input type="hidden" name="bcm" value="'.$real_gpio_data[$key]['bcm'].'"><input type="hidden" class="form-control" name="action" value="mode_out"><button type="submit" data-toggle="tooltip" title="Set Mode to OUT" class="btn btn-xs btn-primary" onclick="return confirm(\'Set Mode to OUT of the PIN '.$expl[0].'?\')">out</button></form> ';
-															}
-															else
-															{
-																echo '<form method="post" action="./gpio.php" style="display:inline-block;"><input type="hidden" name="bcm" value="'.$real_gpio_data[$key]['bcm'].'"><input type="hidden" class="form-control" name="action" value="mode_in"><button type="submit" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Set Mode to IN" onclick="return confirm(\'Set Mode to IN of the PIN '.$expl[0].'?\')">in</button></form> ';
-																
-																if($real_gpio_data[$key]['v']=='1')
-																{
-																	echo '<form method="post" action="./gpio.php" style="display:inline-block;"><input type="hidden" name="bcm" value="'.$real_gpio_data[$key]['bcm'].'"><input type="hidden" class="form-control" name="action" value="v_low"><button type="submit" data-toggle="tooltip" title="Set V to 0" class="btn btn-xs btn-primary" onclick="return confirm(\'Set V to 0 of the PIN '.$expl[0].'?\')">low</button></form> ';
-																}
-																else
-																{
-																	echo '<form method="post" action="./gpio.php" style="display:inline-block;"><input type="hidden" name="bcm" value="'.$real_gpio_data[$key]['bcm'].'"><input type="hidden" class="form-control" name="action" value="v_high"><button type="submit" data-toggle="tooltip" title="Set V to 1" class="btn btn-xs btn-primary" onclick="return confirm(\'Set V to 1 of the PIN '.$expl[0].'?\')">high</button></form> ';
-																}
-																
-																
-															}
-															
-															
-															
-															
-															
-															
-															
-															echo '</div></td>';
+															echo '<div style="text-align:right;">'.$expl[0].' <i class="fa fa-dot-circle-o" aria-hidden="true" style="color:green;"></i></div></td>';
 														}
 														else
 														{
@@ -263,37 +279,7 @@ $(document).ready(function(){
 															$key = array_search($expl[1], $real_gpio_pins);
 															$style_color_left = '';
 															$style_color_right = ' style="background-color:#e8fbe8"';
-															echo '<td '.$style_color_left.$style_color_right.'><div style="text-align:left;"><i class="fa fa-dot-circle-o" aria-hidden="true" style="color:green;"></i> '.$expl[1].'<br/>';
-															
-															if($real_gpio_data[$key]['mode']=='in')
-															{
-																
-																echo '<form method="post" action="./gpio.php" style="display:inline-block;"><input type="hidden" name="bcm" value="'.$real_gpio_data[$key]['bcm'].'"><input type="hidden" class="form-control" name="action" value="mode_out"><button type="submit" data-toggle="tooltip" title="Set Mode to OUT" class="btn btn-xs btn-primary" onclick="return confirm(\'Set Mode to OUT of the PIN '.$expl[1].'?\')">out</button></form> ';
-															}
-															else
-															{
-																echo '<form method="post" action="./gpio.php" style="display:inline-block;"><input type="hidden" name="bcm" value="'.$real_gpio_data[$key]['bcm'].'"><input type="hidden" class="form-control" name="action" value="mode_in"><button type="submit" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Set Mode to IN" onclick="return confirm(\'Set Mode to IN of the PIN '.$expl[1].'?\')">in</button></form> ';
-																
-																
-																
-																if($real_gpio_data[$key]['v']=='1')
-																{
-																	echo '<form method="post" action="./gpio.php" style="display:inline-block;"><input type="hidden" name="bcm" value="'.$real_gpio_data[$key]['bcm'].'"><input type="hidden" class="form-control" name="action" value="v_low"><button type="submit" data-toggle="tooltip" title="Set V to 0" class="btn btn-xs btn-primary" onclick="return confirm(\'Set V to 0 of the PIN '.$expl[1].'?\')">low</button></form> ';
-																}
-																else
-																{
-																	echo '<form method="post" action="./gpio.php" style="display:inline-block;"><input type="hidden" name="bcm" value="'.$real_gpio_data[$key]['bcm'].'"><input type="hidden" class="form-control" name="action" value="v_high"><button type="submit" data-toggle="tooltip" title="Set V to 1" class="btn btn-xs btn-primary" onclick="return confirm(\'Set V to 1 of the PIN '.$expl[1].'?\')">high</button></form> ';
-																}
-																
-																
-															}
-															
-															
-															
-															
-															
-															
-															echo'</div>';
+															echo '<td '.$style_color_left.$style_color_right.'><div style="text-align:left;"><i class="fa fa-dot-circle-o" aria-hidden="true" style="color:green;"></i> '.$expl[1].'<br/></div>';
 														}
 														else
 														{
@@ -339,46 +325,7 @@ $(document).ready(function(){
 				
 				</div>
 				
-				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
-					<div class="panel-heading">
-						<h3 class="panel-title">40 Pin connector pinout</h3>
-					</div>
-					<div class="panel-body">
-
-						<img src="./static/images/Pi-GPIO-header.png"/>
-						<br/>
-						In order to use this page you have to install the libraries, install the 'git' source code management system. Make sure your Pi can access the internet. You can install git by opening a terminal and typing these commands:
-<pre>
-$ sudo apt-get install git-core
-$ sudo apt-get update
-$ sudo apt-get upgrade
-</pre>
-Get the wiringPi project using this command:
-<pre>
-$ git clone git://git.drogon.net/wiringPi
-</pre>
-Change to the new directory, and get the code from the repository at drogon.net:
-<pre>
-$ cd wiringPi
-$ git pull origin
-</pre>
-Build the code:
-<pre>
-$ ./build
-</pre>
-Test wiringPi by typing this command:
-
-<pre>
-$ gpio readall
-</pre>
-as described at http://raspberrywebserver.com/gpio/
-								
-								
-								
-					</div>
 				
-				
-				</div>
 				
 				
 		
