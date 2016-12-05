@@ -82,13 +82,27 @@
 											
 											for($i=0;$i<count($process_rows[$k]);$i++)
 											{
-												echo '<td>';
-												echo $process_rows[$k][$i];
+												if($i>3 && $i<9)
+												{
+													echo '<td class="hidden-xs hidden-sm">';
+												}
+												else
+												{
+													echo '<td>';
+												}
+												if($k==0)
+												{
+													echo '<b>'.$process_rows[$k][$i].'</b>';
+												}
+												else
+												{
+													echo $process_rows[$k][$i];
+												}
 												echo '</td>';
 											}
 											if($process_rows[$k][1]>0)
 											{
-												echo '<td><form method="post" action="./actions.php" style="display:inline-block;"><input type="hidden" name="pid" value="'.$process_rows[$k][1].'"><input type="hidden" class="form-control" name="action" value="kill_pid"><button type="submit" class="btn btn-xs btn-success" onclick="return confirm(\'Are you sure to kill process pid '.$process_rows[$k][1].'?\')">Kill</button></form></td>';
+												echo '<td><form method="post" action="./actions.php" style="display:inline-block;"><input type="hidden" name="pid" value="'.$process_rows[$k][1].'"><input type="hidden" class="form-control" name="action" value="kill_pid"><button type="submit" class="btn btn-xs btn-danger" onclick="return confirm(\'Are you sure to kill process pid '.$process_rows[$k][1].'?\')">Kill</button></form></td>';
 											}
 											else
 											{
