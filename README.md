@@ -18,7 +18,7 @@ Video:
 - change mode and value of the GPIO pins
 - system reboot
 - system update
-
+- execute command (for advanced users only)
 
 to install web server on your raspberry pi do this:
 ```
