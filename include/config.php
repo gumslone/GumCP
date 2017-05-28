@@ -9,6 +9,16 @@ define('LOGIN_REQUIRED', false); //set to "true" if you want to enable a login s
 define('LOGIN_USER', 'pi'); //set username for login
 define('LOGIN_PASS', 'raspberry'); //set password for login
 
+define('DEBUG', false); //change to true to show PHP errors, or false to hide errors
+
+if(DEBUG)
+{
+	error_reporting(E_ALL);
+}
+else
+{
+	error_reporting(0);
+}
 
 //dont touch from this line
 session_start();

@@ -1,6 +1,5 @@
 <?php
-	include_once('./include/config.php');
-	
+include_once('./include/config.php');
 	
 switch ($_REQUEST['action']) {
 	case 'kill_pid':
@@ -64,6 +63,7 @@ switch ($_REQUEST['action']) {
 	case 'cmd':
 		if(!empty($_REQUEST['cmd']))
 		{
+			$cmd = $_REQUEST['cmd'];
 			$message = 'Command "'.$cmd.'" executed';
 		}
 		else

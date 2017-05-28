@@ -5,8 +5,11 @@
 	$temp = round($temp / 1000, 1);
 	
 	$cpuusage = 100 - shell_exec("vmstat | tail -1 | awk '{print $15}'");
+	
+	$clock = '';
 	/*$clock = shell_exec('cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq');
 	$clock = round($clock / 1000);*/
+	
 	
 	
 	//disk usage
@@ -39,10 +42,11 @@
 	$cpu_info = shell_exec('lscpu');
 	$cpu_info = str_replace("\n", '. ', $cpu_info);
 	
-	$uptime = shell_exec("cat /proc/uptime");
-	$uptime = explode(" ", $uptime);
-	$uptime = gmdate("H:i", $uptime[0]);
+	//$uptime = shell_exec("cat /proc/uptime");
+	//$uptime = explode(" ", $uptime);
+	//$uptime = gmdate("H:i", $uptime[0]);
 	
+	$uptime = shell_exec('uptime -p');
 	
 	$load = sys_getloadavg();
 	
@@ -189,7 +193,7 @@ $(function() {
 
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>System uptime</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_uptime"><?php echo $uptime; ?> (Hours:Minutes)</span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_uptime"><?php echo $uptime; ?></span></td>
 								</tr>
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Current system time</strong></td>
