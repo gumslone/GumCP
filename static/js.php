@@ -44,8 +44,10 @@ ob_start();
 include('./js/wow.min.js');
 include('./js/jquery-2.2.4.min.js');
 include('./js/bootstrap.min.js');
+include('./js/bootstrap-switch.js');
 include('./js/jquery.easing.min.js');
 include('./js/jquery.easypiechart.min.js');
+
 
 $out = ob_get_contents();
 ob_end_clean();
