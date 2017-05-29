@@ -241,18 +241,18 @@
 													if(strtolower($gpio_rows[0][$i])=='mode' && ($style_color_left!='' || $style_color_right!=''))
 													{
 														if(strtolower($gpio_rows[$k][$i])=='out')
-															echo '<input class="switch-mode" type="checkbox" checked data-on-text="Out" data-off-text="In" data-on-color="warning" data-size="mini" data-bcm="'.$bcm.'">';
+															echo '<input class="switch-mode" type="checkbox" checked data-on-text="OUT" data-off-text="IN" data-off-color="primary" data-on-color="success" data-size="mini" data-bcm="'.$bcm.'">';
 														else
-															echo '<input class="switch-mode" type="checkbox" data-on-text="Out" data-off-text="In" data-on-color="warning" data-size="mini" data-bcm="'.$bcm.'">';
+															echo '<input class="switch-mode" type="checkbox" data-on-text="OUT" data-off-text="IN" data-off-color="primary" data-on-color="success" data-size="mini" data-bcm="'.$bcm.'">';
 													}
 													elseif(strtolower($gpio_rows[0][$i])=='v' && ($style_color_left!='' || $style_color_right!=''))
 													{
 														if(strtolower($gpio_rows[$k][$i-1])=='out'||strtolower($gpio_rows[$k][$i+1])=='out')
 														{
 															if($gpio_rows[$k][$i]==1)
-																echo '<input class="switch-v" type="checkbox" checked data-on-text="High" data-off-text="Low" data-on-color="danger" data-size="mini" data-bcm="'.$bcm.'">';
+																echo '<input class="switch-v" type="checkbox" checked data-on-text="HIGH" data-off-text="LOW" data-on-color="danger" data-size="mini" data-bcm="'.$bcm.'">';
 															else
-																echo '<input class="switch-v" type="checkbox" data-on-text="High" data-off-text="Low" data-on-color="danger" data-size="mini" data-bcm="'.$bcm.'">';
+																echo '<input class="switch-v" type="checkbox" data-on-text="HIGH" data-off-text="LOW" data-on-color="danger" data-size="mini" data-bcm="'.$bcm.'">';
 														}
 														else
 														{
