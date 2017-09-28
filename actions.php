@@ -75,6 +75,18 @@ switch ($_REQUEST['action']) {
 }
 ?>
 <?php
+	
+	if(!file_exists(dirname(__FILE__).'/command_logs'))
+	{
+		$cmd = "sudo mkdir -m 777 ".dirname(__FILE__)."/command_logs && sudo chmod -R 777 ".dirname(__FILE__)."/command_logs";
+
+	}
+	else if(!is_writable ( dirname(__FILE__).'/command_logs' ))
+	{
+		$cmd = "sudo chmod -R 777 ".dirname(__FILE__)."/command_logs";
+	}
+	
+	
 	if(!empty($cmd))
 	{
 		$connection = ssh2_connect('localhost', SSH_PORT);
@@ -99,6 +111,73 @@ switch ($_REQUEST['action']) {
 	<title>GumCP Actions</title>
 	<link href="./static/css.php" rel="stylesheet" type="text/css">
 	<script src="./static/js.php" type="text/javascript"></script>
+	<script>
+		
+$( document ).ready(function() {
+	
+	$("#advanced_command").submit(function( event ) {
+		
+		if(confirm("Are you sure you want to execute this command?"))
+		{
+			if($("#background_command").is(':checked'))
+			{
+				event.preventDefault();
+				$.post( "execute_command.php", $( "#advanced_command" ).serialize() )
+				.done(function( data ) {
+					alert("command sent!");
+					$('#cmd').val('');
+				});
+				
+				
+				
+				
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+		}
+		else
+		{
+			event.preventDefault();
+			return false;
+		}
+		
+		
+		
+		
+		
+	});
+	
+	
+	
+	
+	
+});
+
+
+function delete_log(file)
+{
+		
+		if(confirm("Are you sure you want to delete this log?"))
+		{
+			
+				event.preventDefault();
+				$.post( "ajax.php", {'action':'delete_log','log_file':file} )
+				.done(function( data ) {
+					alert(data);
+					$('div.'+file.replace(".", "_")).remove();
+				});
+		}
+		else
+		{
+			
+		}
+
+}
+		
+	</script>
 </head>
 
 <body>
@@ -252,7 +331,7 @@ switch ($_REQUEST['action']) {
 						</form>
 						
 						<hr/>
-						<form method="post" style="margin-top: 20px;">
+						<form method="post" id="advanced_command" style="margin-top: 20px;">
 							<div class="form-group row">
 								<label class="col-sm-2 form-control-label" for="sname">Execute command <b>(Advanced users only!)</b></label>
 								<div class="col-sm-4">
@@ -261,15 +340,38 @@ switch ($_REQUEST['action']) {
 									<small class="text-muted">Command usually starts with sudo .....</small>
 								</div>
 								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Execute</button>
+									<div class="checkbox">
+										<label><input type="checkbox" id="background_command" value="">Execute in background</label>
+									</div>
+								</div>
+								<div class="col-sm-4">
+									<button type="submit" class="btn btn-primary">Execute</button>
 								</div>
 							</div>
 							
 							
 						</form>
 						
-						
+						<?php
+							
+							$directory = dirname(__FILE__).'/command_logs/';
+							$scanned_directory = array_diff(scandir($directory), array('..', '.'));
+
+							if(is_array($scanned_directory))
+							{
+							
+								echo '<div class="well well-sm" id="command_logs"><h3>Background command output logs:</h3>';
+								foreach($scanned_directory AS $file)
+								{
+									echo '<div class="'.str_replace(".", "_", $file).'"><a href="./command_logs/'.$file.'">'.$file.'</a> '. date ("F d Y H:i:s.", filemtime('./command_logs/'.$file)).' <a href="javascript:void(0);" onclick="javascript:delete_log(\''.$file.'\');" title="delete_log" style="color:red;"><i class="fa fa-trash-o" aria-hidden="true"></i></a></div>';
+								}
 								
+								echo '</div>';
+						
+							}
+						
+						?>
+						
 					</div>
 				
 				
@@ -284,6 +386,8 @@ switch ($_REQUEST['action']) {
 		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>. <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N"><img src="./static/images/Donate-PayPal-green.svg"/></a></p>
 	</div>
 </footer>
+
+<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
 </body>
 </html>

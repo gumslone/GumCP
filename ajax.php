@@ -15,6 +15,20 @@ switch ($_REQUEST['action']) {
 		$message = 'Command "'.$cmd.'" executed';
 		
 	break;
+	
+	case 'delete_log':
+		$file = basename($_REQUEST['log_file']);
+		if(!empty($file))
+		{
+			$cmd = 'sudo rm -f '.dirname(__FILE__) . DIRECTORY_SEPARATOR .'command_logs/'.$file.'';
+			$message = 'Command "'.$cmd.'" executed';
+		}
+		else
+		{
+			$message = 'File not defined';
+		}
+		
+	break;
 }
 
 if(!empty($cmd))
