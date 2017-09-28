@@ -29,11 +29,7 @@
 	
 	
 	
-	//memory usage
-	$out = shell_exec('free -mo');
-	preg_match_all('/\s+([0-9]+)/', $out, $matches);
-	list($memory_total, $memory_used, $memory_free, $memory_shared, $memory_buffers, $memory_cached) = $matches[1];
-	$memory_percentage = round(($memory_used - $memory_buffers - $memory_cached) / $memory_total * 100);
+	
 	
 	#$servicesArray = shell_exec('/usr/sbin/service --status-all');
 	
@@ -60,6 +56,19 @@
 	$disks = shell_exec("df");
 	
 	$date = shell_exec("date");
+	
+	
+	//memory usage
+	$top_lines = preg_split("/\\r\\n|\\r|\\n/", $top);
+	preg_match_all('/\s+([0-9]+)/', $top_lines[3], $matches);
+	list($memory_total, $memory_used, $memory_free, $memory_buffers) = $matches[1];
+	
+	preg_match_all('/\s+([0-9]+)/', $top_lines[4], $matches);
+	list($swap_total, $swap_used, $swap_free, $memory_cached) = $matches[1];
+	
+	$memory_percentage = round(($memory_used - $memory_buffers - $memory_cached) / $memory_total * 100);
+	
+	
 ?>
 <!DOCTYPE html>
 <html lang="en">
