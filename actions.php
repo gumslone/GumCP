@@ -94,7 +94,7 @@ switch ($_REQUEST['action']) {
 		$stream = ssh2_exec($connection, $cmd);
 		stream_set_blocking($stream, true);
 		$stream_out = ssh2_fetch_stream($stream, SSH2_STREAM_STDIO);
-		$message .= ''.nl2br(stream_get_contents($stream_out));
+		$message .= '<br/><b>Command output:</b><br/>'.nl2br(stream_get_contents($stream_out));
 		
 		ssh2_exec($connection, 'exit');
 	}
