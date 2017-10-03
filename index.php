@@ -219,7 +219,7 @@ $(function() {
 									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_load"><?php echo $load[0]; ?> (1 min) <?php echo $load[1]; ?> (5 mins) <?php echo $load[2]; ?> (15 mins)</span></td>
 								</tr>
 								<tr>
-									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Real Memory</strong></td>
+									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Real memory</strong></td>
 									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_real_memory"><?php echo $memory_total; ?> KiB total / <?php echo ($memory_used - $memory_buffers - $memory_cached); ?> KiB used</span></td>
 								</tr>
 
