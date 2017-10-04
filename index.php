@@ -60,11 +60,51 @@
 	
 	//memory usage
 	$top_lines = preg_split("/\\r\\n|\\r|\\n/", $top);
-	preg_match_all('/\s+([0-9]+)/', $top_lines[3], $matches);
-	list($memory_total, $memory_used, $memory_free, $memory_buffers) = $matches[1];
+	preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[3], $matches);
+	//list($memory_total, $memory_used, $memory_free, $memory_buffers) = $matches[1];
+	//previous version didnt work properly on different linux versions
+	for($i=0;$i<count($matches[1]);$i++)
+	{
+		if(strtolower($matches[2][$i])=='total')
+		{
+			$memory_total = $matches[1][$i];
+		}
+		else if(strtolower($matches[2][$i])=='free')
+		{
+			$memory_free = $matches[1][$i];
+		}
+		else if(strtolower($matches[2][$i])=='used')
+		{
+			$memory_used = $matches[1][$i];
+		}
+		else
+		{
+			$memory_buffers = $matches[1][$i];
+		}
+	}
 	
-	preg_match_all('/\s+([0-9]+)/', $top_lines[4], $matches);
-	list($swap_total, $swap_used, $swap_free, $memory_cached) = $matches[1];
+	preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[4], $matches);
+	//list($swap_total, $swap_used, $swap_free, $memory_cached) = $matches[1];
+	//previous version didnt work properly on different linux versions
+	for($i=0;$i<count($matches[1]);$i++)
+	{
+		if(strtolower($matches[2][$i])=='total')
+		{
+			$swap_total = $matches[1][$i];
+		}
+		else if(strtolower($matches[2][$i])=='free')
+		{
+			$swap_free = $matches[1][$i];
+		}
+		else if(strtolower($matches[2][$i])=='used')
+		{
+			$swap_used = $matches[1][$i];
+		}
+		else
+		{
+			$memory_cached = $matches[1][$i];
+		}
+	}
 	
 	$memory_percentage = round(($memory_used - $memory_buffers - $memory_cached) / $memory_total * 100);
 	
