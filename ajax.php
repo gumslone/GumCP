@@ -57,7 +57,8 @@ switch ($_REQUEST['action']) {
 			$contents = file_get_contents('./buttons/buttons.json');
 			$json_arr = json_decode($contents,true);
 			unset($json_arr[$_REQUEST['button_id']]);
-			
+			$json_arr = array_values($json_arr);
+
 			if(file_put_contents('./buttons/buttons.json', json_encode($json_arr)))
 			{
 				$out['type'] = 'success';
