@@ -60,13 +60,13 @@ switch ($_REQUEST['action']) {
 
 							<form method="post" action="./index.php" class="form-signin">
 								<div class="form-group row">
-									<label for="inputEmail3" class="col-sm-2 form-control-label">Username</label>
+									<label for="login_user" class="col-sm-2 form-control-label">Username</label>
 									<div class="col-sm-10">
 										<input type="text" class="form-control" name="login_user" id="login_user" placeholder="Username" required autofocus>
 									</div>
 								</div>
 								<div class="form-group row">
-									<label for="inputPassword3" class="col-sm-2 form-control-label">Password</label>
+									<label for="login_pass" class="col-sm-2 form-control-label">Password</label>
 									<div class="col-sm-10">
 										<input type="password" class="form-control" name="login_pass" id="login_pass" placeholder="Password" required>
 									</div>
