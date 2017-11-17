@@ -13,7 +13,7 @@ Video:
 
 
 
-** Features **
+**Features**
 - system details, like cpu load, disk and memory usage, cpu temperature etc.
 - start/stop services
 - kill processes
@@ -55,7 +55,7 @@ git pull origin
 ```
 ./build
 ```
-Install GumCP:
+**Install GumCP:**
 ```
 cd /var/www/html
 
@@ -69,11 +69,13 @@ open GumCP in your browser:
 
 
 
-To update GumCP use this commands:
+To **upgrade GumCP** use this commands:
+
 ```cd /var/www/html/GumCP```
+
 ```sudo git pull origin```
 
-after update make sure to edit the include/config.php file
+after update make sure to edit the **include/config.php** file
 
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N)
