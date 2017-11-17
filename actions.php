@@ -46,7 +46,7 @@ switch ($_REQUEST['action']) {
 			$message = 'Service Name shouldn\'t be an empty value';
 		}
 	break;
-	case 'update_sources':
+	/*case 'update_sources':
 		$cmd = 'sudo apt-get update';
 		$message = 'Command "'.$cmd.'" executed';
 
@@ -55,7 +55,7 @@ switch ($_REQUEST['action']) {
 		$cmd = 'sudo rpi-update';
 		$message = 'Command "'.$cmd.'" executed';
 		
-	break;
+	break;*/
 	case 'reboot':
 		$cmd = 'sudo reboot';
 		$message = 'Command "'.$cmd.'" executed';
@@ -296,7 +296,7 @@ function delete_log(file)
 							
 						</form>
 						
-						<form method="post" style="margin-top: 20px;">
+						<!--form method="post" style="margin-top: 20px;">
 							<div class="form-group row">
 								<label class="col-sm-2 form-control-label">Update Sources</label>
 								<input type="hidden" class="form-control" name="action" value="update_sources">
@@ -318,11 +318,11 @@ function delete_log(file)
 							</div>
 							
 							
-						</form>
+						</form-->
 						
 						<form method="post" style="margin-top: 20px;">
 							<div class="form-group row">
-								<label class="col-sm-2 form-control-label">Reboot System</label>
+								<label class="col-sm-2 form-control-label">Reboot RPi System</label>
 								<input type="hidden" class="form-control" name="action" value="reboot">
 								<div class="col-sm-4">
 									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Reboot</button>
@@ -335,7 +335,7 @@ function delete_log(file)
 						<hr/>
 						<form method="post" id="advanced_command" style="margin-top: 20px;">
 							<div class="form-group row">
-								<label class="col-sm-2 form-control-label" for="sname">Execute command <b>(Advanced users only!)</b></label>
+								<label class="col-sm-2 form-control-label" for="cmd">Execute command <b>(Advanced users only!)</b></label>
 								<div class="col-sm-4">
 									<input type="text" class="form-control" id="cmd" name="cmd" placeholder="Command">
 									<input type="hidden" class="form-control" name="action" value="cmd">
@@ -353,6 +353,16 @@ function delete_log(file)
 							
 							
 						</form>
+						
+						<hr/>
+						
+						<div class="well well-sm" id="command_logs"><h3>Useful commands:</h3>
+							<code>sudo apt-get update</code> to update RPi sources.<br/>
+							<code>sudo rpi-update</code> to update RPi firmware.<br/>
+							<code>cd <?php echo dirname(__FILE__); ?> && sudo git pull origin</code> to update GumCP (you have to edit config.php file after this manually).<br/>
+							<code>sudo chmod 0777 <?php echo dirname(__FILE__); ?>/include/config.php</code> to make the config file writable in case you can't write any data to it.
+
+						</div>
 						
 						<?php
 							
