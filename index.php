@@ -27,20 +27,12 @@
 	$disk_used = $disk_total - $disk_free;
 	$disk_percentage = round($disk_used / $disk_total * 100);
 	
-	
-	
-	
-	
-	#$servicesArray = shell_exec('/usr/sbin/service --status-all');
-	
+		
 	$operating_system = shell_exec('uname -a');
 	
 	$cpu_info = shell_exec('lscpu');
 	$cpu_info = str_replace("\n", '. ', $cpu_info);
 	
-	//$uptime = shell_exec("cat /proc/uptime");
-	//$uptime = explode(" ", $uptime);
-	//$uptime = gmdate("H:i", $uptime[0]);
 	
 	$uptime = shell_exec('uptime -p');
 	
@@ -58,54 +50,66 @@
 	$date = shell_exec("date");
 	
 	
+	
+	
+	
 	//memory usage
-	$top_lines = preg_split("/\\r\\n|\\r|\\n/", $top);
-	preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[3], $matches);
-	//list($memory_total, $memory_used, $memory_free, $memory_buffers) = $matches[1];
-	//previous version didnt work properly on different linux versions
-	for($i=0;$i<count($matches[1]);$i++)
+	if(MEMORY_CALCULATION_METHOD==1)
 	{
-		if(strtolower($matches[2][$i])=='total')
+		$out = shell_exec('free -mo');
+		preg_match_all('/\s+([0-9]+)/', $out, $matches);
+		list($memory_total, $memory_used, $memory_free, $memory_shared, $memory_buffers, $memory_cached) = $matches[1];
+	
+	}
+	else
+	{
+		$top_lines = preg_split("/\\r\\n|\\r|\\n/", $top);
+		preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[3], $matches);
+		//list($memory_total, $memory_used, $memory_free, $memory_buffers) = $matches[1];
+		//previous version didnt work properly on different linux versions
+		for($i=0;$i<count($matches[1]);$i++)
 		{
-			$memory_total = $matches[1][$i];
+			if(strtolower($matches[2][$i])=='total')
+			{
+				$memory_total = $matches[1][$i];
+			}
+			else if(strtolower($matches[2][$i])=='free')
+			{
+				$memory_free = $matches[1][$i];
+			}
+			else if(strtolower($matches[2][$i])=='used')
+			{
+				$memory_used = $matches[1][$i];
+			}
+			else
+			{
+				$memory_buffers = $matches[1][$i];
+			}
 		}
-		else if(strtolower($matches[2][$i])=='free')
+		
+		preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[4], $matches);
+		//list($swap_total, $swap_used, $swap_free, $memory_cached) = $matches[1];
+		//previous version didnt work properly on different linux versions
+		for($i=0;$i<count($matches[1]);$i++)
 		{
-			$memory_free = $matches[1][$i];
-		}
-		else if(strtolower($matches[2][$i])=='used')
-		{
-			$memory_used = $matches[1][$i];
-		}
-		else
-		{
-			$memory_buffers = $matches[1][$i];
+			if(strtolower($matches[2][$i])=='total')
+			{
+				$swap_total = $matches[1][$i];
+			}
+			else if(strtolower($matches[2][$i])=='free')
+			{
+				$swap_free = $matches[1][$i];
+			}
+			else if(strtolower($matches[2][$i])=='used')
+			{
+				$swap_used = $matches[1][$i];
+			}
+			else
+			{
+				$memory_cached = $matches[1][$i];
+			}
 		}
 	}
-	
-	preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[4], $matches);
-	//list($swap_total, $swap_used, $swap_free, $memory_cached) = $matches[1];
-	//previous version didnt work properly on different linux versions
-	for($i=0;$i<count($matches[1]);$i++)
-	{
-		if(strtolower($matches[2][$i])=='total')
-		{
-			$swap_total = $matches[1][$i];
-		}
-		else if(strtolower($matches[2][$i])=='free')
-		{
-			$swap_free = $matches[1][$i];
-		}
-		else if(strtolower($matches[2][$i])=='used')
-		{
-			$swap_used = $matches[1][$i];
-		}
-		else
-		{
-			$memory_cached = $matches[1][$i];
-		}
-	}
-	
 	$memory_percentage = round(($memory_used - $memory_buffers - $memory_cached) / $memory_total * 100);
 	
 	//https://unix.stackexchange.com/questions/152299/how-to-get-memory-usedram-used-using-linux-command
@@ -120,7 +124,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="">
 	<meta name="author" content="">
-
+	<link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png" />
+	<link rel="icon" href="./static/images/raspberry.png" type="image/png" />
 	<title>GumCP Dashboard</title>
 	<link href="./static/css.php" rel="stylesheet" type="text/css">
 	<script src="./static/js.php" type="text/javascript">
@@ -171,6 +176,7 @@ $(function() {
 					<li><a href="./phpinfo.php">PHP info</a></li>
 					<li><a href="./actions.php">Actions</a></li>
 					<li><a href="./gpio.php">GPIO</a></li>
+					<li><a href="./buttons.php">Buttons</a></li>
 					<?php
 						if(LOGIN_REQUIRED==true)
 						{
@@ -347,6 +353,7 @@ $(function() {
 		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>. <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N"><img src="./static/images/Donate-PayPal-green.svg"/></a></p>
 	</div>
 </footer>
+<div id="dialog-placeholder"></div>
 <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
 </body>

@@ -11,6 +11,9 @@ define('LOGIN_PASS', 'raspberry'); //set password for login
 
 define('GUMCP_DEBUG', false); //change to true to show PHP errors, or false to hide errors
 
+define('MEMORY_CALCULATION_METHOD', 2); //change to 1 to use the free -mo command, which may not work with all raspberrys
+
+
 if(GUMCP_DEBUG == true)
 {
 	error_reporting(E_ALL);

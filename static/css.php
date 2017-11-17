@@ -81,7 +81,7 @@ include('./css/bootstrap-theme.min.css');
 include('./css/bootstrap.min.css');
 include('./css/bootstrap-switch.min.css');
 include('./css/style.css');
-include('./css/font-awesome.min.css');
+//include('./css/font-awesome.min.css');
 $out = ob_get_contents();
 ob_end_clean();
 $out = compress($out);

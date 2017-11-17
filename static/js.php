@@ -47,7 +47,7 @@ include('./js/bootstrap.min.js');
 include('./js/bootstrap-switch.js');
 include('./js/jquery.easing.min.js');
 include('./js/jquery.easypiechart.min.js');
-
+include('./js/gumcp.js');
 
 $out = ob_get_contents();
 ob_end_clean();

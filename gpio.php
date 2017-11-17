@@ -177,6 +177,7 @@
 					<li><a href="./phpinfo.php">PHP info</a></li>
 					<li><a href="./actions.php">Actions</a></li>
 					<li class="active"><a href="./gpio.php">GPIO</a></li>
+					<li><a href="./buttons.php">Buttons</a></li>
 					<?php
 						if(LOGIN_REQUIRED==true)
 						{
@@ -266,8 +267,19 @@
 														if(in_array($expl[0], $real_gpio_pins))
 														{
 															$key = array_search($expl[0], $real_gpio_pins);
+															if(strtolower($gpio_rows[$k][$i-2])=='out'||strtolower($gpio_rows[$k][$i+2])=='out')
+															{
+																
+																if($gpio_rows[$k][$i-1]==1)
+																	echo '<div style="text-align:right;">'.$expl[0].' <i class="fa fa-dot-circle-o" aria-hidden="true" style="color:red;"></i></div></td>';
+																else
+																	echo '<div style="text-align:right;">'.$expl[0].' <i class="fa fa-dot-circle-o" aria-hidden="true" style="color:blue;"></i></div></td>';
+															}
+															else
+															{
 															
-															echo '<div style="text-align:right;">'.$expl[0].' <i class="fa fa-dot-circle-o" aria-hidden="true" style="color:green;"></i></div></td>';
+																echo '<div style="text-align:right;">'.$expl[0].' <i class="fa fa-circle-o" aria-hidden="true" style="color:green;"></i></div></td>';
+															}
 														}
 														else
 														{
@@ -279,7 +291,22 @@
 															$key = array_search($expl[1], $real_gpio_pins);
 															$style_color_left = '';
 															$style_color_right = ' style="background-color:#e8fbe8"';
-															echo '<td '.$style_color_left.$style_color_right.'><div style="text-align:left;"><i class="fa fa-dot-circle-o" aria-hidden="true" style="color:green;"></i> '.$expl[1].'<br/></div>';
+															
+															if(strtolower($gpio_rows[$k][$i+2])=='out')
+															{
+																
+																if($gpio_rows[$k][$i+1]==1)
+																	echo '<td '.$style_color_left.$style_color_right.'><div style="text-align:left;"><i class="fa fa-dot-circle-o" aria-hidden="true" style="color:red;"></i> '.$expl[1].'<br/></div>';
+																else
+																	echo '<td '.$style_color_left.$style_color_right.'><div style="text-align:left;"><i class="fa fa-dot-circle-o" aria-hidden="true" style="color:blue;"></i> '.$expl[1].'<br/></div>';
+															}
+															else
+															{
+															
+																echo '<td '.$style_color_left.$style_color_right.'><div style="text-align:left;"><i class="fa fa-circle-o" aria-hidden="true" style="color:green;"></i> '.$expl[1].'<br/></div>';
+															}
+															
+															//echo '<td '.$style_color_left.$style_color_right.'><div style="text-align:left;"><i class="fa fa-dot-circle-o" aria-hidden="true" style="color:green;"></i> '.$expl[1].'<br/></div>';
 														}
 														else
 														{
@@ -335,6 +362,7 @@
 		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>. <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N"><img src="./static/images/Donate-PayPal-green.svg"/></a></p>
 	</div>
 </footer>
+<div id="dialog-placeholder"></div>
 <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
 </body>

@@ -168,6 +168,7 @@ $(document).ready(function(){
 					<li><a href="./phpinfo.php">PHP info</a></li>
 					<li><a href="./actions.php">Actions</a></li>
 					<li class="active"><a href="./gpio.php">GPIO</a></li>
+					<li><a href="./buttons.php">Buttons</a></li>
 					<?php
 						if(LOGIN_REQUIRED==true)
 						{

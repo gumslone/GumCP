@@ -3,6 +3,83 @@ include_once('./include/config.php');
 	
 
 switch ($_REQUEST['action']) {
+	case 'submit_button':
+		unset($_POST['action']);
+		if(file_exists('./buttons/buttons.json'))
+		{
+			$contents = file_get_contents('./buttons/buttons.json');
+			$json_arr = json_decode($contents,true);
+			if($_POST['button_id']!='')
+			{
+				
+				$json_arr[$_POST['button_id']] = $_POST;
+			}
+			else
+			{
+				$json_arr[] = $_POST;
+			}
+		}
+		else
+		{
+			$json_arr[] = $_POST;
+		}
+		
+		if(file_put_contents('./buttons/buttons.json', json_encode($json_arr)))
+		{
+			$out['type'] = 'success';
+			if($_POST['button_id']!='')
+			{
+				$out['message'] = 'Button edited successfully';
+			}
+			else
+			{
+				$out['message'] = 'New button created successfully';
+			}
+		}
+		else
+		{
+			$out['type'] = 'error';
+			$out['message'] = 'error, make sure that php-ssh2 is installed, folder buttons exists and is writable';
+		}
+		echo(json_encode($out));
+	break;
+	case 'execute_button':
+		if($_REQUEST['button_id']!='')
+		{
+			$contents = file_get_contents('./buttons/buttons.json');
+			$json_arr = json_decode($contents,true);
+			$cmd = $json_arr[$_REQUEST['button_id']]['button_command'];
+		}
+	break;
+	case 'delete_button':
+		if($_REQUEST['button_id']!='')
+		{
+			$contents = file_get_contents('./buttons/buttons.json');
+			$json_arr = json_decode($contents,true);
+			unset($json_arr[$_REQUEST['button_id']]);
+			
+			if(file_put_contents('./buttons/buttons.json', json_encode($json_arr)))
+			{
+				$out['type'] = 'success';
+				$out['message'] = 'Button deleted successfully';
+			}
+			else
+			{
+				$out['type'] = 'error';
+				$out['message'] = 'error, make sure that php-ssh2 is installed, folder buttons exists and is writable';
+			}
+			echo(json_encode($out));
+		}
+	break;
+	case 'edit_button':
+		if($_REQUEST['button_id']!='')
+		{
+			$contents = file_get_contents('./buttons/buttons.json');
+			$json_arr = json_decode($contents,true);
+			$json_arr[$_REQUEST['button_id']];
+			echo(json_encode($json_arr[$_REQUEST['button_id']]));
+		}
+	break;
 	case 'change_mode':
 		$_REQUEST['mode'] = preg_replace('/[^a-z]/', '', $_REQUEST['mode']);
 		$cmd = 'gpio -g mode '.intval($_REQUEST['bcm']).' '.$_REQUEST['mode'];

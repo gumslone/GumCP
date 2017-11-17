@@ -19,7 +19,8 @@ $phpinfo = $matches[1];
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="">
 	<meta name="author" content="">
-
+	<link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png" />
+	<link rel="icon" href="./static/images/raspberry.png" type="image/png" />
 	<title>GumCP PHP info</title>
 	<link href="./static/css.php" rel="stylesheet" type="text/css">
 	<script src="./static/js.php" type="text/javascript"></script>
@@ -66,6 +67,7 @@ $phpinfo = $matches[1];
 					<li class="active"><a href="./phpinfo.php">PHP info</a></li>
 					<li><a href="./actions.php">Actions</a></li>
 					<li><a href="./gpio.php">GPIO</a></li>
+					<li><a href="./buttons.php">Buttons</a></li>
 					<?php
 						if(LOGIN_REQUIRED==true)
 						{
@@ -106,6 +108,8 @@ $phpinfo = $matches[1];
 		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>. <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N"><img src="./static/images/Donate-PayPal-green.svg"/></a></p>
 	</div>
 </footer>
+<div id="dialog-placeholder"></div>
+<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
 </body>
 </html>
