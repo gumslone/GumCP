@@ -32,7 +32,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="">
 	<meta name="author" content="">
-
+	<link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png" />
+	<link rel="icon" href="./static/images/raspberry.png" type="image/png" />
 	<title>GumCP Buttons</title>
 	<link href="./static/css.php" rel="stylesheet" type="text/css">
 	<script src="./static/js.php" type="text/javascript"></script>
