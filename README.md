@@ -9,7 +9,7 @@ Find more screenshots in the ![screenshots folder](https://github.com/gumslone/G
 
 Video:
 
-[![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/video.png)](https://www.youtube.com/watch?v=lEP_Bbi0HJQ)
+[![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/video.png)](https://youtu.be/rCi9OGLOstU)
 
 
 
