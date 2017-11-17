@@ -68,10 +68,12 @@ open GumCP in your browser:
 `http://RasPi-IP/GumCP/index.php`
 
 
+
 To update GumCP use this commands:
 ```cd /var/www/html/GumCP```
 ```sudo git pull origin```
 
 after update make sure to edit the include/config.php file
+
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N)
