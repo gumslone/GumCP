@@ -325,7 +325,7 @@ function delete_log(file)
 								<label class="col-sm-2 form-control-label">Reboot RPi System</label>
 								<input type="hidden" class="form-control" name="action" value="reboot">
 								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Reboot</button>
+									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure to reboot RPi?')">Reboot</button>
 								</div>
 							</div>
 							
@@ -359,7 +359,7 @@ function delete_log(file)
 						<div class="well well-sm" id="command_logs"><h3>Useful commands:</h3>
 							<code>sudo apt-get update</code> to update RPi sources.<br/>
 							<code>sudo rpi-update</code> to update RPi firmware.<br/>
-							<code>cd <?php echo dirname(__FILE__); ?> && sudo git pull origin</code> to update GumCP (you have to edit config.php file after this manually).<br/>
+							<code>cd <?php echo dirname(__FILE__); ?> && sudo git pull origin</code> to update GumCP (after this you have to edit the config.php file manually).<br/>
 							<code>sudo chmod 0777 <?php echo dirname(__FILE__); ?>/include/config.php</code> to make the config file writable in case you can't write any data to it.
 
 						</div>
