@@ -5,7 +5,7 @@ Original repository: https://github.com/gumslone/GumCP
 
 ![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/dashboard.png)
 
-More screenshots in the screenshots folder.
+Find more screenshots in the ![screenshots folder](https://github.com/gumslone/GumCP/blob/master/screenshots/).
 
 Video:
 
@@ -20,7 +20,8 @@ Video:
 - change mode and value of the GPIO pins
 - system reboot
 - system update
-- execute command (for advanced users only)
+- execute command (for advanced users only) requires php-ssh2
+- create custom buttons to execute custom commands (i.e. set gpio pin to high/low, excute python script, execute bash script etc.) requires php-ssh2
 
 to install web server on your raspberry pi do this:
 ```
