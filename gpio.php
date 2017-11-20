@@ -95,7 +95,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="">
 	<meta name="author" content="">
-
+	<link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png" />
+	<link rel="icon" href="./static/images/raspberry.png" type="image/png" />
 	<title>GumCP GPIO</title>
 	<link href="./static/css.php" rel="stylesheet" type="text/css">
 	<script src="./static/js.php" type="text/javascript"></script>
@@ -104,6 +105,7 @@
 			$('[data-toggle="tooltip"]').tooltip();
 			$('.switch-mode').bootstrapSwitch();
 			$('.switch-v').bootstrapSwitch();
+			$('.switch-pullup').bootstrapSwitch();
 			$('.switch-mode').on('switchChange.bootstrapSwitch', function (event, state) {
 				
 				var bcm = $(this).attr("data-bcm");
@@ -144,6 +146,29 @@
 					type: "POST",
 					url: 'ajax.php',
 					data: {'action':'change_v', 'v':v, 'bcm':bcm},
+					success: function (result) {
+						alert(result);
+						location.reload();
+					}
+				});
+			});
+			$('.switch-pullup').on('switchChange.bootstrapSwitch', function (event, state) {
+				var bcm = $(this).attr("data-bcm");
+				var v = 1;
+				
+				if(state)
+				{
+					mode = 'up';
+				}
+				else
+				{
+					mode = 'down';
+				}
+				
+				$.ajax({
+					type: "POST",
+					url: 'ajax.php',
+					data: {'action':'change_mode', 'mode':mode, 'bcm':bcm},
 					success: function (result) {
 						alert(result);
 						location.reload();
@@ -254,6 +279,13 @@
 																echo '<input class="switch-v" type="checkbox" checked data-on-text="HIGH" data-off-text="LOW" data-on-color="danger" data-size="mini" data-bcm="'.$bcm.'">';
 															else
 																echo '<input class="switch-v" type="checkbox" data-on-text="HIGH" data-off-text="LOW" data-on-color="danger" data-size="mini" data-bcm="'.$bcm.'">';
+														}
+														elseif(strtolower($gpio_rows[$k][$i-1])=='in'||strtolower($gpio_rows[$k][$i+1])=='in')
+														{
+															if($gpio_rows[$k][$i]==1)
+																echo '<input class="switch-pullup" type="checkbox" checked data-on-text="Pull up" data-off-text="Pull down" data-on-color="dark" data-off-color="secondary" data-size="mini" data-bcm="'.$bcm.'">';
+															else
+																echo '<input class="switch-pullup" type="checkbox" data-on-text="Pull up" data-off-text="Pull down" data-on-color="dark" data-off-color="secondary" data-size="mini" data-bcm="'.$bcm.'">';
 														}
 														else
 														{

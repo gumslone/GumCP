@@ -1,10 +1,13 @@
 <?php
-switch ($_REQUEST['action']) {
-	case 'incorrect_login':
-		$message = 'Incorrect Username/Password combination';
+if(isset($_REQUEST['action']))
+{
+	switch ($_REQUEST['action']) {
+		case 'incorrect_login':
+			$message = 'Incorrect Username/Password combination';
+			
+		break;
 		
-	break;
-	
+	}
 }
 
 ?>
