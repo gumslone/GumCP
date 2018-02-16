@@ -1,4 +1,6 @@
 <?php
+$active_page = 'buttons';
+
 	include_once('./include/config.php');
 
 	if(!file_exists(dirname(__FILE__).'/buttons'))
@@ -163,18 +165,8 @@
 			</div>
 			<div id="navbar" class="navbar-collapse collapse">
 				<ul class="nav navbar-nav navbar-right">
-					<li><a href="./index.php">Dashboard</a></li>
-					<li><a href="./services.php">Services</a></li>
-					<li><a href="./processes.php">Processes</a></li>
-					<li><a href="./phpinfo.php">PHP info</a></li>
-					<li><a href="./actions.php">Actions</a></li>
-					<li><a href="./gpio.php">GPIO</a></li>
-					<li class="active"><a href="./buttons.php">Buttons</a></li>
 					<?php
-						if(LOGIN_REQUIRED==true)
-						{
-							echo '<li><a href="./logout.php">Logout</a></li>';
-						}
+						include_once('./include/menu.php');
 					?>
 				</ul>
 			</div><!--/.nav-collapse -->

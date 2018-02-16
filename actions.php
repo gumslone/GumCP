@@ -1,4 +1,6 @@
 <?php
+$active_page = 'actions';
+
 include_once('./include/config.php');
 	
 switch ($_REQUEST['action']) {
@@ -197,18 +199,8 @@ function delete_log(file)
 			</div>
 			<div id="navbar" class="navbar-collapse collapse">
 				<ul class="nav navbar-nav navbar-right">
-					<li><a href="./index.php">Dashboard</a></li>
-					<li><a href="./services.php">Services</a></li>
-					<li><a href="./processes.php">Processes</a></li>
-					<li><a href="./phpinfo.php">PHP info</a></li>
-					<li class="active"><a href="./actions.php">Actions</a></li>
-					<li><a href="./gpio.php">GPIO</a></li>
-					<li><a href="./buttons.php">Buttons</a></li>
 					<?php
-						if(LOGIN_REQUIRED==true)
-						{
-							echo '<li><a href="./logout.php">Logout</a></li>';
-						}
+						include_once('./include/menu.php');
 					?>
 				</ul>
 			</div><!--/.nav-collapse -->
@@ -357,8 +349,10 @@ function delete_log(file)
 						<hr/>
 						
 						<div class="well well-sm" id="command_logs"><h3>Useful commands:</h3>
+							<code>sudo python /folder_path_to_file/mypython_file.py</code> to execute a python script.<br/>
 							<code>sudo apt-get update</code> to update RPi sources.<br/>
 							<code>sudo rpi-update</code> to update RPi firmware.<br/>
+							<code>sudo reboot</code> to reboot RPi.<br/>
 							<code>cd <?php echo dirname(__FILE__); ?> && sudo git pull origin</code> to update GumCP (after this you have to edit the config.php file manually).<br/>
 							<code>sudo chmod 0777 <?php echo dirname(__FILE__); ?>/include/config.php</code> to make the config file writable in case you can't write any data to it.
 
