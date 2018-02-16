@@ -46,6 +46,8 @@ $gumcp_modules = array(
 		'module_index_file_relative_path' => './buttons.php',
 		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
 	),
+	
+	//third party modules with different licenses
 	'tinyfilemanager' => array(
 		'module_title' => 'File Manager',
 		'module_index_file_relative_path' => './modules/tinyfilemanager/tinyfilemanager.php',

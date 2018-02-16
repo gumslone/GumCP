@@ -1,8 +1,6 @@
 # GumCP
 Web Control Panel for Raspberry Pi
 
-> :thumbsup: Thanks everyone who has :star: starred and :money_with_wings: donated the project, it means a lot!
-
 Original repository: https://github.com/gumslone/GumCP
 
 ![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/dashboard.png)
@@ -23,7 +21,8 @@ Video:
 - system reboot
 - system update
 - execute command (for advanced users only) requires php-ssh2
-- create custom buttons to execute custom commands (i.e. set gpio pin to high/low, excute python script, execute bash script etc.) requires php-ssh2
+- create custom buttons to execute custom commands (i.e. set GPIO pin to HIGH/LOW, execute python script, execute bash script etc.) requires php-ssh2
+- added third party modules like: File Manager and Database Manager which you can activate in the config.php file
 
 to install web server on your raspberry pi do this:
 ```
