@@ -112,8 +112,8 @@ else
 		}
 	}
 }
-//$memory_percentage = round(($memory_used - $memory_buffers - $memory_cached) / $memory_total * 100);
 $memory_percentage = round(($memory_free) / $memory_total * 100);
+//$memory_percentage = round(($memory_total-$memory_free) / $memory_total * 100);
 //https://unix.stackexchange.com/questions/152299/how-to-get-memory-usedram-used-using-linux-command
 //$memory_percentage = round(shell_exec("free | awk 'FNR == 3 {print $3/($3+$4)*100}'"));
 
