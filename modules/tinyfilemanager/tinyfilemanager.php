@@ -2,6 +2,7 @@
 	include_once('../../include/config.php');
 	if($gumcp_modules['tinyfilemanager']['module_active']!=1)
 	{
+		header("HTTP/1.0 404 Not Found");
 		exit();
 	}
 /**
