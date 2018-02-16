@@ -14,6 +14,53 @@ define('GUMCP_DEBUG', false); //change to true to show PHP errors, or false to h
 define('MEMORY_CALCULATION_METHOD', 2); //change to 1 to use the free -mo command, which may not work with all raspberrys
 
 
+
+$gumcp_modules = array(
+	'services' => array(
+		'module_title' => 'Services',
+		'module_index_file_relative_path' => './services.php',
+		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
+	),
+	'processes' => array(
+		'module_title' => 'Processes',
+		'module_index_file_relative_path' => './processes.php',
+		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
+	),
+	'phpinfo' => array(
+		'module_title' => 'PHP Info',
+		'module_index_file_relative_path' => './phpinfo.php',
+		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
+	),
+	'actions' => array(
+		'module_title' => 'Actions',
+		'module_index_file_relative_path' => './actions.php',
+		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
+	),
+	'gpio' => array(
+		'module_title' => 'GPIO',
+		'module_index_file_relative_path' => './gpio.php',
+		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
+	),
+	'buttons' => array(
+		'module_title' => 'Buttons',
+		'module_index_file_relative_path' => './buttons.php',
+		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
+	),
+	'tinyfilemanager' => array(
+		'module_title' => 'File Manager',
+		'module_index_file_relative_path' => './modules/tinyfilemanager/tinyfilemanager.php',
+		'module_active' => 0, //change to 1 to enable file manager, and 0 to disable it.
+		'module_show_in_iframe' => 1 //change to 0 show module directly, and 1 to show it in iframe.
+	),
+	'adminer' => array(
+		'module_title' => 'Database Manager',
+		'module_index_file_relative_path' => './modules/adminer/adminer.php',
+		'module_active' => 0, //change to 1 to enable file manager, and 0 to disable it.
+		'module_show_in_iframe' => 1 //change to 0 show module directly, and 1 to show it in iframe.
+	),
+);
+
+
 if(GUMCP_DEBUG == true)
 {
 	error_reporting(E_ALL);
@@ -38,6 +85,8 @@ elseif(!empty($_REQUEST['login_user']) && !empty($_REQUEST['login_pass']))
 	exit();
 }
 
+
+
 if(LOGIN_REQUIRED==true)
 {
 	if(isset($_SESSION['LOGIN_USER']) && $_SESSION['LOGIN_USER']==md5(LOGIN_USER) && isset($_SESSION['LOGIN_PASS']) && $_SESSION['LOGIN_PASS'] == md5(LOGIN_PASS))
@@ -50,6 +99,8 @@ if(LOGIN_REQUIRED==true)
 		exit();
 	}
 }
+
+
 
 
 ?>

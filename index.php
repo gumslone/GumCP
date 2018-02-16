@@ -1,120 +1,122 @@
 <?php
-	include_once('./include/config.php');
-	
-	$temp = shell_exec('cat /sys/class/thermal/thermal_zone*/temp');
-	$temp = round($temp / 1000, 1);
-	
-	$cpuusage = 100 - shell_exec("vmstat | tail -1 | awk '{print $15}'");
-	
-	$clock = '';
-	/*$clock = shell_exec('cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq');
+$active_page = 'dashboard';
+
+include_once('./include/config.php');
+
+$temp = shell_exec('cat /sys/class/thermal/thermal_zone*/temp');
+$temp = round($temp / 1000, 1);
+
+$cpuusage = 100 - shell_exec("vmstat | tail -1 | awk '{print $15}'");
+
+$clock = '';
+/*$clock = shell_exec('cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq');
 	$clock = round($clock / 1000);*/
-	
-	
-	
-	//disk usage
-	$bytes = disk_free_space("."); 
-	$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );
-	$base = 1024;
-	$class = min((int)log($bytes , $base) , count($si_prefix) - 1);
-	$disk_free =  sprintf('%1.2f' , $bytes / pow($base,$class));
-	$bytes = disk_total_space("."); 
-	$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );
-	$base = 1024;
-	$class = min((int)log($bytes , $base) , count($si_prefix) - 1);
-	$disk_total = sprintf('%1.2f' , $bytes / pow($base,$class));
-	
-	$disk_used = $disk_total - $disk_free;
-	$disk_percentage = round($disk_used / $disk_total * 100);
-	
-		
-	$operating_system = shell_exec('uname -a');
-	
-	$cpu_info = shell_exec('lscpu');
-	$cpu_info = str_replace("\n", '. ', $cpu_info);
-	
-	
-	$uptime = shell_exec('uptime -p');
-	
-	$load = sys_getloadavg();
-	
-	$processes = shell_exec("ps aux | wc -l");
-	
-	$top = shell_exec("top -b -n 1 | head -n 30  | tail -n 30");
-	
-	$users = shell_exec("w");
-	$users = preg_replace('/^.+\n/', '', $users);
-	
-	$disks = shell_exec("df");
-	
-	$date = shell_exec("date");
-	
-	
-	
-	
-	
-	//memory usage
-	if(MEMORY_CALCULATION_METHOD==1)
+
+
+
+//disk usage
+$bytes = disk_free_space(".");
+$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );
+$base = 1024;
+$class = min((int)log($bytes , $base) , count($si_prefix) - 1);
+$disk_free =  sprintf('%1.2f' , $bytes / pow($base,$class));
+$bytes = disk_total_space(".");
+$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );
+$base = 1024;
+$class = min((int)log($bytes , $base) , count($si_prefix) - 1);
+$disk_total = sprintf('%1.2f' , $bytes / pow($base,$class));
+
+$disk_used = $disk_total - $disk_free;
+$disk_percentage = round($disk_used / $disk_total * 100);
+
+
+$operating_system = shell_exec('uname -a');
+
+$cpu_info = shell_exec('lscpu');
+$cpu_info = str_replace("\n", '. ', $cpu_info);
+
+
+$uptime = shell_exec('uptime -p');
+
+$load = sys_getloadavg();
+
+$processes = shell_exec("ps aux | wc -l");
+
+$top = shell_exec("top -b -n 1 | head -n 30  | tail -n 30");
+
+$users = shell_exec("w");
+$users = preg_replace('/^.+\n/', '', $users);
+
+$disks = shell_exec("df");
+
+$date = shell_exec("date");
+
+
+
+
+
+//memory usage
+if(MEMORY_CALCULATION_METHOD==1)
+{
+	$out = shell_exec('free -m');
+	preg_match_all('/\s+([0-9]+)/', $out, $matches);
+	list($memory_total, $memory_used, $memory_free, $memory_shared, $memory_buffers, $memory_cached) = $matches[1];
+
+}
+else
+{
+	$top_lines = preg_split("/\\r\\n|\\r|\\n/", $top);
+	preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[3], $matches);
+	//list($memory_total, $memory_used, $memory_free, $memory_buffers) = $matches[1];
+	//previous version didnt work properly on different linux versions
+	for($i=0;$i<count($matches[1]);$i++)
 	{
-		$out = shell_exec('free -mo');
-		preg_match_all('/\s+([0-9]+)/', $out, $matches);
-		list($memory_total, $memory_used, $memory_free, $memory_shared, $memory_buffers, $memory_cached) = $matches[1];
-	
-	}
-	else
-	{
-		$top_lines = preg_split("/\\r\\n|\\r|\\n/", $top);
-		preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[3], $matches);
-		//list($memory_total, $memory_used, $memory_free, $memory_buffers) = $matches[1];
-		//previous version didnt work properly on different linux versions
-		for($i=0;$i<count($matches[1]);$i++)
+		if(strtolower($matches[2][$i])=='total')
 		{
-			if(strtolower($matches[2][$i])=='total')
-			{
-				$memory_total = $matches[1][$i];
-			}
-			else if(strtolower($matches[2][$i])=='free')
+			$memory_total = $matches[1][$i];
+		}
+		else if(strtolower($matches[2][$i])=='free')
 			{
 				$memory_free = $matches[1][$i];
 			}
-			else if(strtolower($matches[2][$i])=='used')
+		else if(strtolower($matches[2][$i])=='used')
 			{
 				$memory_used = $matches[1][$i];
 			}
-			else
+		else if(stristr($matches[2][$i], 'buff'))
 			{
 				$memory_buffers = $matches[1][$i];
 			}
-		}
-		
-		preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[4], $matches);
-		//list($swap_total, $swap_used, $swap_free, $memory_cached) = $matches[1];
-		//previous version didnt work properly on different linux versions
-		for($i=0;$i<count($matches[1]);$i++)
+	}
+
+	preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[4], $matches);
+	//list($swap_total, $swap_used, $swap_free, $memory_cached) = $matches[1];
+	//previous version didnt work properly on different linux versions
+	for($i=0;$i<count($matches[1]);$i++)
+	{
+		if(strtolower($matches[2][$i])=='total')
 		{
-			if(strtolower($matches[2][$i])=='total')
-			{
-				$swap_total = $matches[1][$i];
-			}
-			else if(strtolower($matches[2][$i])=='free')
+			$swap_total = $matches[1][$i];
+		}
+		else if(strtolower($matches[2][$i])=='free')
 			{
 				$swap_free = $matches[1][$i];
 			}
-			else if(strtolower($matches[2][$i])=='used')
+		else if(strtolower($matches[2][$i])=='used')
 			{
 				$swap_used = $matches[1][$i];
 			}
-			else
-			{
-				$memory_cached = $matches[1][$i];
-			}
+		else
+		{
+			$memory_cached = $matches[1][$i];
 		}
 	}
-	$memory_percentage = round(($memory_used - $memory_buffers - $memory_cached) / $memory_total * 100);
-	
-	//https://unix.stackexchange.com/questions/152299/how-to-get-memory-usedram-used-using-linux-command
-	//$memory_percentage = round(shell_exec("free | awk 'FNR == 3 {print $3/($3+$4)*100}'"));
-	
+}
+//$memory_percentage = round(($memory_used - $memory_buffers - $memory_cached) / $memory_total * 100);
+$memory_percentage = round(($memory_free) / $memory_total * 100);
+//https://unix.stackexchange.com/questions/152299/how-to-get-memory-usedram-used-using-linux-command
+//$memory_percentage = round(shell_exec("free | awk 'FNR == 3 {print $3/($3+$4)*100}'"));
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -133,9 +135,9 @@
 	<script type="text/javascript">
 $(function() {
 
-		
-		
-		
+
+
+
 		$(".chart").easyPieChart({
 			barColor: function(b) {
 				return (b < 50 ? "#5cb85c" : b < 85 ? "#f0ad4e" : "#cb3935")
@@ -156,7 +158,7 @@ $(function() {
 
 <body>
 <div class="container">
-	
+
 	<nav class="navbar navbar-default">
 		<div class="container-fluid">
 			<div class="navbar-header">
@@ -170,25 +172,15 @@ $(function() {
 			</div>
 			<div id="navbar" class="navbar-collapse collapse">
 				<ul class="nav navbar-nav navbar-right">
-					<li class="active"><a href="./index.php">Dashboard</a></li>
-					<li><a href="./services.php">Services</a></li>
-					<li><a href="./processes.php">Processes</a></li>
-					<li><a href="./phpinfo.php">PHP info</a></li>
-					<li><a href="./actions.php">Actions</a></li>
-					<li><a href="./gpio.php">GPIO</a></li>
-					<li><a href="./buttons.php">Buttons</a></li>
 					<?php
-						if(LOGIN_REQUIRED==true)
-						{
-							echo '<li><a href="./logout.php">Logout</a></li>';
-						}
-					?>
+include_once('./include/menu.php');
+?>
 				</ul>
 			</div><!--/.nav-collapse -->
 		</div><!--/.container-fluid -->
 	</nav>
 
-	
+
 
 				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
@@ -203,36 +195,36 @@ $(function() {
 									<span class="label">CPU Usage</span>
 								</span>
 							</div>
-							
+
 							<!--div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo ($clock/1000)*100; ?>">
 									<span class="percent"><?php echo $clock; ?><i>MHz</i></span>
 									<span class="label">CPU Clock</span>
 								</span>
 							</div-->
-							
+
 							<div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo $temp; ?>">
 									<span class="percent"><?php echo $temp; ?><i>°C</i></span>
 									<span class="label">Temperature</span>
 								</span>
 							</div>
-							
+
 							<div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo $disk_percentage; ?>">
 									<span class="percent"><?php echo $disk_percentage; ?><i>%</i></span>
 									<span class="label">Local disk space</span>
 								</span>
 							</div>
-							
+
 							<div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo $memory_percentage; ?>">
 									<span class="percent"><?php echo $memory_percentage; ?><i>%</i></span>
 									<span class="label">Real Memory</span>
 								</span>
 							</div>
-							
-							
+
+
 							<table class="table table-hover">
 							<tbody>
 								<tr>
@@ -266,40 +258,40 @@ $(function() {
 								</tr>
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Real memory</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_real_memory"><?php echo $memory_total; ?> KiB total / <?php echo ($memory_used - $memory_buffers - $memory_cached); ?> KiB used</span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_real_memory"><?php echo $memory_total; ?> KiB total / <?php /*echo ($memory_used - $memory_buffers - $memory_cached);*/ echo ($memory_total-$memory_free); ?> KiB used</span></td>
 								</tr>
 
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Local disk space</strong></td>
 									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><?php echo $disk_total; ?> GB total / <?php echo $disk_free; ?> GB free / <?php echo $disk_used; ?> GB used</span></td>
 								</tr>
-								
-								
 
-								
+
+
+
 </tbody></table>
-							
-							
-							
-							
-							
-							
-							
-							
-							
+
+
+
+
+
+
+
+
+
 						</div>
-								
-								
-								
+
+
+
 					</div>
-				
-				
+
+
 				</div>
-				
-				
-				
-				
-				
+
+
+
+
+
 				<div id="top-processes" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
 						<h3 class="panel-title">Top Processes</h3>
@@ -307,17 +299,17 @@ $(function() {
 					<div class="panel-body">
 
 						<pre><?php echo $top; ?></pre>
-						
-						
-						
-								
-								
-								
+
+
+
+
+
+
 					</div>
-				
-				
+
+
 				</div>
-				
+
 				<div id="active-users" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
 						<h3 class="panel-title">Users</h3>
@@ -325,12 +317,12 @@ $(function() {
 					<div class="panel-body">
 
 						<pre><?php echo $users; ?></pre>
-						
+
 					</div>
-				
-				
+
+
 				</div>
-				
+
 				<div id="active-users" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
 						<h3 class="panel-title">Disks</h3>
@@ -338,14 +330,14 @@ $(function() {
 					<div class="panel-body">
 
 						<pre><?php echo $disks; ?></pre>
-						
+
 					</div>
-				
-				
+
+
 				</div>
-				
-				
-		
+
+
+
 </div>
 
 <footer class="footer">
