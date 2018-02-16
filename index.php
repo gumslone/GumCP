@@ -112,7 +112,7 @@ else
 		}
 	}
 }
-$memory_percentage = round(($memory_free) / $memory_total * 100);
+$memory_percentage = round(($memory_used) / $memory_total * 100);
 //$memory_percentage = round(($memory_total-$memory_free) / $memory_total * 100);
 //https://unix.stackexchange.com/questions/152299/how-to-get-memory-usedram-used-using-linux-command
 //$memory_percentage = round(shell_exec("free | awk 'FNR == 3 {print $3/($3+$4)*100}'"));
@@ -258,7 +258,7 @@ include_once('./include/menu.php');
 								</tr>
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Real memory</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_real_memory"><?php echo $memory_total; ?> KiB total / <?php /*echo ($memory_used - $memory_buffers - $memory_cached);*/ echo ($memory_total-$memory_free); ?> KiB used</span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_real_memory"><?php echo $memory_total; ?> KiB total / <?php /*echo ($memory_used - $memory_buffers - $memory_cached);*/ echo ($memory_used); ?> KiB used</span></td>
 								</tr>
 
 								<tr>
