@@ -78,6 +78,20 @@ To **upgrade GumCP** use this commands:
 
 after update make sure to edit the **include/config.php** file
 
+**If the actions.php or buttons.php page doesn't open or you get some http error, it means that php-ssh2 is not installed.**
+
+For PHP 7 use this:
+
+```sudo apt-get install php7.0-ssh2```
+
+For PHP 7.1 use this:
+
+```sudo apt-get install php7.1-ssh2```
+
+Or try this command:
+
+```sudo apt-get install php-ssh2```
+
 
 **If your Raspberry Pi is accessible from internet**, you should tell the bots and spiders like googlebot not to crawl the pages of GumCP and exclude GumCP from search results with a robots.txt file.
 Just create a file **robots.txt**, place it in the webroot of your raspberry pi (usually its /var/www/html/) and define in the robots.txt the parts of web content which shouldn't be crawled like this:
