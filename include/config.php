@@ -47,6 +47,14 @@ $gumcp_modules = array(
 		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
 	),
 	
+	//you can order your tehybug from https://www.tindie.com/stores/gumslone/
+	'tehybug' => array(
+		'module_title' => 'TeHyBug',
+		'module_index_file_relative_path' => './modules/tehybug/index.php',
+		'module_active' => 0, //change to 1 to enable file manager, and 0 to disable it.
+		'module_show_in_iframe' => 1 //change to 0 show module directly, and 1 to show it in iframe.
+	),
+	
 	//third party modules with different licenses
 	'tinyfilemanager' => array(
 		'module_title' => 'File Manager',
