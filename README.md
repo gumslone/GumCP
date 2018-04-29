@@ -111,6 +111,7 @@ Disallow: /
 to exclude the entire web root from being crawled by bots
 
 **TeHyBug module**
+
 TeHyBug is a low power temperature/humidity and barometric air pressure wifi data tracker which can be ordered here: https://www.tindie.com/stores/gumslone/
 
 The TeHyBug module requires sqlite3 to be installed:
