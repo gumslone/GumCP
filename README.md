@@ -110,4 +110,16 @@ Disallow: /
 ```
 to exclude the entire web root from being crawled by bots
 
+**TeHyBug module**
+
+The TeHyBug module requires sqlite3 to be installed:
+
+```sudo apt-get install sqlite3```
+
+For php5
+```sudo apt-get install php5-sqlite```
+
+For php7
+```sudo apt-get install php7.0-sqlite3```
+
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N)
