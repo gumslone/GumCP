@@ -24,7 +24,9 @@ Video:
 - create custom buttons to execute custom commands (i.e. set GPIO pin to HIGH/LOW, execute python script, execute bash script etc.) requires php-ssh2
 - added third party modules like: File Manager and Database Manager which you can activate in the config.php file
 
-to install web server on your raspberry pi do this:
+to install web server on your raspberry pi do this you can use the instructions from here:
+https://www.raspberrypi.org/documentation/remote-access/web-server/apache.md
+or use commands below
 ```
 sudo apt-get update && sudo apt-get install apache2 php5 php5-ssh2
 ```
