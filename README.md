@@ -38,6 +38,10 @@ make sure that php5-ssh2 is installed:
 ```
 sudo apt-get install php5-ssh2
 ```
+or
+```
+sudo apt-get install php-ssh2
+```
 restart apache:
 ```
 sudo service apache2 restart
