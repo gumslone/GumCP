@@ -1,4 +1,9 @@
 <?php
+if (!function_exists('ssh2_connect')) {
+    echo "<b>php-ssh2</b> is not installed, this page will only work with installed php-ssh2.<br />\n";
+    exit();
+}
+
 $active_page = 'actions';
 
 include_once('./include/config.php');
