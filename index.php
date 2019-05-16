@@ -133,6 +133,24 @@ $memory_percentage = round(($memory_used) / $memory_total * 100);
 	<script src="./static/js.php" type="text/javascript">
 </script>
 	<script type="text/javascript">
+var timeout = setInterval(reloadData, 10000);    
+function reloadData () {
+	$.getJSON( "./ajax.php?action=server_info", function( data ) {
+		if(data!=null && data['top']!=null)
+		{
+			$.each( data, function( key, val ) {
+				$('#'+key).html(val);
+			});
+			$( ".chart" ).each(function( index ) {
+				$(this).data('easyPieChart').update($(this).closest( "span" ).text().replace(/[^0-9\.]/g,''));
+				$(this).attr("data-percent",$(this).closest( "span" ).text().replace(/[^0-9\.]/g,''));
+			});
+		}
+	});
+    
+}
+
+
 $(function() {
 
 
@@ -184,14 +202,14 @@ include_once('./include/menu.php');
 
 				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
 					<div class="panel-heading">
-						<h3 class="panel-title">System Information<a href="?updated" target="_top" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a></h3>
+						<h3 class="panel-title">System Information<!--a href="?updated" target="_top" class="btn btn-success pull-right" style="margin:-6px -11px; color: white;"><i class="fa fa-refresh"></i></a--></h3>
 					</div>
 					<div class="panel-body">
 
 						<div class="row" style="margin: 0;">
 							<div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo $cpuusage; ?>">
-									<span class="percent"><?php echo $cpuusage; ?><i>%</i></span>
+									<span class="percent"><span id="cpuusage"><?php echo $cpuusage; ?></span><i>%</i></span>
 									<span class="label">CPU Usage</span>
 								</span>
 							</div>
@@ -205,21 +223,21 @@ include_once('./include/menu.php');
 
 							<div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo $temp; ?>">
-									<span class="percent"><?php echo $temp; ?><i>°C</i></span>
+									<span class="percent"><span id="temp"><?php echo $temp; ?></span><i>°C</i></span>
 									<span class="label">Temperature</span>
 								</span>
 							</div>
 
 							<div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo $disk_percentage; ?>">
-									<span class="percent"><?php echo $disk_percentage; ?><i>%</i></span>
+									<span class="percent"><span id="disk_percentage"><?php echo $disk_percentage; ?></span><i>%</i></span>
 									<span class="label">Local disk space</span>
 								</span>
 							</div>
 
 							<div class="col-xs-6 col-sm-3 text-center">
 								<span class="chart" data-percent="<?php echo $memory_percentage; ?>">
-									<span class="percent"><?php echo $memory_percentage; ?><i>%</i></span>
+									<span class="percent"><span id="memory_percentage"><?php echo $memory_percentage; ?></span><i>%</i></span>
 									<span class="label">Real Memory</span>
 								</span>
 							</div>
@@ -242,28 +260,28 @@ include_once('./include/menu.php');
 
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>System uptime</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_uptime"><?php echo $uptime; ?></span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_uptime"><span id="uptime"><?php echo $uptime; ?></span></span></td>
 								</tr>
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Current system time</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><?php echo $date; ?></span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><span id="date"><?php echo $date; ?></span></span></td>
 								</tr>
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Running processes</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_running_proc"><a href="./processes.php"><?php echo $processes; ?></a></span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_running_proc"><a href="./processes.php" id="processes"><?php echo $processes; ?></a></span></td>
 								</tr>
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>CPU load averages</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_load"><?php echo $load[0]; ?> (1 min) <?php echo $load[1]; ?> (5 mins) <?php echo $load[2]; ?> (15 mins)</span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_load"><span id="load0"><?php echo $load[0]; ?></span> (1 min) <span id="load1"><?php echo $load[1]; ?></span> (5 mins) <span id="load2"><?php echo $load[2]; ?></span></span> (15 mins)</span></td>
 								</tr>
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Real memory</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_real_memory"><?php echo $memory_total; ?> KiB total / <?php /*echo ($memory_used - $memory_buffers - $memory_cached);*/ echo ($memory_used); ?> KiB used</span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_real_memory"><span id="memory_total"><?php echo $memory_total; ?></span> KiB total / <span id="memory_used"><?php /*echo ($memory_used - $memory_buffers - $memory_cached);*/ echo ($memory_used); ?></span> KiB used</span></td>
 								</tr>
 
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Local disk space</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><?php echo $disk_total; ?> GB total / <?php echo $disk_free; ?> GB free / <?php echo $disk_used; ?> GB used</span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><span id="disk_total"><?php echo $disk_total; ?></span> GB total / <span id="disk_free"><?php echo $disk_free; ?></span> GB free / <span id="disk_used"><?php echo $disk_used; ?> GB used</span></td>
 								</tr>
 
 
@@ -298,7 +316,7 @@ include_once('./include/menu.php');
 					</div>
 					<div class="panel-body">
 
-						<pre><?php echo $top; ?></pre>
+						<pre id="top"><?php echo $top; ?></pre>
 
 
 
@@ -316,7 +334,7 @@ include_once('./include/menu.php');
 					</div>
 					<div class="panel-body">
 
-						<pre><?php echo $users; ?></pre>
+						<pre id="users"><?php echo $users; ?></pre>
 
 					</div>
 
@@ -329,7 +347,7 @@ include_once('./include/menu.php');
 					</div>
 					<div class="panel-body">
 
-						<pre><?php echo $disks; ?></pre>
+						<pre id="disks"><?php echo $disks; ?></pre>
 
 					</div>
 

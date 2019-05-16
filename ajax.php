@@ -107,6 +107,137 @@ switch ($_REQUEST['action']) {
 		}
 		
 	break;
+	
+	case 'server_info':
+		$out = array();
+		$temp = shell_exec('cat /sys/class/thermal/thermal_zone*/temp');
+		$temp = round($temp / 1000, 1);
+		$out['temp'] = $temp;
+		
+		$cpuusage = 100 - shell_exec("vmstat | tail -1 | awk '{print $15}'");
+		$out['cpuusage'] = $cpuusage;
+		
+		$clock = '';
+		/*$clock = shell_exec('cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq');
+			$clock = round($clock / 1000);*/
+
+		//disk usage
+		$bytes = disk_free_space(".");
+		$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );
+		$base = 1024;
+		$class = min((int)log($bytes , $base) , count($si_prefix) - 1);
+		$disk_free =  sprintf('%1.2f' , $bytes / pow($base,$class));
+		$out['disk_free'] = $disk_free;
+		$bytes = disk_total_space(".");
+		$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );
+		$base = 1024;
+		$class = min((int)log($bytes , $base) , count($si_prefix) - 1);
+		$disk_total = sprintf('%1.2f' , $bytes / pow($base,$class));
+		$out['disk_total'] = $disk_total;
+		$disk_used = $disk_total - $disk_free;
+		$out['disk_used'] = $disk_used;
+		$disk_percentage = round($disk_used / $disk_total * 100);
+		$out['disk_percentage'] = $disk_percentage;
+		
+		$uptime = shell_exec('uptime -p');
+		$out['uptime'] = $uptime;
+		
+		$load = sys_getloadavg();
+		$out['load'] = $load;
+		$out['load0'] = $load[0];
+		$out['load1'] = $load[1];
+		$out['load2'] = $load[2];
+		$processes = shell_exec("ps aux | wc -l");
+		$out['processes'] = $processes;
+		
+		$top = shell_exec("top -b -n 1 | head -n 30  | tail -n 30");
+		$out['top'] = $top;
+		
+		$users = shell_exec("w");
+		$users = preg_replace('/^.+\n/', '', $users);
+		$out['users'] = $users;
+
+		$disks = shell_exec("df");
+		$out['disks'] = $disks;
+		
+		$date = shell_exec("date");
+		$out['date'] = $date;
+		
+		//memory usage
+		if(MEMORY_CALCULATION_METHOD==1)
+		{
+			$out = shell_exec('free -m');
+			preg_match_all('/\s+([0-9]+)/', $out, $matches);
+			list($memory_total, $memory_used, $memory_free, $memory_shared, $memory_buffers, $memory_cached) = $matches[1];
+		
+		}
+		else
+		{
+			$top_lines = preg_split("/\\r\\n|\\r|\\n/", $top);
+			preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[3], $matches);
+			//list($memory_total, $memory_used, $memory_free, $memory_buffers) = $matches[1];
+			//previous version didnt work properly on different linux versions
+			for($i=0;$i<count($matches[1]);$i++)
+			{
+				if(strtolower($matches[2][$i])=='total')
+				{
+					$memory_total = $matches[1][$i];
+				}
+				else if(strtolower($matches[2][$i])=='free')
+					{
+						$memory_free = $matches[1][$i];
+					}
+				else if(strtolower($matches[2][$i])=='used')
+					{
+						$memory_used = $matches[1][$i];
+					}
+				else if(stristr($matches[2][$i], 'buff'))
+					{
+						$memory_buffers = $matches[1][$i];
+					}
+			}
+		
+			preg_match_all('/\s+([0-9]+)\s+([A-z]+)/', $top_lines[4], $matches);
+			//list($swap_total, $swap_used, $swap_free, $memory_cached) = $matches[1];
+			//previous version didnt work properly on different linux versions
+			for($i=0;$i<count($matches[1]);$i++)
+			{
+				if(strtolower($matches[2][$i])=='total')
+				{
+					$swap_total = $matches[1][$i];
+				}
+				else if(strtolower($matches[2][$i])=='free')
+					{
+						$swap_free = $matches[1][$i];
+					}
+				else if(strtolower($matches[2][$i])=='used')
+					{
+						$swap_used = $matches[1][$i];
+					}
+				else
+				{
+					$memory_cached = $matches[1][$i];
+				}
+			}
+		}
+		//$memory_total, $memory_used, $memory_free, $memory_shared, $memory_buffers, $memory_cached
+		
+		$out['memory_total'] = $memory_total;
+		$out['memory_used'] = $memory_used;
+		$out['memory_free'] = $memory_free;
+		$out['memory_shared'] = $memory_shared;
+		$out['memory_buffers'] = $memory_buffers;
+		$out['memory_cached'] = $memory_cached;
+		
+		
+		
+		$memory_percentage = round(($memory_used) / $memory_total * 100);
+		$out['memory_percentage'] = $memory_percentage;
+
+		echo json_encode($out,true);
+		exit();
+		
+	break;
 }
 
 if(!empty($cmd))
