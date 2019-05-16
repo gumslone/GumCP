@@ -281,7 +281,7 @@ include_once('./include/menu.php');
 
 								<tr>
 									<td style="width:30%;vertical-align:middle; padding:8px;"><strong>Local disk space</strong></td>
-									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><span id="disk_total"><?php echo $disk_total; ?></span> GB total / <span id="disk_free"><?php echo $disk_free; ?></span> GB free / <span id="disk_used"><?php echo $disk_used; ?> GB used</span></td>
+									<td style="width:70%; vertical-align:middle; padding:8px;"><span data-id="sysinfo_disk_space"><span id="disk_total"><?php echo $disk_total; ?></span> GB total / <span id="disk_free"><?php echo $disk_free; ?></span> GB free / <span id="disk_used"><?php echo $disk_used; ?></span> GB used</span></td>
 								</tr>
 
 
