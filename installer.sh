@@ -44,6 +44,16 @@ sudo service apache2 restart
 echo ""
 echo "Done"
 echo ""
+echo ""
+echo "GumCP should be installed at:"
+echo ""
+IP="$(hostname -I | cut -d' ' -f1)"
+echo "http://${IP}/GumCP/"
+echo ""
+echo "If you cant access it, then something went wrong, you can open an issue at github: https://github.com/gumslone/GumCP/issues"
+echo ""
+
+
 
 
 
