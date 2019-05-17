@@ -26,7 +26,27 @@ Video:
 - create custom buttons to execute custom commands (i.e. set GPIO pin to HIGH/LOW, execute python script, execute bash script etc.) requires php-ssh2
 - added third party modules like: File Manager and Database Manager which you can activate in the config.php file
 
-to install web server on your raspberry pi do this you can use the instructions from here:
+**How to install GumCP (simple way) which should work in most cases**
+
+1. Login to your Raspberry Pi via ssh. 
+
+    default username is: pi 
+    
+    default password is: raspberry
+    
+2. run this command:
+```
+cd && sudo apt-get update && sudo apt-get install wget -y
+```
+3. run this command:
+```
+sudo wget https://raw.githubusercontent.com/gumslone/GumCP/master/installer.sh && sudo sh ./installer.sh
+```
+This should install everything.
+
+**Other ways of installation**
+
+To install web server on your raspberry pi do this you can use the instructions from here:
 https://www.raspberrypi.org/documentation/remote-access/web-server/apache.md
 or use commands below
 ```
