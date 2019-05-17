@@ -3,6 +3,8 @@ Web Control Panel for Raspberry Pi
 
 Original repository: https://github.com/gumslone/GumCP
 
+If you like the GumCP: please **⭐️star** the GumCP repo to make it more popular! You can also [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N) to support more frequent updates of GumCP if you wish!
+
 ![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/dashboard.png)
 
 Find more screenshots in the ![screenshots folder](https://github.com/gumslone/GumCP/blob/master/screenshots/).
