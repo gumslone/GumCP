@@ -27,7 +27,7 @@ echo ""
 echo "Install wiringPI"
 echo ""
 cd
-sudo git clone git://git.drogon.net/wiringPi
+sudo git clone https://github.com/WiringPi/WiringPi.git
 cd wiringPi
 sudo git pull origin
 ./build
