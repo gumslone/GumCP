@@ -223,10 +223,17 @@ else
         fi
     fi
 
-    # config.php
+    # config.php — not tracked by git; created from config.example.php on install
     CONFIG="$GUMCP_DIR/include/config.php"
+    EXAMPLE="$GUMCP_DIR/include/config.example.php"
     if [ ! -f "$CONFIG" ]; then
         fail "include/config.php not found"
+        if [ -f "$EXAMPLE" ]; then
+            try_fix "copy config.example.php → config.php" \
+                "sudo cp $EXAMPLE $CONFIG && sudo chown $WEB_USER:$WEB_USER $CONFIG && sudo chmod 664 $CONFIG"
+        else
+            info "Neither config.php nor config.example.php found — re-run installer.sh"
+        fi
     else
         pass "include/config.php exists"
     fi

@@ -1,0 +1,10 @@
+# User configuration — edit include/config.php to set credentials.
+# config.example.php is the tracked template; config.php is your live copy.
+include/config.php
+
+# User data directories written at runtime by the web server.
+buttons/
+command_logs/
+
+# CPU stat cache written by ajax.php for accurate polling.
+gumcp_cpu_stat

@@ -123,6 +123,16 @@ if [ ! -d "$GUMCP_DIR" ]; then
     fi
 fi
 
+# ── config.php ────────────────────────────────────────────────────────────────
+# config.php is NOT tracked by git so your credentials survive git pull.
+# On a fresh install, copy the example template to create it.
+if [ ! -f "$GUMCP_DIR/include/config.php" ]; then
+    print_message "Creating include/config.php from template..."
+    sudo cp "$GUMCP_DIR/include/config.example.php" "$GUMCP_DIR/include/config.php"
+else
+    print_message "include/config.php already exists — skipping (your settings are preserved)."
+fi
+
 # ── writable directories ──────────────────────────────────────────────────────
 # Create directories that the web server writes to at runtime.
 print_message "Creating writable directories..."
@@ -133,7 +143,6 @@ sudo mkdir -p "$GUMCP_DIR/command_logs"
 print_message "Setting permissions..."
 sudo chown -R www-data:www-data "$GUMCP_DIR"
 sudo chmod -R 755 "$GUMCP_DIR"
-# config.php needs to be writable so you can edit credentials via the web UI
 sudo chmod 664 "$GUMCP_DIR/include/config.php"
 print_message "Permissions set"
 
