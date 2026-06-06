@@ -223,6 +223,32 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
         <h1>Command Buttons <small>Execute predefined commands</small></h1>
     </div>
 
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-info-circle"></i> How it works</h3>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-sm-4">
+                    <p><i class="fa fa-plus-circle text-success fa-fw"></i> <strong>Create a button</strong><br>
+                    Click <em>Add Command Button</em>, give it a name, and enter the shell command you want to run — for example <code>sudo systemctl restart apache2</code> or <code>sudo reboot</code>. Choose an icon, colour, and size.</p>
+                </div>
+                <div class="col-sm-4">
+                    <p><i class="fa fa-play-circle text-primary fa-fw"></i> <strong>Execute</strong><br>
+                    Click any button to open a confirmation dialog showing the exact command that will run. Press <em>Execute</em> to send it to the Raspberry Pi over SSH. The output is displayed in the same dialog.</p>
+                </div>
+                <div class="col-sm-4">
+                    <p><i class="fa fa-cog text-muted fa-fw"></i> <strong>Edit &amp; delete</strong><br>
+                    Use the small dropdown arrow next to each button to edit its settings or delete it. Commands run as the SSH user configured in <code>include/config.php</code>.</p>
+                </div>
+            </div>
+            <p class="text-muted" style="margin-bottom:0; font-size:12px">
+                <i class="fa fa-exclamation-triangle"></i>
+                Commands execute with the SSH user's permissions. Only save commands you trust. Prefix with <code>sudo</code> where root access is needed.
+            </p>
+        </div>
+    </div>
+
     <button type="button" class="btn btn-success" onclick="addButton()">
         <i class="fa fa-plus"></i> Add Command Button
     </button>
