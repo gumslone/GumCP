@@ -5,11 +5,13 @@ define('SSH_PORT', '22');        // SSH port (default: 22)
 define('SSH_USER', 'pi');        // SSH username
 define('SSH_PASS', 'raspberry'); // SSH password
 
-define('LOGIN_REQUIRED', false); // true = require login, false = open access
+define('LOGIN_REQUIRED', false); // true = require login via the login page
 define('LOGIN_USER', 'pi');
 define('LOGIN_PASS', 'raspberry');
 
-define('BASIC_AUTH', false);    // true = use HTTP Basic Auth instead of the login page;
+define('BASIC_AUTH', false);         // true = also accept HTTP Basic Auth
+define('BASIC_AUTH_USER', 'api');    // separate credentials for Basic Auth
+define('BASIC_AUTH_PASS', 'secret');
 
 define('GUMCP_DEBUG', false);    // true = show PHP errors
 
@@ -99,34 +101,43 @@ if (!empty($_POST['login_user']) && !empty($_POST['login_pass'])) {
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
 
-if (LOGIN_REQUIRED === true || (defined('BASIC_AUTH') && BASIC_AUTH === true)) {
-    // Apache may strip the Authorization header; fall back to parsing it manually.
-    $basic_user = (string)($_SERVER['PHP_AUTH_USER'] ?? '');
-    $basic_pass = (string)($_SERVER['PHP_AUTH_PW']   ?? '');
-    if ($basic_user === '' && isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        $decoded = base64_decode(ltrim(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
-        if ($decoded !== false && strpos($decoded, ':') !== false) {
-            [$basic_user, $basic_pass] = explode(':', $decoded, 2);
+$_gumcp_need_auth = (LOGIN_REQUIRED === true) || (defined('BASIC_AUTH') && BASIC_AUTH === true);
+
+if ($_gumcp_need_auth) {
+    $authed = false;
+
+    // ── Basic Auth check ──────────────────────────────────────────────────────
+    if (defined('BASIC_AUTH') && BASIC_AUTH === true) {
+        // Apache may strip the Authorization header; fall back to parsing it manually.
+        $basic_user = (string)($_SERVER['PHP_AUTH_USER'] ?? '');
+        $basic_pass = (string)($_SERVER['PHP_AUTH_PW']   ?? '');
+        if ($basic_user === '' && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $decoded = base64_decode(ltrim(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
+            if ($decoded !== false && strpos($decoded, ':') !== false) {
+                [$basic_user, $basic_pass] = explode(':', $decoded, 2);
+            }
+        }
+        if ($basic_user !== ''
+            && hash_equals(BASIC_AUTH_USER, $basic_user)
+            && hash_equals(BASIC_AUTH_PASS, $basic_pass)
+        ) {
+            $authed = true;
         }
     }
-    $basic_ok   = $basic_user !== ''
-               && hash_equals(LOGIN_USER, $basic_user)
-               && hash_equals(LOGIN_PASS, $basic_pass);
 
-    $session_ok = isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
-               && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
-               && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS);
-
-    if ($basic_ok && !$session_ok) {
-        // Stamp the session so LOGIN_REQUIRED checks also pass
-        $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
-        $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
-        $session_ok = true;
+    // ── Session (login form) check ────────────────────────────────────────────
+    if (!$authed && LOGIN_REQUIRED === true) {
+        if (isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
+            && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
+            && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS)
+        ) {
+            $authed = true;
+        }
     }
 
-    if (!$basic_ok && !$session_ok) {
+    // ── Reject ────────────────────────────────────────────────────────────────
+    if (!$authed) {
         if (defined('BASIC_AUTH') && BASIC_AUTH === true) {
-            // Prompt the browser's native credentials dialog
             header('WWW-Authenticate: Basic realm="GumCP"');
             http_response_code(401);
             echo '401 Unauthorized';
@@ -136,3 +147,4 @@ if (LOGIN_REQUIRED === true || (defined('BASIC_AUTH') && BASIC_AUTH === true)) {
         exit();
     }
 }
+unset($_gumcp_need_auth);
