@@ -9,6 +9,8 @@ define('LOGIN_REQUIRED', false); // true = require login, false = open access
 define('LOGIN_USER', 'pi');
 define('LOGIN_PASS', 'raspberry');
 
+define('BASIC_AUTH', false);    // true = use HTTP Basic Auth instead of the login page;
+
 define('GUMCP_DEBUG', false);    // true = show PHP errors
 
 error_reporting(GUMCP_DEBUG ? E_ALL : 0);
@@ -97,7 +99,18 @@ if (!empty($_POST['login_user']) && !empty($_POST['login_pass'])) {
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
 
-if (LOGIN_REQUIRED === true) {
+if (defined('BASIC_AUTH') && BASIC_AUTH === true) {
+    $auth_user = (string)($_SERVER['PHP_AUTH_USER'] ?? '');
+    $auth_pass = (string)($_SERVER['PHP_AUTH_PW']   ?? '');
+    $valid = hash_equals(LOGIN_USER, $auth_user)
+          && hash_equals(LOGIN_PASS, $auth_pass);
+    if (!$valid) {
+        header('WWW-Authenticate: Basic realm="GumCP"');
+        http_response_code(401);
+        echo '401 Unauthorized';
+        exit();
+    }
+} elseif (LOGIN_REQUIRED === true) {
     $authed = isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
            && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
            && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS);
