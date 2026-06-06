@@ -16,8 +16,10 @@ $buttons_dir  = __DIR__ . '/buttons';
 $buttons_file = $buttons_dir . '/buttons.json';
 $buttons      = [];
 
-if (!is_dir($buttons_dir) && !mkdir($buttons_dir, 0755, true)) {
-    $message      = 'Error: Unable to create buttons directory';
+if (!is_dir($buttons_dir) && !@mkdir($buttons_dir, 0755, true)) {
+    $message      = 'Cannot create buttons directory ' . $buttons_dir
+                  . ' — fix with: sudo mkdir -p ' . $buttons_dir
+                  . ' &amp;&amp; sudo chown www-data:www-data ' . $buttons_dir;
     $message_type = 'danger';
 }
 

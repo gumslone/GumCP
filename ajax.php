@@ -86,11 +86,20 @@ function load_buttons() {
     return is_array($data) ? $data : null;
 }
 
-function save_buttons(array $buttons): bool {
+// Returns an empty string on success, or an error message on failure.
+function save_buttons(array $buttons): string {
     if (!is_dir(BUTTONS_DIR)) {
-        mkdir(BUTTONS_DIR, 0755, true);
+        if (!@mkdir(BUTTONS_DIR, 0755, true)) {
+            return 'Cannot create ' . BUTTONS_DIR
+                 . ' — fix with: sudo mkdir -p ' . BUTTONS_DIR
+                 . ' && sudo chown www-data:www-data ' . BUTTONS_DIR;
+        }
     }
-    return file_put_contents(BUTTONS_FILE, json_encode($buttons, JSON_PRETTY_PRINT)) !== false;
+    if (file_put_contents(BUTTONS_FILE, json_encode($buttons, JSON_PRETTY_PRINT)) === false) {
+        return 'Cannot write ' . BUTTONS_FILE
+             . ' — fix with: sudo chown -R www-data:www-data ' . BUTTONS_DIR;
+    }
+    return '';
 }
 
 function validate_button_id($id): bool {
@@ -139,9 +148,8 @@ switch ($action) {
             $msg = 'Button created';
         }
 
-        $out = save_buttons($buttons)
-            ? ok($msg)
-            : err('Failed to save button — check that the buttons directory is writable');
+        $save_err = save_buttons($buttons);
+        $out = $save_err === '' ? ok($msg) : err($save_err);
         break;
 
     // ── Buttons: read for edit dialog ─────────────────────────────────────────
@@ -199,9 +207,8 @@ switch ($action) {
             break;
         }
         unset($buttons[$idx]);
-        $out = save_buttons(array_values($buttons))
-            ? ok('Button deleted')
-            : err('Failed to save buttons file');
+        $save_err = save_buttons(array_values($buttons));
+        $out = $save_err === '' ? ok('Button deleted') : err($save_err);
         break;
 
     // ── GPIO: change pin mode ─────────────────────────────────────────────────

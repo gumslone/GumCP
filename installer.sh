@@ -123,6 +123,12 @@ if [ ! -d "$GUMCP_DIR" ]; then
     fi
 fi
 
+# ── writable directories ──────────────────────────────────────────────────────
+# Create directories that the web server writes to at runtime.
+print_message "Creating writable directories..."
+sudo mkdir -p "$GUMCP_DIR/buttons"
+sudo mkdir -p "$GUMCP_DIR/command_logs"
+
 # ── permissions ───────────────────────────────────────────────────────────────
 print_message "Setting permissions..."
 sudo chown -R www-data:www-data "$GUMCP_DIR"
