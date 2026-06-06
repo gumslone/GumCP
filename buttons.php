@@ -259,7 +259,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                                 id="execute-btn-<?php echo $idx; ?>"
                                 type="button"
                                 class="btn <?php echo $style; ?> <?php echo $size; ?>"
-                                onclick="executeButton(<?php echo $idx; ?>, <?php echo htmlspecialchars(json_encode($button['button_title'] ?? 'Untitled'), ENT_QUOTES, 'UTF-8'); ?>, <?php echo htmlspecialchars(json_encode($button['button_command'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)"
+                                onclick="executeButton(<?php echo $idx; ?>, <?php echo htmlspecialchars(json_encode($button['button_title'] ?? 'Untitled'), ENT_QUOTES, 'UTF-8'); ?>, <?php echo htmlspecialchars(json_encode($button['button_command'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)">
                                 <?php if ($icon !== ''): ?>
                                     <i class="fa <?php echo $icon; ?>" aria-hidden="true"></i>
                                 <?php endif; ?>
