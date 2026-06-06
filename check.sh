@@ -2,6 +2,9 @@
 # GumCP diagnostic and repair script
 # Usage: bash check.sh          — check only
 #        sudo bash check.sh --fix — check and apply fixes automatically
+if [ -z "${BASH_VERSION:-}" ]; then
+    exec bash "$0" "$@"
+fi
 
 set -euo pipefail
 
