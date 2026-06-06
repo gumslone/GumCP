@@ -127,6 +127,22 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
     }
 
     /* ── execute ────────────────────────────────────────────────────────── */
+    function showOutput(type, title, output) {
+        var $panel = $('#output-panel');
+        var $body  = $('#output-body');
+        $panel.removeClass('panel-success panel-danger panel-default')
+              .addClass(type === 'success' ? 'panel-success' : 'panel-danger');
+        $('#output-title').text(title);
+        $body.empty();
+        if (output && output.trim() !== '') {
+            $body.append($('<pre>').css({ fontSize: '12px', marginBottom: 0 }).text(output.trim()));
+        } else {
+            $body.append($('<p>').addClass('text-muted').css('margin', 0).text('(no output)'));
+        }
+        $panel.show();
+        $('html, body').animate({ scrollTop: $panel.offset().top - 20 }, 200);
+    }
+
     function executeButton(buttonId) {
         if (!confirm('Execute this command?')) return;
 
@@ -140,13 +156,12 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
             data: { action: 'execute_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
             dataType: 'json',
             success: function(data) {
-                var msg = data.message || (data.type === 'success' ? 'Done' : 'Command failed');
-                if (data.output) msg += '\n\nOutput:\n' + data.output;
-                alert(msg);
+                var ok = data.type === 'success';
+                showOutput(data.type, ok ? 'Command executed' : 'Command failed', data.output || data.message || '');
                 $btn.prop('disabled', false).html(originalHtml);
             },
             error: function() {
-                alert('Error executing command');
+                showOutput('error', 'Request failed', 'Could not reach the server.');
                 $btn.prop('disabled', false).html(originalHtml);
             }
         });
@@ -205,6 +220,20 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
     <button type="button" class="btn btn-success" onclick="addButton()">
         <i class="fa fa-plus"></i> Add Command Button
     </button>
+
+    <!-- Command output panel — hidden until a button is executed -->
+    <div id="output-panel" class="panel panel-default" style="margin-top:15px; display:none">
+        <div class="panel-heading" style="display:flex; align-items:center; justify-content:space-between">
+            <h3 class="panel-title">
+                <i class="fa fa-terminal"></i>
+                <span id="output-title">Output</span>
+            </h3>
+            <button type="button" class="close" onclick="$('#output-panel').hide();" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="panel-body" id="output-body"></div>
+    </div>
 
     <div class="panel panel-default" style="margin-top: 15px">
         <div class="panel-heading">
