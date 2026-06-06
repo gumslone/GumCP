@@ -1,4 +1,8 @@
 #!/bin/bash
+# Re-exec with bash if invoked via sh or another shell
+if [ -z "${BASH_VERSION:-}" ]; then
+    exec bash "$0" "$@"
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -32,7 +36,7 @@ if [ "$(id -u)" -eq 0 ]; then
     exit 1
 fi
 
-if ! command -v apt-get &>/dev/null; then
+if ! command -v apt-get >/dev/null 2>&1; then
     print_error "This installer requires apt-get (Debian/Raspberry Pi OS)."
     exit 1
 fi
