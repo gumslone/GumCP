@@ -368,6 +368,21 @@ switch ($action) {
             ? ok('Fix applied', ['output' => $result['output'], 'fix' => $fix])
             : err($result['error']);
         break;
+
+    case 'save_menu_order':
+        $order = $_POST['order'] ?? [];
+        if (!is_array($order)) {
+            $out = err('Invalid order');
+            break;
+        }
+        $order = array_values(array_map('strval', $order));
+        $file  = __DIR__ . '/include/menu_order.json';
+        if (file_put_contents($file, json_encode($order)) === false) {
+            $out = err('Could not write menu_order.json');
+        } else {
+            $out = ok('Menu order saved');
+        }
+        break;
 }
 
 echo json_encode($out);

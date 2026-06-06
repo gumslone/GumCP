@@ -1,67 +1,68 @@
 <?php
-	
-include_once('../../include/config.php');
-	
-$db = new SQLite3('tehybug.sqlite');
+declare(strict_types=1);
 
-$type = $_GET['type'];
+require_once('../../include/config.php');
 
-$start_date = $_GET['start_date'];
-$end_date = $_GET['end_date'];
-$days = $_GET['days'];
-$act = $_GET['act'];
-$tehy_bug_id = $_GET['tehy_bug_id'];
-$supports_gzip = strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false;
-$date = $_REQUEST['date'];
+header('Content-Type: application/json; charset=UTF-8');
 
-if($act == 'by_date')
-{
+$act        = (string)($_GET['act']         ?? '');
+$bug_id     = (int)   ($_GET['tehy_bug_id'] ?? 0);
+$date_param = (string)($_GET['date']        ?? date('Y-m-d'));
 
-	
-	list($year,$month,$day) = explode('-', $date);
-	
-	$startTime = mktime(0, 0, 0, $month, $day, $year);
-	$endTime = $startTime + 24*3600;
-	$q = "SELECT A.* FROM tehybug_data A WHERE A.data_bug_id IN (".intval($tehy_bug_id).") AND A.data_time BETWEEN ".$startTime." AND ".$endTime." ORDER BY A.data_time ASC ";
-	
-	$statement = $db->prepare($q);
-	$result = $statement->execute();
-	while($bug = $result->fetchArray(SQLITE3_ASSOC))
-	{
-		$arr[] = $bug;
-	}
-	#$arr = array_reverse($arr);
-	//print_r($arr);
-	$out = array();
-	//$arr = array_reverse($arr);
-	foreach($arr as $a)
-	{
-		$a['date'] = date('Y-m-d / H:i');
-		$out[0][] = date('Y-m-d / H:i',$a['data_time']);
-		$json_arr = json_decode($a['data_details'],true);
-		$out[1][] = (int)$json_arr['t'];
-		if(isset($json_arr['h']))
-			$out[2][] = (int)$json_arr['h'];
-		
-		if(isset($json_arr['p']))
-			$out[3][] = (int)$json_arr['p'];
-		//$out[] = $a;
-	}
-	
-	if(!isset($out[2]))
-		$out[2] = array();
-	if(!isset($out[3]))
-		$out[3] = array();
-	
-	header('Cache-Control: max-age=300');
-	header('Content-type: application/json; charset=UTF-8'); 
-	if($supports_gzip)
-	{
-		header('Content-Encoding: gzip');
-		ob_start("ob_gzhandler");
-	}
-	echo json_encode($out);
-	exit();
-}	
-	
-?>
+if ($act !== 'by_date' || $bug_id <= 0) {
+    echo json_encode([[], [], [], []]);
+    exit();
+}
+
+$parts = explode('-', $date_param);
+if (count($parts) !== 3) {
+    echo json_encode([[], [], [], []]);
+    exit();
+}
+[$year, $month, $day] = $parts;
+$start = mktime(0, 0, 0, (int)$month, (int)$day, (int)$year);
+$end   = $start + 86400;
+
+$db = new SQLite3(__DIR__ . '/tehybug.sqlite');
+$db->busyTimeout(3000);
+
+$stmt = $db->prepare(
+    'SELECT data_details, data_time
+     FROM tehybug_data
+     WHERE data_bug_id = :id
+       AND data_time BETWEEN :start AND :end
+     ORDER BY data_time ASC'
+);
+$stmt->bindValue(':id',    $bug_id, SQLITE3_INTEGER);
+$stmt->bindValue(':start', $start,  SQLITE3_INTEGER);
+$stmt->bindValue(':end',   $end,    SQLITE3_INTEGER);
+$result = $stmt->execute();
+
+$times  = [];
+$temps  = [];
+$humis  = [];
+$press  = [];
+
+while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    $d = json_decode($row['data_details'], true);
+    if (!is_array($d)) continue;
+
+    $times[] = date('Y-m-d / H:i', (int)$row['data_time']);
+
+    $temps[] = isset($d['t']) ? (float)$d['t'] : null;
+
+    if (isset($d['h'])) $humis[] = (float)$d['h'];
+    if (isset($d['p'])) $press[] = (float)$d['p'];
+}
+
+$out = [$times, $temps, $humis, $press];
+
+header('Cache-Control: max-age=300');
+
+$accept = (string)($_SERVER['HTTP_ACCEPT_ENCODING'] ?? '');
+if (strpos($accept, 'gzip') !== false && function_exists('ob_gzhandler')) {
+    header('Content-Encoding: gzip');
+    ob_start('ob_gzhandler');
+}
+
+echo json_encode($out);

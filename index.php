@@ -191,6 +191,13 @@ $temp_color = $sys['cpu_temp'] >= 80 ? 'danger' : ($sys['cpu_temp'] >= 70 ? 'war
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-right">
                     <?php require_once('./include/menu.php'); ?>
+                    <li>
+                        <a href="#" title="Reorder menu"
+                           onclick="openMenuReorder(); return false;"
+                           style="opacity:.6">
+                            <i class="fa fa-bars"></i>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -493,6 +500,144 @@ function refreshStats() {
 $(function() {
     setInterval(refreshStats, 30000);
 });
+</script>
+
+<?php
+// Build ordered active-module list for the reorder modal
+$menu_order_file = __DIR__ . '/include/menu_order.json';
+$saved_menu_order = [];
+if (is_readable($menu_order_file)) {
+    $decoded = json_decode(file_get_contents($menu_order_file), true);
+    if (is_array($decoded)) $saved_menu_order = $decoded;
+}
+$modal_modules = [];
+if (!empty($saved_menu_order)) {
+    foreach ($saved_menu_order as $k) {
+        if (isset($gumcp_modules[$k]) && ($gumcp_modules[$k]['module_active'] ?? 0) == 1) {
+            $modal_modules[$k] = $gumcp_modules[$k];
+        }
+    }
+}
+foreach ($gumcp_modules as $k => $m) {
+    if (($m['module_active'] ?? 0) == 1 && !isset($modal_modules[$k])) {
+        $modal_modules[$k] = $m;
+    }
+}
+?>
+
+<!-- Menu Reorder Modal -->
+<div class="modal fade" id="menu-reorder-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title"><i class="fa fa-bars"></i> Reorder Menu</h4>
+            </div>
+            <div class="modal-body" style="padding:10px">
+                <p class="text-muted" style="font-size:12px; margin-bottom:8px">
+                    Drag items to reorder. Dashboard is always first.
+                </p>
+                <ul id="menu-sortable-list" style="list-style:none; padding:0; margin:0; cursor:grab">
+                    <li style="padding:7px 10px; border:1px solid #ddd; border-radius:3px;
+                                margin-bottom:4px; background:#f5f5f5; color:#999; cursor:default">
+                        <i class="fa fa-home fa-fw"></i> Dashboard
+                    </li>
+                    <?php foreach ($modal_modules as $key => $mod): ?>
+                    <li data-key="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"
+                        draggable="true"
+                        style="padding:7px 10px; border:1px solid #ddd; border-radius:3px;
+                               margin-bottom:4px; background:#fff; cursor:grab">
+                        <i class="fa fa-bars fa-fw text-muted"></i>
+                        <?php echo htmlspecialchars($mod['module_title'] ?? $key, ENT_QUOTES, 'UTF-8'); ?>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="menu-reorder-save-btn"
+                        onclick="saveMenuOrder()">
+                    <i class="fa fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openMenuReorder() {
+    $('#menu-reorder-modal').modal('show');
+}
+
+// HTML5 drag-and-drop reorder
+(function() {
+    var list, dragged;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        list = document.getElementById('menu-sortable-list');
+        if (!list) return;
+
+        list.addEventListener('dragstart', function(e) {
+            dragged = e.target.closest('li[data-key]');
+            if (!dragged) { e.preventDefault(); return; }
+            e.dataTransfer.effectAllowed = 'move';
+            setTimeout(function() { dragged.style.opacity = '0.4'; }, 0);
+        });
+
+        list.addEventListener('dragend', function() {
+            if (dragged) dragged.style.opacity = '';
+            dragged = null;
+            list.querySelectorAll('li').forEach(function(li) {
+                li.style.borderColor = '#ddd';
+            });
+        });
+
+        list.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            var over = e.target.closest('li[data-key]');
+            if (!over || over === dragged) return;
+            list.querySelectorAll('li[data-key]').forEach(function(li) {
+                li.style.borderColor = '#ddd';
+            });
+            over.style.borderColor = '#66afe9';
+        });
+
+        list.addEventListener('drop', function(e) {
+            e.preventDefault();
+            var over = e.target.closest('li[data-key]');
+            if (!over || !dragged || over === dragged) return;
+            var items = Array.from(list.querySelectorAll('li'));
+            var dragIdx = items.indexOf(dragged);
+            var overIdx = items.indexOf(over);
+            if (dragIdx < overIdx) {
+                list.insertBefore(dragged, over.nextSibling);
+            } else {
+                list.insertBefore(dragged, over);
+            }
+        });
+    });
+})();
+
+function saveMenuOrder() {
+    var btn = document.getElementById('menu-reorder-save-btn');
+    btn.disabled = true;
+    var order = [];
+    document.querySelectorAll('#menu-sortable-list li[data-key]').forEach(function(li) {
+        order.push(li.getAttribute('data-key'));
+    });
+    $.ajax({
+        type: 'POST',
+        url: './ajax.php?action=save_menu_order',
+        dataType: 'json',
+        data: { order: order, csrf_token: <?php echo json_encode($_SESSION['csrf_token']); ?> },
+        success: function() { location.reload(); },
+        error: function() {
+            alert('Failed to save menu order');
+            btn.disabled = false;
+        }
+    });
+}
 </script>
 
 </body>

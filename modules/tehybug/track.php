@@ -1,35 +1,50 @@
 <?php
-header("Cache-Control: no-cache, must-revalidate");
-$db = new SQLite3('tehybug.sqlite');
+declare(strict_types=1);
 
+header('Cache-Control: no-cache, must-revalidate');
+header('Content-Type: text/plain; charset=UTF-8');
 
-if(empty($_REQUEST['bug_key']))
-{
-	$_REQUEST['bug_key'] = ($_REQUEST['sensor']);
+$db = new SQLite3(__DIR__ . '/tehybug.sqlite');
+$db->busyTimeout(3000);
+
+// Sensor posts either bug_key or chipid/sensor as the device identifier.
+$key = trim((string)($_REQUEST['bug_key'] ?? $_REQUEST['sensor'] ?? ''));
+
+if ($key === '') {
+    http_response_code(400);
+    echo 'ERR: missing key';
+    exit();
 }
-		
-$statement = $db->prepare('SELECT bug_id,bug_key FROM tehybugs WHERE bug_key = :bug_key LIMIT 1;');
-$statement->bindValue(':bug_key', trim($_REQUEST['bug_key']));
-$result = $statement->execute();
-$bug = $result->fetchArray(SQLITE3_ASSOC);
-#print_r($bug);
-#file_put_contents('./static/db/'.$_REQUEST['bug_key'].date("Y-m-d").'_sensor_data.txt', 'time='.time().'&'.$_SERVER['QUERY_STRING']."\n", FILE_APPEND | LOCK_EX);
 
-if($bug['bug_id']>0)
-{
+$stmt = $db->prepare(
+    'SELECT bug_id, bug_key FROM tehybugs WHERE bug_key = :key LIMIT 1'
+);
+$stmt->bindValue(':key', $key, SQLITE3_TEXT);
+$row = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
 
-	$sql = $db->prepare("INSERT INTO tehybug_data (data_bug_id, data_bug_key, data_details, data_time) VALUES (:data_bug_id, :data_bug_key, :data_details, :data_time)");
-	$data = array(
-					'data_bug_id' => $bug['bug_id'],
-					'data_bug_key' => $bug['bug_key'],
-					'data_details' => json_encode($_REQUEST),
-					'data_time' => time()
-				);
-	foreach ($data as $key => $value) {
-		$sql->bindValue(':'.$key, $value);
-	}
-	$sql->execute();
+if (empty($row['bug_id'])) {
+    http_response_code(404);
+    echo 'ERR: unknown key';
+    exit();
 }
+
+// Store only the numeric sensor fields — never dump raw $_REQUEST into the DB.
+$allowed = ['t', 'h', 'p', 'chipid', 'sensor'];
+$details = [];
+foreach ($allowed as $field) {
+    if (isset($_REQUEST[$field]) && $_REQUEST[$field] !== '') {
+        $details[$field] = $_REQUEST[$field];
+    }
+}
+
+$ins = $db->prepare(
+    'INSERT INTO tehybug_data (data_bug_id, data_bug_key, data_details, data_time)
+     VALUES (:bug_id, :bug_key, :details, :ts)'
+);
+$ins->bindValue(':bug_id',  (int)$row['bug_id'],  SQLITE3_INTEGER);
+$ins->bindValue(':bug_key', $row['bug_key'],       SQLITE3_TEXT);
+$ins->bindValue(':details', json_encode($details), SQLITE3_TEXT);
+$ins->bindValue(':ts',      time(),                SQLITE3_INTEGER);
+$ins->execute();
 
 echo 'OK';
-?>

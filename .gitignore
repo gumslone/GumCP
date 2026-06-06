@@ -8,3 +8,6 @@ command_logs/
 
 # CPU stat cache written by ajax.php for accurate polling.
 gumcp_cpu_stat
+
+# User-customized menu order persisted by the reorder UI.
+include/menu_order.json
