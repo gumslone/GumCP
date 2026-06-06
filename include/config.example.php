@@ -117,6 +117,13 @@ if (LOGIN_REQUIRED === true || (defined('BASIC_AUTH') && BASIC_AUTH === true)) {
                && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
                && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS);
 
+    if ($basic_ok && !$session_ok) {
+        // Stamp the session so LOGIN_REQUIRED checks also pass
+        $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
+        $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
+        $session_ok = true;
+    }
+
     if (!$basic_ok && !$session_ok) {
         if (defined('BASIC_AUTH') && BASIC_AUTH === true) {
             // Prompt the browser's native credentials dialog
