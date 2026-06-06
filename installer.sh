@@ -27,7 +27,7 @@ echo "======================================"
 echo ""
 
 # ── pre-flight checks ─────────────────────────────────────────────────────────
-if [ "$EUID" -eq 0 ]; then
+if [ "$(id -u)" -eq 0 ]; then
     print_error "Do not run as root. The script calls sudo where needed."
     exit 1
 fi
