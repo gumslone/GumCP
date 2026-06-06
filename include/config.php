@@ -1,116 +1,109 @@
 <?php
-	
-//make sure that php ssh in installed (sudo apt-get install php5-ssh2)
-define('SSH_PORT', '22'); //your ssh port, defailt is "22"
-define('SSH_USER', 'pi'); //your ssh username, default is "pi"
-define('SSH_PASS', 'raspberry'); //your ssh password, default is "raspberry"
+declare(strict_types=1);
 
-define('LOGIN_REQUIRED', false); //set to "true" if you want to enable a login system, or "false" to disable it
-define('LOGIN_USER', 'pi'); //set username for login
-define('LOGIN_PASS', 'raspberry'); //set password for login
+define('SSH_PORT', '22');        // SSH port (default: 22)
+define('SSH_USER', 'pi');        // SSH username
+define('SSH_PASS', 'raspberry'); // SSH password
 
-define('GUMCP_DEBUG', false); //change to true to show PHP errors, or false to hide errors
+define('LOGIN_REQUIRED', false); // true = require login, false = open access
+define('LOGIN_USER', 'pi');
+define('LOGIN_PASS', 'raspberry');
 
-define('MEMORY_CALCULATION_METHOD', 2); //change to 1 to use the free -mo command, which may not work with all raspberrys
+define('GUMCP_DEBUG', false);    // true = show PHP errors
 
+error_reporting(GUMCP_DEBUG ? E_ALL : 0);
 
+$gumcp_modules = [
+    'services' => [
+        'module_title'                    => 'Services',
+        'module_index_file_relative_path' => './services.php',
+        'module_active'                   => 1,
+    ],
+    'processes' => [
+        'module_title'                    => 'Processes',
+        'module_index_file_relative_path' => './processes.php',
+        'module_active'                   => 1,
+    ],
+    'phpinfo' => [
+        'module_title'                    => 'PHP Info',
+        'module_index_file_relative_path' => './phpinfo.php',
+        'module_active'                   => 1,
+    ],
+    'actions' => [
+        'module_title'                    => 'Actions',
+        'module_index_file_relative_path' => './actions.php',
+        'module_active'                   => 1,
+    ],
+    'gpio' => [
+        'module_title'                    => 'GPIO',
+        'module_index_file_relative_path' => './gpio.php',
+        'module_active'                   => 1,
+    ],
+    'buttons' => [
+        'module_title'                    => 'Buttons',
+        'module_index_file_relative_path' => './buttons.php',
+        'module_active'                   => 1,
+    ],
+    // Order from https://www.tindie.com/stores/gumslone/
+    'tehybug' => [
+        'module_title'                    => 'TeHyBug',
+        'module_index_file_relative_path' => './modules/tehybug/index.php',
+        'module_active'                   => 0,
+        'module_show_in_iframe'           => 1,
+    ],
+    // Third-party modules (separate licenses)
+    'tinyfilemanager' => [
+        'module_title'                    => 'File Manager',
+        'module_index_file_relative_path' => './modules/tinyfilemanager/tinyfilemanager.php',
+        'module_active'                   => 0,
+        'module_show_in_iframe'           => 1,
+    ],
+    'adminer' => [
+        'module_title'                    => 'Database Manager',
+        'module_index_file_relative_path' => './modules/adminer/adminer.php',
+        'module_active'                   => 0,
+        'module_show_in_iframe'           => 1,
+    ],
+];
 
-$gumcp_modules = array(
-	'services' => array(
-		'module_title' => 'Services',
-		'module_index_file_relative_path' => './services.php',
-		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
-	),
-	'processes' => array(
-		'module_title' => 'Processes',
-		'module_index_file_relative_path' => './processes.php',
-		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
-	),
-	'phpinfo' => array(
-		'module_title' => 'PHP Info',
-		'module_index_file_relative_path' => './phpinfo.php',
-		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
-	),
-	'actions' => array(
-		'module_title' => 'Actions',
-		'module_index_file_relative_path' => './actions.php',
-		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
-	),
-	'gpio' => array(
-		'module_title' => 'GPIO',
-		'module_index_file_relative_path' => './gpio.php',
-		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
-	),
-	'buttons' => array(
-		'module_title' => 'Buttons',
-		'module_index_file_relative_path' => './buttons.php',
-		'module_active' => 1, //change to 1 to enable file manager, and 0 to disable it.
-	),
-	
-	//you can order your tehybug from https://www.tindie.com/stores/gumslone/
-	'tehybug' => array(
-		'module_title' => 'TeHyBug',
-		'module_index_file_relative_path' => './modules/tehybug/index.php',
-		'module_active' => 0, //change to 1 to enable file manager, and 0 to disable it.
-		'module_show_in_iframe' => 1 //change to 0 show module directly, and 1 to show it in iframe.
-	),
-	
-	//third party modules with different licenses
-	'tinyfilemanager' => array(
-		'module_title' => 'File Manager',
-		'module_index_file_relative_path' => './modules/tinyfilemanager/tinyfilemanager.php',
-		'module_active' => 0, //change to 1 to enable file manager, and 0 to disable it.
-		'module_show_in_iframe' => 1 //change to 0 show module directly, and 1 to show it in iframe.
-	),
-	'adminer' => array(
-		'module_title' => 'Database Manager',
-		'module_index_file_relative_path' => './modules/adminer/adminer.php',
-		'module_active' => 0, //change to 1 to enable file manager, and 0 to disable it.
-		'module_show_in_iframe' => 1 //change to 0 show module directly, and 1 to show it in iframe.
-	),
-);
+// ── Session ───────────────────────────────────────────────────────────────────
 
-
-if(GUMCP_DEBUG == true)
-{
-	error_reporting(E_ALL);
-}
-else
-{
-	error_reporting(0);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+    session_regenerate_id();
 }
 
-//dont touch from this line
-session_start();
-session_regenerate_id();
+// ── Login processing ──────────────────────────────────────────────────────────
+// Only triggered when the login form is submitted (POST with credentials).
 
-if(!empty($_REQUEST['login_user']) && !empty($_REQUEST['login_pass']) && $_REQUEST['login_user'] == LOGIN_USER && $_REQUEST['login_pass'] == LOGIN_PASS)
-{
-	$_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
-	$_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
-}
-elseif(!empty($_REQUEST['login_user']) && !empty($_REQUEST['login_pass']))
-{
-	header("Location: ./login.php?action=incorrect_login");
-	exit();
-}
+if (!empty($_POST['login_user']) && !empty($_POST['login_pass'])) {
+    // CSRF check: token must exist in session and match the submitted value.
+    $submitted_token = (string)($_POST['csrf_token'] ?? '');
+    $valid_csrf = isset($_SESSION['csrf_token'])
+               && hash_equals($_SESSION['csrf_token'], $submitted_token);
 
+    // Credential check: constant-time comparison prevents timing attacks.
+    $valid_user = $valid_csrf && hash_equals(LOGIN_USER, $_POST['login_user']);
+    $valid_pass = $valid_user && hash_equals(LOGIN_PASS, $_POST['login_pass']);
 
-
-if(LOGIN_REQUIRED==true)
-{
-	if(isset($_SESSION['LOGIN_USER']) && $_SESSION['LOGIN_USER']==md5(LOGIN_USER) && isset($_SESSION['LOGIN_PASS']) && $_SESSION['LOGIN_PASS'] == md5(LOGIN_PASS))
-	{
-		
-	}
-	else
-	{
-		header("Location: ./login.php");
-		exit();
-	}
+    if ($valid_pass) {
+        $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
+        $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
+    } else {
+        header('Location: ./login.php?action=incorrect_login');
+        exit();
+    }
 }
 
+// ── Auth gate ─────────────────────────────────────────────────────────────────
 
+if (LOGIN_REQUIRED === true) {
+    $authed = isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
+           && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
+           && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS);
 
-
-?>
+    if (!$authed) {
+        header('Location: ./login.php');
+        exit();
+    }
+}

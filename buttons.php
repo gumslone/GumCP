@@ -1,302 +1,383 @@
 <?php
-if (!function_exists('ssh2_connect')) {
-    echo "<b>php-ssh2</b> is not installed, this page will only work with installed php-ssh2.<br />\n";
-    exit();
-}
+declare(strict_types=1);
+
 $active_page = 'buttons';
 
-	include_once('./include/config.php');
+require_once('./include/config.php');
 
-	if(!file_exists(dirname(__FILE__).'/buttons'))
-	{
-		$cmd = "sudo mkdir -m 777 ".dirname(__FILE__)."/buttons && sudo chmod -R 777 ".dirname(__FILE__)."/buttons";
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
-	}
-	else if(!is_writable ( dirname(__FILE__).'/buttons' ))
-	{
-		$cmd = "sudo chmod -R 777 ".dirname(__FILE__)."/buttons";
-	}
-	
-	if(!empty($cmd))
-	{
-		$connection = ssh2_connect('localhost', SSH_PORT);
-		ssh2_auth_password($connection, SSH_USER, SSH_PASS);
-		$stream = ssh2_exec($connection, $cmd);
-		stream_set_blocking($stream, true);
-		$stream_out = ssh2_fetch_stream($stream, SSH2_STREAM_STDIO);
-		$message .= '<br/><b>Command output:</b><br/>'.nl2br(stream_get_contents($stream_out));
-		
-		ssh2_exec($connection, 'exit');
-	}
+$message      = '';
+$message_type = 'info';
 
+$buttons_dir  = __DIR__ . '/buttons';
+$buttons_file = $buttons_dir . '/buttons.json';
+$buttons      = [];
+
+if (!is_dir($buttons_dir) && !mkdir($buttons_dir, 0755, true)) {
+    $message      = 'Error: Unable to create buttons directory';
+    $message_type = 'danger';
+}
+
+if (file_exists($buttons_file)) {
+    $contents = file_get_contents($buttons_file);
+    if ($contents !== false) {
+        $decoded = json_decode($contents, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $buttons = $decoded;
+        } else {
+            $message      = 'Warning: buttons.json is corrupted';
+            $message_type = 'warning';
+        }
+    }
+}
+
+$csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
+
+$allowed_styles = ['btn-default', 'btn-primary', 'btn-success', 'btn-info', 'btn-warning', 'btn-danger'];
+$allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="">
-	<meta name="author" content="">
-	<link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png" />
-	<link rel="icon" href="./static/images/raspberry.png" type="image/png" />
-	<title>GumCP Buttons</title>
-	<link href="./static/css.php" rel="stylesheet" type="text/css">
-	<script src="./static/js.php" type="text/javascript"></script>
-	<script>
-		$(document).ready(function(){
-			$('[data-toggle="tooltip"]').tooltip();
-			
-		});
-		
-		function add_button()
-		{
-		
-			var html = jQuery('#create-button-dialog').html();
-		
-			html += '<div class="dialog-actions text-right margin-top-sm">';
-		
-			html += '<div class="form-group pull-right">';
-			html += '<button type="button" class="btn btn-default" onclick="javascript:jQuery(\'#dialog\').modal(\'hide\');">Cancel</button> ';
-			html += ' <button type="button" class="btn btn-default" id="send-message-btn" onclick="javascript:submit_button();jQuery(this).prop(\'disabled\', true);">Send</button>';
-			html += '</div>';
-			
-			html += '<div style="clear:both;"></div></div>';
-			
-			open_dialog('Add a button', html);
-		
-		}
-		
-		function submit_button()
-		{
-			jQuery('#send-message-btn').prop('disabled', true);
-			var form_data = $('#dialog .create-button-form').serializeArray();
-			jQuery.ajax({ 
-				type: 'POST', 
-				url: 'ajax.php', 
-				data: form_data,
-				dataType:'json',
-				success: function (data) { 
-					alert(data.message);
-					if(data.type=='success')
-					{
-						location.reload();
-					}
-					else
-					{
-						jQuery('#send-message-btn').prop('disabled', false);
-					}
-				}
-			});
-			
-		}
-		function execute_button(button_id)
-		{
-			jQuery('#button-id-'+button_id).prop('disabled', true);
-			jQuery.ajax({ 
-				type: 'POST', 
-				url: 'ajax.php', 
-				data: {'action':'execute_button','button_id':button_id},
-				dataType:'text',
-				success: function (data) { 
-					alert(data);
-					jQuery('#button-id-'+button_id).prop('disabled', false);
-				}
-			});
-			
-		}
-		function edit_button(button_id)
-		{
-			add_button();
-			jQuery.ajax({ 
-				type: 'POST', 
-				url: 'ajax.php', 
-				data: {'action':'edit_button','button_id':button_id},
-				dataType:'json',
-				success: function (data) { 
-					//alert(data);
-					$('#dialog .create-button-form #button_id').val(button_id);
-					$('#dialog .create-button-form #button_command').val(data.button_command);
-					$('#dialog .create-button-form #button_title').val(data.button_title);
-					$('#dialog .create-button-form #button_icon').val(data.button_icon);
-					$('#dialog .create-button-form #button_style option[value="' + data.button_style + '"]').prop('selected', true);
-					$('#dialog .create-button-form #button_size option[value="' + data.button_size + '"]').prop('selected', true);
-				}
-			});
-			
-		}
-		function delete_button(button_id)
-		{
-			if(confirm("Are you sure you want to delete this button?"))
-			{
-				jQuery('#button-id-'+button_id).prop('disabled', true);
-				jQuery.ajax({ 
-					type: 'POST', 
-					url: 'ajax.php', 
-					data: {'action':'delete_button','button_id':button_id},
-					dataType:'json',
-					success: function (data) { 
-						alert(data.message);
-						if(data.type=='success')
-						{
-							location.reload();
-						}
-						else
-						{
-							jQuery('#button-id-'+button_id).prop('disabled', false);
-						}
-					}
-				});
-			}
-			
-		}
-	</script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="GumCP Command Buttons">
+    <link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png" />
+    <link rel="icon" href="./static/images/raspberry.png" type="image/png" />
+    <title>GumCP Buttons</title>
+    <link href="./static/css.php" rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="./static/js.php" type="text/javascript"></script>
+    <script>
+    var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+
+    /* ── modal helpers ──────────────────────────────────────────────────── */
+    function openButtonModal(title, buttonId) {
+        $('#button-modal .modal-title').text(title);
+        $('#button-modal-form')[0].reset();
+        $('#modal-button-id').val(buttonId !== undefined ? buttonId : '');
+        $('#button-modal').modal('show');
+    }
+
+    function addButton() {
+        openButtonModal('Add Command Button');
+    }
+
+    /* ── edit ───────────────────────────────────────────────────────────── */
+    function editButton(buttonId) {
+        openButtonModal('Edit Command Button', buttonId);
+
+        $.ajax({
+            type: 'POST',
+            url: 'ajax.php',
+            data: { action: 'edit_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
+            dataType: 'json',
+            success: function(data) {
+                if (data.type === 'error') {
+                    alert(data.message);
+                    $('#button-modal').modal('hide');
+                    return;
+                }
+                $('#modal-button-title').val(data.button_title   || '');
+                $('#modal-button-command').val(data.button_command || '');
+                $('#modal-button-icon').val(data.button_icon    || '');
+                $('#modal-button-style').val(data.button_style  || 'btn-default');
+                $('#modal-button-size').val(data.button_size   || 'btn-md');
+            },
+            error: function() {
+                alert('Error loading button data');
+                $('#button-modal').modal('hide');
+            }
+        });
+    }
+
+    /* ── save (add + edit share the same form) ──────────────────────────── */
+    function saveButton() {
+        var $btn = $('#modal-save-btn');
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+
+        var formData = $('#button-modal-form').serializeArray();
+        formData.push({ name: 'csrf_token', value: CSRF_TOKEN });
+
+        $.ajax({
+            type: 'POST',
+            url: 'ajax.php',
+            data: formData,
+            dataType: 'json',
+            success: function(data) {
+                if (data.type === 'success') {
+                    $('#button-modal').modal('hide');
+                    location.reload();
+                } else {
+                    alert(data.message || 'An error occurred');
+                    $btn.prop('disabled', false).text('Save');
+                }
+            },
+            error: function() {
+                alert('Error saving button');
+                $btn.prop('disabled', false).text('Save');
+            }
+        });
+    }
+
+    /* ── execute ────────────────────────────────────────────────────────── */
+    function executeButton(buttonId) {
+        if (!confirm('Execute this command?')) return;
+
+        var $btn = $('#execute-btn-' + buttonId);
+        var originalHtml = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+        $.ajax({
+            type: 'POST',
+            url: 'ajax.php',
+            data: { action: 'execute_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
+            dataType: 'json',
+            success: function(data) {
+                var msg = data.message || (data.type === 'success' ? 'Done' : 'Command failed');
+                if (data.output) msg += '\n\nOutput:\n' + data.output;
+                alert(msg);
+                $btn.prop('disabled', false).html(originalHtml);
+            },
+            error: function() {
+                alert('Error executing command');
+                $btn.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+
+    /* ── delete ─────────────────────────────────────────────────────────── */
+    function deleteButton(buttonId) {
+        if (!confirm('Delete this button?')) return;
+
+        $.ajax({
+            type: 'POST',
+            url: 'ajax.php',
+            data: { action: 'delete_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
+            dataType: 'json',
+            success: function(data) {
+                if (data.type === 'success') {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Delete failed');
+                }
+            },
+            error: function() { alert('Error deleting button'); }
+        });
+    }
+    </script>
 </head>
 
 <body>
 <div class="container">
-	
-	<nav class="navbar navbar-default">
-		<div class="container-fluid">
-			<div class="navbar-header">
-				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-					<span class="sr-only">Toggle navigation</span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-				</button>
-				<a class="navbar-brand" href="./index.php"><img src="./static/images/raspberry.png" />GumCP</a>
-			</div>
-			<div id="navbar" class="navbar-collapse collapse">
-				<ul class="nav navbar-nav navbar-right">
-					<?php
-						include_once('./include/menu.php');
-					?>
-				</ul>
-			</div><!--/.nav-collapse -->
-		</div><!--/.container-fluid -->
-	</nav>
 
-	
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="./index.php">
+                    <img src="./static/images/raspberry.png" alt="Logo" />GumCP
+                </a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <?php require_once('./include/menu.php'); ?>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-				<button type="button" class="btn btn-default" onclick="javascript:add_button();"><i class="fa fa-plus fa-lg"></i> Add a command button</button>
+    <div class="page-header">
+        <h1>Command Buttons <small>Execute predefined commands</small></h1>
+    </div>
 
-				<div id="system-status" class="panel panel-default" style="margin-top: 5px">
-					<div class="panel-heading">
-						<h3 class="panel-title">Command buttons</h3>
-					</div>
-					<div class="panel-body">
+    <button type="button" class="btn btn-success" onclick="addButton()">
+        <i class="fa fa-plus"></i> Add Command Button
+    </button>
 
-						<?php
-							if(!empty($message))
-							{
-								echo '<div class="alert alert-info" role="alert" style="margin-bottom:20px;">'.$message.'</div>';
-							}	
-						
-						if(file_exists('./buttons/buttons.json'))
-						{
-							$contents = file_get_contents('./buttons/buttons.json');
-							$json_arr = json_decode($contents,true);
-							
-								
-							for($i=0;$i<count($json_arr);$i++)
-							{
-								echo ' <div class="btn-group" role="group" aria-label="...">';
-								echo '<button onclick="javascript:execute_button(\''.$i.'\');" type="button" id="button-id-'.$i.'" class="'.$json_arr[$i]['button_style'].' '.$json_arr[$i]['button_size'].'" data-toggle="tooltip" data-original-title="'.$json_arr[$i]['button_command'].'">';
-								if(!empty($json_arr[$i]['button_icon']))
-								echo '<i class="fa '.$json_arr[$i]['button_icon'].'" aria-hidden="true"></i> ';
-								echo $json_arr[$i]['button_title'];
-								echo '</button>';
-								
-								echo '<div class="btn-group" role="group">
-									<button type="button" class="btn btn-default dropdown-toggle '.$json_arr[$i]['button_size'].'" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button>
-									<ul class="dropdown-menu">
-										<li><a href="javascript:void(0);" onclick="javascript:edit_button(\''.$i.'\');">Edit</a></li>
-										<li><a href="javascript:void(0);" onclick="javascript:delete_button(\''.$i.'\');">Delete</a></li>
-									</ul>
-								</div>';
-								
-								
-								
-								echo '</div> ';
-							}
-								
-							
-						}
-	
-						
-						
-						
-						?>
-						
-						
-						
-					</div>
-				
-				
-				</div>
-				
-				
+    <div class="panel panel-default" style="margin-top: 15px">
+        <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-terminal"></i> Command Buttons</h3>
+        </div>
+        <div class="panel-body">
 
-				
-				
-				
-				
-		
+            <?php if (!empty($message)): ?>
+                <div class="alert alert-<?php echo htmlspecialchars($message_type, ENT_QUOTES, 'UTF-8'); ?>" role="alert">
+                    <?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (empty($buttons)): ?>
+                <div class="alert alert-info" role="alert">
+                    <i class="fa fa-info-circle"></i>
+                    No buttons yet. Click <strong>Add Command Button</strong> to create one.
+                </div>
+            <?php else: ?>
+                <div class="button-container">
+                    <?php foreach ($buttons as $index => $button):
+                        $style   = in_array($button['button_style'] ?? '', $allowed_styles) ? $button['button_style'] : 'btn-default';
+                        $size    = in_array($button['button_size']  ?? '', $allowed_sizes)  ? $button['button_size']  : 'btn-md';
+                        $title   = htmlspecialchars($button['button_title']   ?? 'Untitled', ENT_QUOTES, 'UTF-8');
+                        $command = htmlspecialchars($button['button_command'] ?? '',         ENT_QUOTES, 'UTF-8');
+                        $icon    = htmlspecialchars($button['button_icon']    ?? '',         ENT_QUOTES, 'UTF-8');
+                        $idx     = (int) $index;
+                    ?>
+                        <div class="btn-group" role="group" style="margin: 5px;">
+                            <button
+                                id="execute-btn-<?php echo $idx; ?>"
+                                type="button"
+                                class="btn <?php echo $style; ?> <?php echo $size; ?>"
+                                onclick="executeButton(<?php echo $idx; ?>)"
+                                title="<?php echo $command; ?>"
+                                data-toggle="tooltip"
+                                data-placement="top">
+                                <?php if ($icon !== ''): ?>
+                                    <i class="fa <?php echo $icon; ?>" aria-hidden="true"></i>
+                                <?php endif; ?>
+                                <?php echo $title; ?>
+                            </button>
+                            <div class="btn-group" role="group">
+                                <button type="button"
+                                    class="btn btn-default dropdown-toggle <?php echo $size; ?>"
+                                    data-toggle="dropdown"
+                                    aria-haspopup="true"
+                                    aria-expanded="false">
+                                    <span class="caret"></span>
+                                    <span class="sr-only">Options</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="#" onclick="editButton(<?php echo $idx; ?>); return false;">
+                                            <i class="fa fa-edit"></i> Edit
+                                        </a>
+                                    </li>
+                                    <li role="separator" class="divider"></li>
+                                    <li>
+                                        <a href="#" onclick="deleteButton(<?php echo $idx; ?>); return false;" class="text-danger">
+                                            <i class="fa fa-trash"></i> Delete
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
+
+</div><!-- /.container -->
+
+<!-- Add / Edit button modal -->
+<div class="modal fade" id="button-modal" tabindex="-1" role="dialog" aria-labelledby="button-modal-label">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="button-modal-label">Command Button</h4>
+            </div>
+            <div class="modal-body">
+                <form id="button-modal-form">
+                    <input type="hidden" name="action"    value="submit_button">
+                    <input type="hidden" name="button_id" id="modal-button-id" value="">
+
+                    <div class="form-group">
+                        <label for="modal-button-title">
+                            <i class="fa fa-tag"></i> Button Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="modal-button-title"
+                               name="button_title" placeholder="e.g., Restart Apache"
+                               required maxlength="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-button-command">
+                            <i class="fa fa-terminal"></i> Command <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="modal-button-command"
+                               name="button_command" placeholder="e.g., sudo systemctl restart apache2"
+                               required>
+                        <small class="help-block">Shell command executed over SSH when the button is clicked</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-button-icon">
+                            <i class="fa fa-picture-o"></i> Icon <small class="text-muted">(optional)</small>
+                        </label>
+                        <input type="text" class="form-control" id="modal-button-icon"
+                               name="button_icon" placeholder="e.g., fa-refresh" maxlength="50">
+                        <small class="help-block">
+                            <a href="https://fontawesome.com/v4.7.0/icons/" target="_blank" rel="noopener">FontAwesome 4.7 icon name</a>
+                        </small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label for="modal-button-style">
+                                    <i class="fa fa-paint-brush"></i> Style
+                                </label>
+                                <select class="form-control" id="modal-button-style" name="button_style">
+                                    <option value="btn-default">Default (Gray)</option>
+                                    <option value="btn-primary">Primary (Blue)</option>
+                                    <option value="btn-success">Success (Green)</option>
+                                    <option value="btn-info">Info (Light Blue)</option>
+                                    <option value="btn-warning">Warning (Orange)</option>
+                                    <option value="btn-danger">Danger (Red)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label for="modal-button-size">
+                                    <i class="fa fa-arrows-alt"></i> Size
+                                </label>
+                                <select class="form-control" id="modal-button-size" name="button_size">
+                                    <option value="btn-lg">Large</option>
+                                    <option value="btn-md" selected>Medium</option>
+                                    <option value="btn-sm">Small</option>
+                                    <option value="btn-xs">Extra Small</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        Commands run with the SSH user's permissions. Only save commands you trust.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="modal-save-btn" onclick="saveButton()">Save</button>
+            </div>
+        </div>
+    </div>
 </div>
-
-<div id="create-button-dialog" style="display: none">
-	<form style="width: 100%;" class="create-button-form">
-		<input type="hidden" name="action" value="submit_button">
-		<input type="hidden" id="button_id" name="button_id" value="">
-		<div class="form-group">
-			<label for="button_title">Button title:</label>
-			<input type="text" class="form-control" id="button_title" placeholder="Enter a some title text" name="button_title">
-		</div>
-		<div class="form-group">
-			<label for="button_command">Button command:</label>
-			<input type="text" class="form-control" id="button_command" placeholder="Enter a command to be executed on a button click" name="button_command">
-		</div>
-		<div class="form-group">
-			<label for="button_icon">Button icon:</label>
-			<input type="text" class="form-control" id="button_icon" placeholder="Insert icon class name from fontawesome, i.e. fa-plus" name="button_icon">
-		</div>
-		<div class="form-group">
-			<label for="button_style">Button style:</label>
-			<select class="form-control" id="button_style" name="button_style">
-				<option value="btn">Basic</option>
-				<option value="btn btn-default">Default</option>
-				<option value="btn btn-primary">Primary</option>
-				<option value="btn btn-success">Success</option>
-				<option value="btn btn-info">Info</option>
-				<option value="btn btn-warning">Warning</option>
-				<option value="btn btn-danger">Danger</option>
-				<option value="btn btn-link">Link</option>
-			</select>
-		</div>
-		<div class="form-group">
-			<label for="button_size">Button size:</label>
-			<select class="form-control" id="button_size" name="button_size">
-				<option value="">Default</option>
-				<option value="btn-lg">Large</option>
-				<option value="btn-md">Medium</option>
-				<option value="btn-sm">Small</option>
-				<option value="btn-xs">XSmall</option>
-			</select>
-		</div>
-	</form>
-</div>
-
-
 
 <footer class="footer">
-	<div class="container">
-		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>. <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N"><img src="./static/images/Donate-PayPal-green.svg"/></a></p>
-	</div>
+    <div class="container">
+        <p class="text-muted">
+            GumCP <a href="https://github.com/gumslone/GumCP" target="_blank" rel="noopener">GitHub</a>.
+            <a href="https://www.paypal.com/donate/?hosted_button_id=VCWHQPACTXV5N" target="_blank" rel="noopener">
+                <img src="./static/images/Donate-PayPal-green.svg" alt="Donate"/>
+            </a>
+        </p>
+    </div>
 </footer>
-<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
-<div id="dialog-placeholder"></div>
-
 
 </body>
 </html>

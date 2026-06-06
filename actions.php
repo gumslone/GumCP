@@ -1,404 +1,507 @@
 <?php
-if (!function_exists('ssh2_connect')) {
-    echo "<b>php-ssh2</b> is not installed, this page will only work with installed php-ssh2.<br />\n";
-    exit();
-}
+declare(strict_types=1);
 
 $active_page = 'actions';
 
-include_once('./include/config.php');
-	
-switch ($_REQUEST['action']) {
-	case 'kill_pid':
-		if($_REQUEST['pid']>0)
-		{
-			$cmd = 'sudo kill -9 '.$_REQUEST['pid'];
-			$message = 'Command "'.$cmd.'" executed';
-		}
-		else
-		{
-			$message = 'Process ID should be an integer';
-		}
-	break;
-	case 'kill_pname':
-		if(!empty($_REQUEST['pname']))
-		{
-			$cmd = 'sudo killall '.$_REQUEST['pname'];
-			$message = 'Command "'.$cmd.'" executed';
-		}
-		else
-		{
-			$message = 'Process Name shouldn\'t be an empty value';
-		}
-	break;
-	case 'start_sname':
-		if(!empty($_REQUEST['sname']))
-		{
-			$cmd = 'sudo service '.$_REQUEST['sname'].' start';
-			$message = 'Command "'.$cmd.'" executed';
-		}
-		else
-		{
-			$message = 'Service Name shouldn\'t be an empty value';
-		}
-	break;
-	case 'stop_sname':
-		if(!empty($_REQUEST['sname']))
-		{
-			$cmd = 'sudo service '.$_REQUEST['sname'].' stop';
-			$message = 'Command "'.$cmd.'" executed';
-		}
-		else
-		{
-			$message = 'Service Name shouldn\'t be an empty value';
-		}
-	break;
-	/*case 'update_sources':
-		$cmd = 'sudo apt-get update';
-		$message = 'Command "'.$cmd.'" executed';
+require_once('./include/config.php');
 
-	break;
-	case 'update_firmware':
-		$cmd = 'sudo rpi-update';
-		$message = 'Command "'.$cmd.'" executed';
-		
-	break;*/
-	case 'reboot':
-		$cmd = 'sudo reboot';
-		$message = 'Command "'.$cmd.'" executed';
-	break;
-	case 'cmd':
-		if(!empty($_REQUEST['cmd']))
-		{
-			$cmd = $_REQUEST['cmd'];
-			$message = 'Command "'.$cmd.'" executed';
-		}
-		else
-		{
-			$message = 'Command shouldn\'t be an empty value';
-		}
-		
-	break;
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
-?>
-<?php
-	
-	if(!file_exists(dirname(__FILE__).'/command_logs'))
-	{
-		$cmd = "sudo mkdir -m 777 ".dirname(__FILE__)."/command_logs && sudo chmod -R 777 ".dirname(__FILE__)."/command_logs";
 
-	}
-	else if(!is_writable ( dirname(__FILE__).'/command_logs' ))
-	{
-		$cmd = "sudo chmod -R 777 ".dirname(__FILE__)."/command_logs";
-	}
-	
-	
-	if(!empty($cmd))
-	{
-		$connection = ssh2_connect('localhost', SSH_PORT);
-		ssh2_auth_password($connection, SSH_USER, SSH_PASS);
-		$stream = ssh2_exec($connection, $cmd);
-		stream_set_blocking($stream, true);
-		$stream_out = ssh2_fetch_stream($stream, SSH2_STREAM_STDIO);
-		$message .= '<br/><b>Command output:</b><br/>'.nl2br(stream_get_contents($stream_out));
-		
-		ssh2_exec($connection, 'exit');
-	}
+$ssh_available = function_exists('ssh2_connect');
+
+// ── Input validation helpers ──────────────────────────────────────────────────
+function validate_pid($pid): bool {
+    return is_numeric($pid) && (int)$pid > 0;
+}
+
+function validate_name(string $name): bool {
+    return $name !== '' && preg_match('/^[a-zA-Z0-9_\-\.]+$/', $name) === 1;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+$message        = '';
+$message_type   = 'info';
+$executed_cmd   = '';
+$command_output = '';
+$cmd            = '';
+
+// ── Handle POST ───────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string)$_POST['csrf_token'])) {
+        $message      = 'Invalid request — CSRF token mismatch. Please reload the page and try again.';
+        $message_type = 'danger';
+
+    } elseif (!$ssh_available) {
+        $message      = 'The php-ssh2 extension is not installed. Actions require SSH.';
+        $message_type = 'danger';
+
+    } else {
+        // Rotate the token after each valid submission so it cannot be replayed.
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+        $action = $_POST['action'] ?? '';
+
+        switch ($action) {
+            case 'kill_pid':
+                $pid = $_POST['pid'] ?? '';
+                if (validate_pid($pid)) {
+                    $cmd = sprintf('sudo kill -9 %d', (int)$pid);
+                } else {
+                    $message      = 'Process ID must be a positive integer.';
+                    $message_type = 'danger';
+                }
+                break;
+
+            case 'kill_pname':
+                $pname = trim($_POST['pname'] ?? '');
+                if (validate_name($pname)) {
+                    $cmd = sprintf('sudo killall %s', escapeshellarg($pname));
+                } else {
+                    $message      = 'Process name may only contain letters, digits, hyphens, underscores and dots.';
+                    $message_type = 'danger';
+                }
+                break;
+
+            case 'start_sname':
+                $sname = trim($_POST['sname'] ?? '');
+                if (validate_name($sname)) {
+                    $cmd = sprintf('sudo service %s start', escapeshellarg($sname));
+                } else {
+                    $message      = 'Service name may only contain letters, digits, hyphens, underscores and dots.';
+                    $message_type = 'danger';
+                }
+                break;
+
+            case 'stop_sname':
+                $sname = trim($_POST['sname'] ?? '');
+                if (validate_name($sname)) {
+                    $cmd = sprintf('sudo service %s stop', escapeshellarg($sname));
+                } else {
+                    $message      = 'Service name may only contain letters, digits, hyphens, underscores and dots.';
+                    $message_type = 'danger';
+                }
+                break;
+
+            case 'reboot':
+                $cmd = 'sudo reboot';
+                break;
+
+            case 'cmd':
+                $raw = trim($_POST['cmd'] ?? '');
+                if ($raw !== '') {
+                    $cmd = $raw;
+                } else {
+                    $message      = 'Command cannot be empty.';
+                    $message_type = 'danger';
+                }
+                break;
+
+            default:
+                $message      = 'Unknown action.';
+                $message_type = 'danger';
+                break;
+        }
+    }
+}
+
+// ── Ensure command_logs directory exists (PHP, not via SSH) ───────────────────
+$command_logs_dir = __DIR__ . '/command_logs';
+if (!is_dir($command_logs_dir)) {
+    mkdir($command_logs_dir, 0755, true);
+}
+
+// ── Execute command via SSH ───────────────────────────────────────────────────
+if ($cmd !== '') {
+    $connection = null;
+    try {
+        $connection = @ssh2_connect('localhost', (int)SSH_PORT);
+        if ($connection === false) {
+            throw new Exception('Could not connect to SSH on port ' . SSH_PORT . '. Check that SSH is running.');
+        }
+
+        if (!@ssh2_auth_password($connection, SSH_USER, SSH_PASS)) {
+            throw new Exception('SSH authentication failed — verify SSH_USER and SSH_PASS in config.php.');
+        }
+
+        $stream = ssh2_exec($connection, $cmd);
+        if ($stream === false) {
+            throw new Exception('ssh2_exec failed for command: ' . $cmd);
+        }
+
+        stream_set_blocking($stream, true);
+        $stdout_stream = ssh2_fetch_stream($stream, SSH2_STREAM_STDIO);
+        $stderr_stream = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
+        $stdout = (string)stream_get_contents($stdout_stream);
+        $stderr = (string)stream_get_contents($stderr_stream);
+        fclose($stdout_stream);
+        fclose($stderr_stream);
+
+        @ssh2_exec($connection, 'exit');
+
+        $executed_cmd   = $cmd;
+        $message        = 'Command executed successfully.';
+        $message_type   = 'success';
+        $command_output = trim($stdout . ($stderr !== '' ? "\n[stderr]\n" . $stderr : ''));
+
+    } catch (Exception $e) {
+        $message      = $e->getMessage();
+        $message_type = 'danger';
+    } finally {
+        unset($connection);
+    }
+}
+
+// ── Load log files sorted newest-first ───────────────────────────────────────
+$log_files = [];
+if (is_dir($command_logs_dir)) {
+    foreach (array_diff(scandir($command_logs_dir), ['.', '..']) as $file) {
+        $path = $command_logs_dir . '/' . $file;
+        if (is_file($path)) {
+            $log_files[] = ['name' => $file, 'mtime' => (int)filemtime($path)];
+        }
+    }
+    usort($log_files, fn($a, $b) => $b['mtime'] - $a['mtime']);
+}
+
+$csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
+$dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="">
-	<meta name="author" content="">
-	<link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png" />
-	<link rel="icon" href="./static/images/raspberry.png" type="image/png" />
-	<title>GumCP Actions</title>
-	<link href="./static/css.php" rel="stylesheet" type="text/css">
-	<script src="./static/js.php" type="text/javascript"></script>
-	<script>
-		
-$( document ).ready(function() {
-	
-	$("#advanced_command").submit(function( event ) {
-		
-		if(confirm("Are you sure you want to execute this command?"))
-		{
-			if($("#background_command").is(':checked'))
-			{
-				event.preventDefault();
-				$.post( "execute_command.php", $( "#advanced_command" ).serialize() )
-				.done(function( data ) {
-					alert("command sent!");
-					$('#cmd').val('');
-				});
-				
-				
-				
-				
-				return false;
-			}
-			else
-			{
-				return true;
-			}
-		}
-		else
-		{
-			event.preventDefault();
-			return false;
-		}
-		
-		
-		
-		
-		
-	});
-	
-	
-	
-	
-	
-});
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="GumCP Actions">
+    <link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png" />
+    <link rel="icon" href="./static/images/raspberry.png" type="image/png" />
+    <title>GumCP Actions</title>
+    <link href="./static/css.php" rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="./static/js.php" type="text/javascript"></script>
+    <script>
+    var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
 
+    $(document).ready(function() {
 
-function delete_log(file)
-{
-		
-		if(confirm("Are you sure you want to delete this log?"))
-		{
-			
-				event.preventDefault();
-				$.post( "ajax.php", {'action':'delete_log','log_file':file} )
-				.done(function( data ) {
-					alert(data);
-					$('div.'+file.replace(".", "_")).remove();
-				});
-		}
-		else
-		{
-			
-		}
+        // ── Background command form ───────────────────────────────────────────
+        $('#advanced-command-form').on('submit', function(e) {
+            if (!confirm('Are you sure you want to execute this command?')) {
+                e.preventDefault();
+                return false;
+            }
+            if ($('#background-command').is(':checked')) {
+                e.preventDefault();
+                var $btn = $(this).find('button[type=submit]');
+                $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Sending...');
 
-}
-		
-	</script>
+                $.ajax({
+                    type: 'POST',
+                    url: 'execute_command.php',
+                    data: $(this).serialize(),
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.success) {
+                            alert('Command sent to background.' + (data.log_file ? '\nLog: ' + data.log_file : ''));
+                            $('#cmd').val('');
+                            location.reload();
+                        } else {
+                            alert('Error: ' + (data.message || 'Unknown error'));
+                        }
+                        $btn.prop('disabled', false).html('Execute');
+                    },
+                    error: function() {
+                        alert('Error communicating with server');
+                        $btn.prop('disabled', false).html('Execute');
+                    }
+                });
+                return false;
+            }
+        });
+
+        // ── Delete log file ───────────────────────────────────────────────────
+        $(document).on('click', '.delete-log-btn', function() {
+            var file = $(this).data('file');
+            var $row = $(this).closest('.log-entry');
+            if (!confirm('Delete log file "' + file + '"?')) return;
+
+            $.ajax({
+                type: 'POST',
+                url: 'ajax.php',
+                data: { action: 'delete_log', log_file: file, csrf_token: CSRF_TOKEN },
+                dataType: 'json',
+                success: function(data) {
+                    if (data.type === 'success') {
+                        $row.remove();
+                    } else {
+                        alert(data.message || 'Delete failed');
+                    }
+                },
+                error: function() { alert('Error deleting log'); }
+            });
+        });
+
+    });
+    </script>
 </head>
 
 <body>
 <div class="container">
-	
-	<nav class="navbar navbar-default">
-		<div class="container-fluid">
-			<div class="navbar-header">
-				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-					<span class="sr-only">Toggle navigation</span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-				</button>
-				<a class="navbar-brand" href="./index.php"><img src="./static/images/raspberry.png" />GumCP</a>
-			</div>
-			<div id="navbar" class="navbar-collapse collapse">
-				<ul class="nav navbar-nav navbar-right">
-					<?php
-						include_once('./include/menu.php');
-					?>
-				</ul>
-			</div><!--/.nav-collapse -->
-		</div><!--/.container-fluid -->
-	</nav>
 
-	
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="./index.php">
+                    <img src="./static/images/raspberry.png" alt="Logo" />GumCP
+                </a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <?php require_once('./include/menu.php'); ?>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-				<div id="system-status" class="panel panel-default" style="margin-bottom: 5px">
-					<div class="panel-heading">
-						<h3 class="panel-title">Actions</h3>
-					</div>
-					<div class="panel-body">
+    <?php if (!$ssh_available): ?>
+        <div class="alert alert-danger" role="alert">
+            <i class="fa fa-exclamation-circle"></i>
+            <strong>php-ssh2 is not installed.</strong>
+            This page requires the SSH2 PHP extension.
+            Install it with: <code>sudo apt-get install php-ssh2 &amp;&amp; sudo systemctl restart apache2</code>
+        </div>
+    <?php endif; ?>
 
-						<?php
-							if(!empty($message))
-							{
-								echo '<div class="alert alert-info" role="alert" style="margin-bottom:20px;">'.$message.'</div>';
-							}	
-						?>
-						
-						<form method="post">
-							<div class="form-group row">
-								<label class="col-sm-2 form-control-label" for="pid">Kill Process by ID</label>
-								<div class="col-sm-4">
-									<input type="text" class="form-control" id="pid" name="pid" placeholder="Process ID (PID)">
-									<input type="hidden" class="form-control" name="action" value="kill_pid">
-									<small class="text-muted">Provide the PID to kill.</small>
-								</div>
-								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Kill</button>
-								</div>
-							</div>
-							
-							
-						</form>
-						
-						<form method="post" style="margin-top: 20px;">
-							<div class="form-group row">
-								<label class="col-sm-2 form-control-label" for="pname">Kill Processes by Name</label>
-								<div class="col-sm-4">
-									<input type="text" class="form-control" id="pname" name="pname" placeholder="Process Name">
-									<input type="hidden" class="form-control" name="action" value="kill_pname">
-									<small class="text-muted">Provide the process name to kill.</small>
-								</div>
-								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Kill</button>
-								</div>
-							</div>
-							
-							
-						</form>
-								
-								
-						<form method="post" style="margin-top: 20px;">
-							<div class="form-group row">
-								<label class="col-sm-2 form-control-label" for="sname">Start Service by Name</label>
-								<div class="col-sm-4">
-									<input type="text" class="form-control" id="sname" name="sname" placeholder="Service Name">
-									<input type="hidden" class="form-control" name="action" value="start_sname">
-									<small class="text-muted">Provide the service name to start.</small>
-								</div>
-								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Start</button>
-								</div>
-							</div>
-							
-							
-						</form>
-						
-						
-						<form method="post" style="margin-top: 20px;">
-							<div class="form-group row">
-								<label class="col-sm-2 form-control-label" for="sname">Stop Service by Name</label>
-								<div class="col-sm-4">
-									<input type="text" class="form-control" id="sname" name="sname" placeholder="Service Name">
-									<input type="hidden" class="form-control" name="action" value="stop_sname">
-									<small class="text-muted">Provide the service name to stop.</small>
-								</div>
-								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Stop</button>
-								</div>
-							</div>
-							
-							
-						</form>
-						
-						<!--form method="post" style="margin-top: 20px;">
-							<div class="form-group row">
-								<label class="col-sm-2 form-control-label">Update Sources</label>
-								<input type="hidden" class="form-control" name="action" value="update_sources">
-								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Update</button>
-								</div>
-							</div>
-							
-							
-						</form>
-						
-						<form method="post" style="margin-top: 20px;">
-							<div class="form-group row">
-								<label class="col-sm-2 form-control-label">Update Firmware</label>
-								<input type="hidden" class="form-control" name="action" value="update_firmware">
-								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure?')">Update</button>
-								</div>
-							</div>
-							
-							
-						</form-->
-						
-						<form method="post" style="margin-top: 20px;">
-							<div class="form-group row">
-								<label class="col-sm-2 form-control-label">Reboot RPi System</label>
-								<input type="hidden" class="form-control" name="action" value="reboot">
-								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure to reboot RPi?')">Reboot</button>
-								</div>
-							</div>
-							
-							
-						</form>
-						
-						<hr/>
-						<form method="post" id="advanced_command" style="margin-top: 20px;">
-							<div class="form-group row">
-								<label class="col-sm-2 form-control-label" for="cmd">Execute command <b>(Advanced users only!)</b></label>
-								<div class="col-sm-4">
-									<input type="text" class="form-control" id="cmd" name="cmd" placeholder="Command">
-									<input type="hidden" class="form-control" name="action" value="cmd">
-									<small class="text-muted">Command usually starts with sudo .....</small>
-								</div>
-								<div class="col-sm-4">
-									<div class="checkbox">
-										<label><input type="checkbox" id="background_command" value="">Execute in background</label>
-									</div>
-								</div>
-								<div class="col-sm-4">
-									<button type="submit" class="btn btn-primary">Execute</button>
-								</div>
-							</div>
-							
-							
-						</form>
-						
-						<hr/>
-						
-						<div class="well well-sm" id="command_logs"><h3>Useful commands:</h3>
-							<code>sudo python /folder_path_to_file/mypython_file.py</code> to execute a python script.<br/>
-							<code>sudo apt-get update</code> to update RPi sources.<br/>
-							<code>sudo rpi-update</code> to update RPi firmware.<br/>
-							<code>sudo reboot</code> to reboot RPi.<br/>
-							<code>cd <?php echo dirname(__FILE__); ?> && sudo git pull origin</code> to update GumCP (after this you have to edit the config.php file manually).<br/>
-							<code>sudo chmod 0777 <?php echo dirname(__FILE__); ?>/include/config.php</code> to make the config file writable in case you can't write any data to it.
+    <!-- Result message -->
+    <?php if ($message !== ''): ?>
+        <div class="alert alert-<?php echo htmlspecialchars($message_type, ENT_QUOTES, 'UTF-8'); ?>" role="alert">
+            <i class="fa fa-<?php echo $message_type === 'success' ? 'check-circle' : ($message_type === 'danger' ? 'times-circle' : 'info-circle'); ?>"></i>
+            <?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?>
+            <?php if ($executed_cmd !== ''): ?>
+                <br><strong>Command:</strong> <code><?php echo htmlspecialchars($executed_cmd, ENT_QUOTES, 'UTF-8'); ?></code>
+            <?php endif; ?>
+            <?php if ($command_output !== ''): ?>
+                <pre class="pre-scrollable" style="margin-top:8px; font-size:12px;"><?php echo htmlspecialchars($command_output, ENT_QUOTES, 'UTF-8'); ?></pre>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 
-						</div>
-						
-						<?php
-							
-							$directory = dirname(__FILE__).'/command_logs/';
-							$scanned_directory = array_diff(scandir($directory), array('..', '.'));
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-cogs"></i> Actions</h3>
+        </div>
+        <div class="panel-body">
 
-							if(is_array($scanned_directory))
-							{
-							
-								echo '<div class="well well-sm" id="command_logs"><h3>Background command output logs:</h3>';
-								foreach($scanned_directory AS $file)
-								{
-									echo '<div class="'.str_replace(".", "_", $file).'"><a href="./command_logs/'.$file.'">'.$file.'</a> '. date ("F d Y H:i:s.", filemtime('./command_logs/'.$file)).' <a href="javascript:void(0);" onclick="javascript:delete_log(\''.$file.'\');" title="delete_log" style="color:red;"><i class="fa fa-trash-o" aria-hidden="true"></i></a></div>';
-								}
-								
-								echo '</div>';
-						
-							}
-						
-						?>
-						
-					</div>
-				
-				
-				</div>
-				
-				
-		
+            <!-- Kill by PID -->
+            <form method="post" onsubmit="return confirm('Kill process?')">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="kill_pid">
+                <div class="form-group row">
+                    <label class="col-sm-3 control-label" for="pid">Kill process by PID</label>
+                    <div class="col-sm-4">
+                        <input type="number" class="form-control" id="pid" name="pid"
+                               placeholder="Process ID" min="1" required>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-times"></i> Kill
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Kill by name -->
+            <form method="post" onsubmit="return confirm('Kill all processes with this name?')">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="kill_pname">
+                <div class="form-group row">
+                    <label class="col-sm-3 control-label" for="pname">Kill processes by name</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="pname" name="pname"
+                               placeholder="Process name" pattern="[a-zA-Z0-9_\-\.]+" required>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-times"></i> Kill
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Start service -->
+            <form method="post" onsubmit="return confirm('Start this service?')">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="start_sname">
+                <div class="form-group row">
+                    <label class="col-sm-3 control-label" for="sname-start">Start service</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="sname-start" name="sname"
+                               placeholder="Service name" pattern="[a-zA-Z0-9_\-\.]+" required>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-play"></i> Start
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Stop service -->
+            <form method="post" onsubmit="return confirm('Stop this service?')">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="stop_sname">
+                <div class="form-group row">
+                    <label class="col-sm-3 control-label" for="sname-stop">Stop service</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="sname-stop" name="sname"
+                               placeholder="Service name" pattern="[a-zA-Z0-9_\-\.]+" required>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fa fa-stop"></i> Stop
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Reboot -->
+            <form method="post" onsubmit="return confirm('Reboot the Raspberry Pi now?')">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="reboot">
+                <div class="form-group row">
+                    <label class="col-sm-3 control-label">Reboot Raspberry Pi</label>
+                    <div class="col-sm-4">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-refresh"></i> Reboot
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Advanced command -->
+            <form method="post" id="advanced-command-form">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="cmd">
+                <div class="form-group row">
+                    <label class="col-sm-3 control-label" for="cmd">
+                        Execute command
+                        <small class="text-danger"><br>Advanced users only</small>
+                    </label>
+                    <div class="col-sm-5">
+                        <input type="text" class="form-control" id="cmd" name="cmd"
+                               placeholder="e.g. sudo systemctl restart apache2" required>
+                        <div class="checkbox" style="margin-top:6px;">
+                            <label>
+                                <input type="checkbox" id="background-command" name="background_command" value="1">
+                                Run in background (output saved to log file)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-terminal"></i> Execute
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Useful commands reference -->
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-book"></i> Useful commands</h3>
+        </div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>Run a Python script</dt>
+                <dd><code>python3 /path/to/script.py</code></dd>
+                <dt>Update package sources</dt>
+                <dd><code>sudo apt-get update</code></dd>
+                <dt>Update RPi firmware</dt>
+                <dd><code>sudo rpi-update</code></dd>
+                <dt>Reboot</dt>
+                <dd><code>sudo reboot</code></dd>
+                <dt>Update GumCP</dt>
+                <dd><code>cd <?php echo $dir; ?> &amp;&amp; sudo git pull origin master</code>
+                    <small class="text-muted"> — re-check config.php after update</small></dd>
+                <dt>Fix config permissions</dt>
+                <dd><code>sudo chmod 664 <?php echo $dir; ?>/include/config.php</code></dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Background command logs -->
+    <?php if (!empty($log_files)): ?>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-file-text-o"></i> Background command logs</h3>
+            </div>
+            <div class="panel-body">
+                <table class="table table-condensed table-hover">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($log_files as $log): ?>
+                            <tr class="log-entry">
+                                <td>
+                                    <a href="./command_logs/<?php echo htmlspecialchars($log['name'], ENT_QUOTES, 'UTF-8'); ?>">
+                                        <?php echo htmlspecialchars($log['name'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </a>
+                                </td>
+                                <td><?php echo htmlspecialchars(date('Y-m-d H:i:s', $log['mtime']), ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td>
+                                    <button type="button" class="btn btn-xs btn-danger delete-log-btn"
+                                            data-file="<?php echo htmlspecialchars($log['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            title="Delete log">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php endif; ?>
+
 </div>
 
 <footer class="footer">
-	<div class="container">
-		<p class="text-muted">GumCP <a href="https://github.com/gumslone/GumCP">GitHub</a>. <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VCWHQPACTXV5N"><img src="./static/images/Donate-PayPal-green.svg"/></a></p>
-	</div>
+    <div class="container">
+        <p class="text-muted">
+            GumCP <a href="https://github.com/gumslone/GumCP" target="_blank" rel="noopener">GitHub</a>.
+            <a href="https://www.paypal.com/donate/?hosted_button_id=VCWHQPACTXV5N" target="_blank" rel="noopener">
+                <img src="./static/images/Donate-PayPal-green.svg" alt="Donate"/>
+            </a>
+        </p>
+    </div>
 </footer>
-<div id="dialog-placeholder"></div>
-<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
 </body>
 </html>
