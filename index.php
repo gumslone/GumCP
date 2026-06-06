@@ -54,7 +54,9 @@ function get_cpu_usage(): int {
     usleep(100000);
     $s2 = @file_get_contents('/proc/stat');
     if ($s2 === false) return 0;
-    $parse = static fn(string $r): array => explode(' ', preg_replace('/\s+/', ' ', trim(explode("\n", $r)[0])));
+    $parse = static function(string $r): array {
+        return explode(' ', preg_replace('/\s+/', ' ', trim(explode("\n", $r)[0])));
+    };
     $a = $parse($s1); $b = $parse($s2);
     $idle  = (int)$b[4] - (int)$a[4];
     $total = 0;
@@ -84,7 +86,9 @@ function get_memory_info(): array {
     $def = ['total' => 0, 'used' => 0, 'free' => 0, 'percent' => 0, 'buffers' => 0, 'cached' => 0];
     $raw = @file_get_contents('/proc/meminfo');
     if ($raw === false) return $def;
-    $get = static fn(string $k): int => preg_match('/^' . $k . ':\s+(\d+)/m', $raw, $m) ? (int)$m[1] : 0;
+    $get = static function(string $k) use ($raw): int {
+        return preg_match('/^' . $k . ':\s+(\d+)/m', $raw, $m) ? (int)$m[1] : 0;
+    };
     $total     = $get('MemTotal');
     $free      = $get('MemFree');
     $available = $get('MemAvailable') ?: $free;

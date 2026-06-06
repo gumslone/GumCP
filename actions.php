@@ -163,7 +163,7 @@ if (is_dir($command_logs_dir)) {
             $log_files[] = ['name' => $file, 'mtime' => (int)filemtime($path)];
         }
     }
-    usort($log_files, fn($a, $b) => $b['mtime'] - $a['mtime']);
+    usort($log_files, function($a, $b) { return $b['mtime'] - $a['mtime']; });
 }
 
 $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
