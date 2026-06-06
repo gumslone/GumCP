@@ -427,6 +427,20 @@ $dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
         </div>
     </div>
 
+    <!-- System check shortcut -->
+    <div class="panel panel-info" style="margin-top:10px">
+        <div class="panel-body" style="display:flex; align-items:center; justify-content:space-between">
+            <span>
+                <i class="fa fa-stethoscope fa-lg"></i>
+                <strong style="margin-left:6px">System Check</strong>
+                <span class="text-muted" style="margin-left:8px">— verify PHP extensions, directory permissions, SSH and GPIO tools</span>
+            </span>
+            <a href="./check.php" class="btn btn-info btn-sm">
+                <i class="fa fa-stethoscope"></i> Run System Check
+            </a>
+        </div>
+    </div>
+
     <!-- Useful commands reference -->
     <div class="panel panel-default">
         <div class="panel-heading">

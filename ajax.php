@@ -266,6 +266,29 @@ switch ($action) {
         $out = collect_server_info();
         break;
 
+    // ── Services: list all init.d services and their status ──────────────────
+    case 'services':
+        $raw = @shell_exec('/usr/sbin/service --status-all 2>&1');
+        if ($raw === null || trim($raw) === '') {
+            $out = err('service --status-all returned no output — ensure /usr/sbin/service is available');
+            break;
+        }
+        $active = $inactive = $unknown = [];
+        foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
+            if (strpos($line, '[ + ]') !== false) {
+                $name = trim(str_replace('[ + ]', '', $line));
+                if ($name !== '') $active[] = $name;
+            } elseif (strpos($line, '[ - ]') !== false) {
+                $name = trim(str_replace('[ - ]', '', $line));
+                if ($name !== '') $inactive[] = $name;
+            } elseif (strpos($line, '[ ? ]') !== false) {
+                $name = trim(str_replace('[ ? ]', '', $line));
+                if ($name !== '') $unknown[] = $name;
+            }
+        }
+        $out = ok('ok', ['active' => $active, 'inactive' => $inactive, 'unknown' => $unknown]);
+        break;
+
     // ── System check: re-run all diagnostics, return JSON ─────────────────────
     case 'system_check':
         $gumcp      = rtrim(__DIR__, '/');
