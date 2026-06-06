@@ -100,8 +100,15 @@ if (!empty($_POST['login_user']) && !empty($_POST['login_pass'])) {
 // ── Auth gate ─────────────────────────────────────────────────────────────────
 
 if (LOGIN_REQUIRED === true || (defined('BASIC_AUTH') && BASIC_AUTH === true)) {
+    // Apache may strip the Authorization header; fall back to parsing it manually.
     $basic_user = (string)($_SERVER['PHP_AUTH_USER'] ?? '');
     $basic_pass = (string)($_SERVER['PHP_AUTH_PW']   ?? '');
+    if ($basic_user === '' && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $decoded = base64_decode(ltrim(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
+        if ($decoded !== false && strpos($decoded, ':') !== false) {
+            [$basic_user, $basic_pass] = explode(':', $decoded, 2);
+        }
+    }
     $basic_ok   = $basic_user !== ''
                && hash_equals(LOGIN_USER, $basic_user)
                && hash_equals(LOGIN_PASS, $basic_pass);
