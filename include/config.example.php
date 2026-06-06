@@ -99,23 +99,25 @@ if (!empty($_POST['login_user']) && !empty($_POST['login_pass'])) {
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
 
-if (defined('BASIC_AUTH') && BASIC_AUTH === true) {
-    $auth_user = (string)($_SERVER['PHP_AUTH_USER'] ?? '');
-    $auth_pass = (string)($_SERVER['PHP_AUTH_PW']   ?? '');
-    $valid = hash_equals(LOGIN_USER, $auth_user)
-          && hash_equals(LOGIN_PASS, $auth_pass);
-    if (!$valid) {
-        header('WWW-Authenticate: Basic realm="GumCP"');
-        http_response_code(401);
-        echo '401 Unauthorized';
-        exit();
-    }
-} elseif (LOGIN_REQUIRED === true) {
-    $authed = isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
-           && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
-           && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS);
+if (LOGIN_REQUIRED === true || (defined('BASIC_AUTH') && BASIC_AUTH === true)) {
+    $basic_user = (string)($_SERVER['PHP_AUTH_USER'] ?? '');
+    $basic_pass = (string)($_SERVER['PHP_AUTH_PW']   ?? '');
+    $basic_ok   = $basic_user !== ''
+               && hash_equals(LOGIN_USER, $basic_user)
+               && hash_equals(LOGIN_PASS, $basic_pass);
 
-    if (!$authed) {
+    $session_ok = isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
+               && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
+               && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS);
+
+    if (!$basic_ok && !$session_ok) {
+        if (defined('BASIC_AUTH') && BASIC_AUTH === true) {
+            // Prompt the browser's native credentials dialog
+            header('WWW-Authenticate: Basic realm="GumCP"');
+            http_response_code(401);
+            echo '401 Unauthorized';
+            exit();
+        }
         header('Location: ./login.php');
         exit();
     }
