@@ -430,17 +430,36 @@ function collect_server_info(): array {
 }
 
 function read_cpu_usage(): int {
-    $s1 = @file_get_contents('/proc/stat');
-    if ($s1 === false) return 0;
-    usleep(100000); // 100 ms sample window
-    $s2 = @file_get_contents('/proc/stat');
-    if ($s2 === false) return 0;
+    // Persist the previous /proc/stat snapshot between AJAX polls so the delta
+    // is measured over the full ~30 s polling interval instead of a tiny window.
+    // This prevents the "always 0%" problem on lightly-loaded Pis where no
+    // non-idle jiffies tick during a short in-process usleep sample.
+    $cache = sys_get_temp_dir() . '/gumcp_cpu_stat';
 
     $parse = static function(string $raw): array {
         return explode(' ', preg_replace('/\s+/', ' ', trim(explode("\n", $raw)[0])));
     };
-    $a = $parse($s1);
-    $b = $parse($s2);
+
+    $current = @file_get_contents('/proc/stat');
+    if ($current === false) return 0;
+
+    $b    = $parse($current);
+    $prev = @file_get_contents($cache);
+
+    // Save current snapshot for the next call before any early return.
+    @file_put_contents($cache, $current, LOCK_EX);
+
+    if ($prev === false || $prev === '') {
+        // No baseline yet — fall back to a 300 ms in-process sample.
+        usleep(300000);
+        $s2 = @file_get_contents('/proc/stat');
+        if ($s2 === false) return 0;
+        $b = $parse($s2);
+        @file_put_contents($cache, $s2, LOCK_EX);
+        $a = $parse($current);
+    } else {
+        $a = $parse($prev);
+    }
 
     $idle  = (int)$b[4] - (int)$a[4];
     $total = 0;
