@@ -289,7 +289,7 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
                                 <?php if (!$c['ok'] && $c['fix_key'] !== ''): ?>
                                     <button type="button"
                                             class="btn btn-xs btn-warning"
-                                            onclick="applyFix(<?php echo json_encode($c['fix_key']); ?>, this)">
+                                            onclick="applyFix(<?php echo htmlspecialchars(json_encode($c['fix_key']), ENT_QUOTES, 'UTF-8'); ?>, this)">
                                         <i class="fa fa-wrench"></i> Fix
                                     </button>
                                 <?php endif; ?>
