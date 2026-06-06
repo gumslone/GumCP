@@ -127,28 +127,25 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
     }
 
     /* ── execute ────────────────────────────────────────────────────────── */
-    function showOutput(type, title, output) {
-        var $panel = $('#output-panel');
-        var $body  = $('#output-body');
-        $panel.removeClass('panel-success panel-danger panel-default')
-              .addClass(type === 'success' ? 'panel-success' : 'panel-danger');
-        $('#output-title').text(title);
-        $body.empty();
-        if (output && output.trim() !== '') {
-            $body.append($('<pre>').css({ fontSize: '12px', marginBottom: 0 }).text(output.trim()));
-        } else {
-            $body.append($('<p>').addClass('text-muted').css('margin', 0).text('(no output)'));
-        }
-        $panel.show();
-        $('html, body').animate({ scrollTop: $panel.offset().top - 20 }, 200);
+    var _execButtonId = null;
+
+    function executeButton(buttonId, title, command) {
+        _execButtonId = buttonId;
+        $('#exec-modal-title').text(title);
+        $('#exec-modal-command').text(command);
+        $('#exec-modal-output-wrap').hide();
+        $('#exec-modal-output').text('');
+        $('#exec-modal-footer-run').show();
+        $('#exec-modal-footer-close').hide().text('Close');
+        $('#exec-run-btn').prop('disabled', false).html('<i class="fa fa-play"></i> Execute');
+        $('#exec-modal').modal('show');
     }
 
-    function executeButton(buttonId) {
-        if (!confirm('Execute this command?')) return;
-
-        var $btn = $('#execute-btn-' + buttonId);
-        var originalHtml = $btn.html();
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+    function runExecCommand() {
+        var buttonId = _execButtonId;
+        var $runBtn  = $('#exec-run-btn');
+        $runBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Running&hellip;');
+        $('#exec-modal-output-wrap').hide();
 
         $.ajax({
             type: 'POST',
@@ -156,13 +153,22 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
             data: { action: 'execute_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
             dataType: 'json',
             success: function(data) {
-                var ok = data.type === 'success';
-                showOutput(data.type, ok ? 'Command executed' : 'Command failed', data.output || data.message || '');
-                $btn.prop('disabled', false).html(originalHtml);
+                var ok     = data.type === 'success';
+                var output = (data.output || '').trim() || (ok ? '(no output)' : data.message || 'Command failed');
+                $('#exec-modal-output')
+                    .removeClass('text-success text-danger')
+                    .addClass(ok ? 'text-success' : 'text-danger')
+                    .text(output);
+                $('#exec-modal-output-wrap').show();
+                $('#exec-modal-footer-run').hide();
+                $('#exec-modal-footer-close').show();
             },
             error: function() {
-                showOutput('error', 'Request failed', 'Could not reach the server.');
-                $btn.prop('disabled', false).html(originalHtml);
+                $('#exec-modal-output').removeClass('text-success text-danger').addClass('text-danger')
+                    .text('Request failed — could not reach the server.');
+                $('#exec-modal-output-wrap').show();
+                $('#exec-modal-footer-run').hide();
+                $('#exec-modal-footer-close').show();
             }
         });
     }
@@ -221,20 +227,6 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
         <i class="fa fa-plus"></i> Add Command Button
     </button>
 
-    <!-- Command output panel — hidden until a button is executed -->
-    <div id="output-panel" class="panel panel-default" style="margin-top:15px; display:none">
-        <div class="panel-heading" style="display:flex; align-items:center; justify-content:space-between">
-            <h3 class="panel-title">
-                <i class="fa fa-terminal"></i>
-                <span id="output-title">Output</span>
-            </h3>
-            <button type="button" class="close" onclick="$('#output-panel').hide();" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <div class="panel-body" id="output-body"></div>
-    </div>
-
     <div class="panel panel-default" style="margin-top: 15px">
         <div class="panel-heading">
             <h3 class="panel-title"><i class="fa fa-terminal"></i> Command Buttons</h3>
@@ -267,10 +259,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                                 id="execute-btn-<?php echo $idx; ?>"
                                 type="button"
                                 class="btn <?php echo $style; ?> <?php echo $size; ?>"
-                                onclick="executeButton(<?php echo $idx; ?>)"
-                                title="<?php echo $command; ?>"
-                                data-toggle="tooltip"
-                                data-placement="top">
+                                onclick="executeButton(<?php echo $idx; ?>, <?php echo htmlspecialchars(json_encode($button['button_title'] ?? 'Untitled'), ENT_QUOTES, 'UTF-8'); ?>, <?php echo htmlspecialchars(json_encode($button['button_command'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)"
                                 <?php if ($icon !== ''): ?>
                                     <i class="fa <?php echo $icon; ?>" aria-hidden="true"></i>
                                 <?php endif; ?>
@@ -394,6 +383,41 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="modal-save-btn" onclick="saveButton()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Execute confirmation + output modal -->
+<div class="modal fade" id="exec-modal" tabindex="-1" role="dialog" aria-labelledby="exec-modal-label">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="exec-modal-label">
+                    <i class="fa fa-terminal"></i>
+                    Execute: <span id="exec-modal-title"></span>
+                </h4>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" style="margin-bottom:4px">Command</p>
+                <pre id="exec-modal-command" style="font-size:13px; word-break:break-all"></pre>
+
+                <div id="exec-modal-output-wrap" style="display:none; margin-top:10px">
+                    <p class="text-muted" style="margin-bottom:4px">Output</p>
+                    <pre id="exec-modal-output" style="font-size:12px; max-height:300px; overflow-y:auto; word-break:break-all"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="exec-modal-footer-run">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="exec-run-btn" onclick="runExecCommand()">
+                        <i class="fa fa-play"></i> Execute
+                    </button>
+                </span>
+                <button type="button" id="exec-modal-footer-close" class="btn btn-default" data-dismiss="modal" style="display:none">Close</button>
             </div>
         </div>
     </div>
