@@ -74,7 +74,7 @@ function ssh_run(string $cmd, bool $capture = true): array {
 const BUTTONS_FILE = __DIR__ . '/buttons/buttons.json';
 const BUTTONS_DIR  = __DIR__ . '/buttons';
 
-function load_buttons(): ?array {
+function load_buttons() {
     if (!file_exists(BUTTONS_FILE)) {
         return [];
     }

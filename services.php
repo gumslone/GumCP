@@ -17,13 +17,13 @@ $inactive = [];
 $unknown  = [];
 
 foreach (preg_split('/\r\n|\r|\n/', (string)$raw) as $line) {
-    if (str_contains($line, '[ + ]')) {
+    if (strpos($line, '[ + ]') !== false) {
         $name = trim(str_replace('[ + ]', '', $line));
         if ($name !== '') $active[] = $name;
-    } elseif (str_contains($line, '[ - ]')) {
+    } elseif (strpos($line, '[ - ]') !== false) {
         $name = trim(str_replace('[ - ]', '', $line));
         if ($name !== '') $inactive[] = $name;
-    } elseif (str_contains($line, '[ ? ]')) {
+    } elseif (strpos($line, '[ ? ]') !== false) {
         $name = trim(str_replace('[ ? ]', '', $line));
         if ($name !== '') $unknown[] = $name;
     }
