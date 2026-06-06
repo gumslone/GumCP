@@ -245,7 +245,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                     No buttons yet. Click <strong>Add Command Button</strong> to create one.
                 </div>
             <?php else: ?>
-                <div class="button-container">
+                <div class="button-container" id="buttons-sortable">
                     <?php foreach ($buttons as $index => $button):
                         $style   = in_array($button['button_style'] ?? '', $allowed_styles) ? $button['button_style'] : 'btn-default';
                         $size    = in_array($button['button_size']  ?? '', $allowed_sizes)  ? $button['button_size']  : 'btn-md';
@@ -254,7 +254,9 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                         $icon    = htmlspecialchars($button['button_icon']    ?? '',         ENT_QUOTES, 'UTF-8');
                         $idx     = (int) $index;
                     ?>
-                        <div class="btn-group" role="group" style="margin: 5px;">
+                        <div class="btn-draggable" data-idx="<?php echo $idx; ?>"
+                             draggable="true" style="display:inline-block; margin:5px; cursor:grab">
+                        <div class="btn-group" role="group">
                             <button
                                 id="execute-btn-<?php echo $idx; ?>"
                                 type="button"
@@ -289,6 +291,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                                 </ul>
                             </div>
                         </div>
+                        </div><!-- /.btn-draggable -->
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
@@ -459,6 +462,66 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
         </p>
     </div>
 </footer>
+
+<script>
+(function() {
+    var container = document.getElementById('buttons-sortable');
+    if (!container) return;
+
+    var dragged = null;
+
+    container.addEventListener('dragstart', function(e) {
+        dragged = e.target.closest('.btn-draggable');
+        if (!dragged) { e.preventDefault(); return; }
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(function() { dragged.style.opacity = '0.4'; }, 0);
+    });
+
+    container.addEventListener('dragend', function() {
+        if (dragged) dragged.style.opacity = '';
+        dragged = null;
+        container.querySelectorAll('.btn-draggable').forEach(function(el) {
+            el.style.outline = '';
+        });
+    });
+
+    container.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        var over = e.target.closest('.btn-draggable');
+        container.querySelectorAll('.btn-draggable').forEach(function(el) {
+            el.style.outline = '';
+        });
+        if (over && over !== dragged) {
+            over.style.outline = '2px solid #66afe9';
+        }
+    });
+
+    container.addEventListener('drop', function(e) {
+        e.preventDefault();
+        var over = e.target.closest('.btn-draggable');
+        if (!over || !dragged || over === dragged) return;
+        var items = Array.from(container.querySelectorAll('.btn-draggable'));
+        if (items.indexOf(dragged) < items.indexOf(over)) {
+            container.insertBefore(dragged, over.nextSibling);
+        } else {
+            container.insertBefore(dragged, over);
+        }
+        saveButtonOrder();
+    });
+
+    function saveButtonOrder() {
+        var order = [];
+        container.querySelectorAll('.btn-draggable').forEach(function(el) {
+            order.push(el.getAttribute('data-idx'));
+        });
+        $.post('./ajax.php?action=reorder_buttons', {
+            order: order,
+            csrf_token: CSRF_TOKEN
+        }, null, 'json');
+    }
+})();
+</script>
 
 </body>
 </html>

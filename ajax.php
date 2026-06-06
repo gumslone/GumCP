@@ -211,6 +211,35 @@ switch ($action) {
         $out = $save_err === '' ? ok('Button deleted') : err($save_err);
         break;
 
+    // ── Buttons: reorder ─────────────────────────────────────────────────────
+    case 'reorder_buttons':
+        $order = $_POST['order'] ?? [];
+        if (!is_array($order)) {
+            $out = err('Invalid order');
+            break;
+        }
+        $buttons = load_buttons();
+        if ($buttons === null) {
+            $out = err('Could not read buttons file');
+            break;
+        }
+        $reordered = [];
+        foreach ($order as $raw_idx) {
+            $idx = (int)$raw_idx;
+            if (isset($buttons[$idx])) {
+                $reordered[] = $buttons[$idx];
+            }
+        }
+        // Append any buttons not included in the order (safety)
+        foreach ($buttons as $i => $b) {
+            if (!in_array((string)$i, array_map('strval', $order), true)) {
+                $reordered[] = $b;
+            }
+        }
+        $save_err = save_buttons($reordered);
+        $out = $save_err === '' ? ok('Buttons reordered') : err($save_err);
+        break;
+
     // ── GPIO: change pin mode ─────────────────────────────────────────────────
     case 'change_mode':
         $bcm  = filter_var($_POST['bcm']  ?? '', FILTER_VALIDATE_INT);
