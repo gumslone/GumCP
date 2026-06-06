@@ -273,7 +273,7 @@ foreach ($gpio_rows as $k => $row) {
                                             <?php elseif ($is_gpio_cell && $col_header === 'v'): ?>
                                                 <input class="switch-v" type="checkbox"
                                                        <?php echo $cell === '1' ? 'checked' : ''; ?>
-                                                       data-on-text="1" data-off-text="0"
+                                                       data-on-text="HIGH" data-off-text="LOW"
                                                        data-bcm="<?php echo $bcm; ?>">
 
                                             <?php elseif ($is_gpio_cell && $col_header === 'pud'): ?>
@@ -281,6 +281,15 @@ foreach ($gpio_rows as $k => $row) {
                                                        <?php echo strtolower($cell) === 'up' ? 'checked' : ''; ?>
                                                        data-on-text="UP" data-off-text="DOWN"
                                                        data-bcm="<?php echo $bcm; ?>">
+
+                                            <?php elseif ($is_physical_col): ?>
+                                                <strong><?php echo htmlspecialchars(
+                                                    str_replace('||', ' | ', $cell),
+                                                    ENT_QUOTES, 'UTF-8'
+                                                ); ?></strong>
+
+                                            <?php elseif ($col_header === 'bcm'): ?>
+                                                <strong><?php echo $cell_esc; ?></strong>
 
                                             <?php else: ?>
                                                 <?php echo $cell_esc; ?>
