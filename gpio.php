@@ -263,33 +263,29 @@ foreach ($gpio_rows as $k => $row) {
 
                                         $cell_esc = htmlspecialchars($cell, ENT_QUOTES, 'UTF-8');
                                     ?>
-                                        <?php if ($is_physical_col && $k === 0): ?>
-                                            <td colspan="2" style="text-align:center;"><?php echo $cell_esc; ?></td>
-                                        <?php else: ?>
-                                            <td<?php echo $hl; ?>>
-                                                <?php if ($is_gpio_cell && $col_header === 'mode'): ?>
-                                                    <input class="switch-mode" type="checkbox"
-                                                           <?php echo strtolower($cell) === 'out' ? 'checked' : ''; ?>
-                                                           data-on-text="OUT" data-off-text="IN"
-                                                           data-bcm="<?php echo $bcm; ?>">
+                                        <td<?php echo $hl; ?> <?php echo $is_physical_col ? 'style="text-align:center"' : ''; ?>>
+                                            <?php if ($is_gpio_cell && $col_header === 'mode'): ?>
+                                                <input class="switch-mode" type="checkbox"
+                                                       <?php echo strtolower($cell) === 'out' ? 'checked' : ''; ?>
+                                                       data-on-text="OUT" data-off-text="IN"
+                                                       data-bcm="<?php echo $bcm; ?>">
 
-                                                <?php elseif ($is_gpio_cell && $col_header === 'v'): ?>
-                                                    <input class="switch-v" type="checkbox"
-                                                           <?php echo $cell === '1' ? 'checked' : ''; ?>
-                                                           data-on-text="1" data-off-text="0"
-                                                           data-bcm="<?php echo $bcm; ?>">
+                                            <?php elseif ($is_gpio_cell && $col_header === 'v'): ?>
+                                                <input class="switch-v" type="checkbox"
+                                                       <?php echo $cell === '1' ? 'checked' : ''; ?>
+                                                       data-on-text="1" data-off-text="0"
+                                                       data-bcm="<?php echo $bcm; ?>">
 
-                                                <?php elseif ($is_gpio_cell && $col_header === 'pud'): ?>
-                                                    <input class="switch-pullup" type="checkbox"
-                                                           <?php echo strtolower($cell) === 'up' ? 'checked' : ''; ?>
-                                                           data-on-text="UP" data-off-text="DOWN"
-                                                           data-bcm="<?php echo $bcm; ?>">
+                                            <?php elseif ($is_gpio_cell && $col_header === 'pud'): ?>
+                                                <input class="switch-pullup" type="checkbox"
+                                                       <?php echo strtolower($cell) === 'up' ? 'checked' : ''; ?>
+                                                       data-on-text="UP" data-off-text="DOWN"
+                                                       data-bcm="<?php echo $bcm; ?>">
 
-                                                <?php else: ?>
-                                                    <?php echo $cell_esc; ?>
-                                                <?php endif; ?>
-                                            </td>
-                                        <?php endif; ?>
+                                            <?php else: ?>
+                                                <?php echo $cell_esc; ?>
+                                            <?php endif; ?>
+                                        </td>
                                     <?php endforeach; ?>
                                 </tr>
                             <?php endforeach; ?>

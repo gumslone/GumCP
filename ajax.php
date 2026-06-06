@@ -265,6 +265,86 @@ switch ($action) {
     case 'server_info':
         $out = collect_server_info();
         break;
+
+    // ── System check: re-run all diagnostics, return JSON ─────────────────────
+    case 'system_check':
+        $gumcp      = rtrim(__DIR__, '/');
+        $php_major  = (int)PHP_MAJOR_VERSION;
+        $php_minor  = (int)PHP_MINOR_VERSION;
+        $btns_dir   = $gumcp . '/buttons';
+        $logs_dir   = $gumcp . '/command_logs';
+
+        $checks = [
+            'php_version'     => $php_major > 7 || ($php_major === 7 && $php_minor >= 0),
+            'ext_ssh2'        => extension_loaded('ssh2'),
+            'ext_json'        => extension_loaded('json'),
+            'ext_sqlite3'     => extension_loaded('sqlite3'),
+            'ext_curl'        => extension_loaded('curl'),
+            'buttons_exists'  => is_dir($btns_dir),
+            'buttons_writable'=> is_dir($btns_dir) && is_writable($btns_dir),
+            'logs_exists'     => is_dir($logs_dir),
+            'logs_writable'   => is_dir($logs_dir) && is_writable($logs_dir),
+            'config_readable' => is_readable($gumcp . '/include/config.php'),
+        ];
+
+        // Pi model for GPIO context
+        $model = trim((string)@file_get_contents('/proc/device-tree/model'));
+        $is_pi5 = stripos($model, 'Raspberry Pi 5') !== false;
+
+        $gpio_ok = false;
+        $gpio_detail = '';
+        if ($is_pi5) {
+            $gpio_ok     = !empty(shell_exec('command -v raspi-gpio 2>/dev/null'));
+            $gpio_detail = $gpio_ok ? 'raspi-gpio installed' : 'raspi-gpio missing';
+        } else {
+            $gpio_ok     = !empty(shell_exec('command -v gpio 2>/dev/null'));
+            $gpio_detail = $gpio_ok ? 'gpio (WiringPi) installed' : 'gpio (WiringPi) missing';
+        }
+        $checks['gpio'] = $gpio_ok;
+
+        $all_pass = !in_array(false, $checks, true);
+        $out = ok($all_pass ? 'All checks passed' : 'Some checks failed', [
+            'checks'     => $checks,
+            'php_version'=> PHP_VERSION,
+            'model'      => $model,
+            'gpio_detail'=> $gpio_detail,
+            'all_pass'   => $all_pass,
+        ]);
+        break;
+
+    // ── System fix: run a whitelisted repair command via SSH ──────────────────
+    case 'system_fix':
+        $fix   = (string)($_POST['fix'] ?? '');
+        $gumcp = rtrim(__DIR__, '/');
+        $btns  = $gumcp . '/buttons';
+        $logs  = $gumcp . '/command_logs';
+
+        // All fix commands are pre-defined here — no user-supplied shell strings.
+        $allowed = [
+            'buttons_dir'        => 'sudo mkdir -p ' . escapeshellarg($btns)
+                                  . ' && sudo chown www-data:www-data ' . escapeshellarg($btns)
+                                  . ' && sudo chmod 755 ' . escapeshellarg($btns),
+            'logs_dir'           => 'sudo mkdir -p ' . escapeshellarg($logs)
+                                  . ' && sudo chown www-data:www-data ' . escapeshellarg($logs)
+                                  . ' && sudo chmod 755 ' . escapeshellarg($logs),
+            'gumcp_chown'        => 'sudo chown -R www-data:www-data ' . escapeshellarg($gumcp),
+            'install_ssh2'       => 'sudo apt-get install -y php-ssh2 && sudo systemctl restart apache2',
+            'install_sqlite3'    => 'sudo apt-get install -y php-sqlite3 && sudo systemctl restart apache2',
+            'install_curl'       => 'sudo apt-get install -y php-curl && sudo systemctl restart apache2',
+            'install_raspi_gpio' => 'sudo apt-get install -y raspi-gpio',
+            'start_ssh'          => 'sudo systemctl enable ssh && sudo systemctl start ssh',
+            'start_apache'       => 'sudo systemctl enable apache2 && sudo systemctl start apache2',
+        ];
+
+        if (!array_key_exists($fix, $allowed)) {
+            $out = err('Unknown fix key: ' . htmlspecialchars($fix, ENT_QUOTES, 'UTF-8'));
+            break;
+        }
+        $result = ssh_run($allowed[$fix]);
+        $out = $result['success']
+            ? ok('Fix applied', ['output' => $result['output'], 'fix' => $fix])
+            : err($result['error']);
+        break;
 }
 
 echo json_encode($out);
