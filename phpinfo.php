@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 $active_page = 'phpinfo';
 
-require_once('./include/config.php');
+require_once('./include/init.php');
 
 ob_start();
 phpinfo();

@@ -4,7 +4,7 @@ declare(strict_types=1);
 // Send JSON header first so every response — including early errors — is typed.
 header('Content-Type: application/json');
 
-require_once('./include/config.php');
+require_once('./include/init.php');
 
 // ── CSRF guard (all POST requests) ───────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

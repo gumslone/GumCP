@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once('../../include/config.php');
+require_once('../../include/init.php');
 
 if (empty($gumcp_modules['tehybug']['module_active'])) {
     http_response_code(404);

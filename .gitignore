@@ -3,8 +3,11 @@
 include/config.php
 
 # User data directories written at runtime by the web server.
-buttons/
-command_logs/
+# Track the .htaccess files inside them so web access is always blocked.
+buttons/*
+!buttons/.htaccess
+command_logs/*
+!command_logs/.htaccess
 
 # CPU stat cache written by ajax.php for accurate polling.
 gumcp_cpu_stat

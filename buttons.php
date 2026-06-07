@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 $active_page = 'buttons';
 
-require_once('./include/config.php');
+require_once('./include/init.php');
 
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

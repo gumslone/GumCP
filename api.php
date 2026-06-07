@@ -13,7 +13,7 @@ header('Content-Type: application/json; charset=UTF-8');
 // Tell config.php to skip the auth gate for this request.
 define('GUMCP_API_REQUEST', true);
 
-require_once(__DIR__ . '/include/config.php');
+require_once(__DIR__ . '/include/init.php');
 require_once(__DIR__ . '/include/ssh.php');
 
 define('BUTTONS_FILE', __DIR__ . '/buttons/buttons.json');

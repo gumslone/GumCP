@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once('../../include/config.php');
+require_once('../../include/init.php');
 
 header('Content-Type: application/json; charset=UTF-8');
 

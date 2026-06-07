@@ -5,7 +5,7 @@ declare(strict_types=1);
 // It will be overwritten below once the module key is validated.
 $active_page = '';
 
-require_once('./include/config.php');
+require_once('./include/init.php');
 
 // ── Module validation ─────────────────────────────────────────────────────────
 
