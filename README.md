@@ -136,8 +136,6 @@ define('LOGIN_PASS', 'raspberry');
 define('BASIC_AUTH', false);     // true = also accept HTTP Basic Auth
 define('BASIC_AUTH_USER', 'api');
 define('BASIC_AUTH_PASS', 'secret');
-
-define('BUTTON_API_ENABLED', true); // false = disable api.php entirely
 ```
 
 ---
@@ -193,10 +191,10 @@ Toggle between modes with the **Direct execution** checkbox when creating or edi
 
 ### Button API
 
-Enabled by default. Disable in `config.php` if not needed:
+Enabled by default. Disable in `config.php` like any other module:
 
 ```php
-define('BUTTON_API_ENABLED', false);
+$gumcp_modules['button_api']['module_active'] = 0;
 ```
 
 Every button gets a unique secret hash. Use it to trigger the button from any HTTP client without logging in — no session or Basic Auth required:
@@ -301,7 +299,7 @@ sudo apt-get install -y php-sqlite3
 
 - **Change default credentials** in `include/config.php` before putting GumCP on any network
 - Enable `LOGIN_REQUIRED` and/or `BASIC_AUTH` in `config.php` for protected access
-- Button API is enabled by default — set `BUTTON_API_ENABLED=false` to disable it if you don't use it
+- Button API is enabled by default — set `$gumcp_modules['button_api']['module_active'] = 0` in `config.php` to disable it
 - Button API hashes are secret URLs — treat them like passwords; use **Regenerate hash** if a hash is compromised
 - `command_logs/` and `buttons/` are blocked from direct web access via `.htaccess`
 - GumCP executes commands as the SSH user — use a dedicated user with only the permissions it needs
