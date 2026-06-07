@@ -89,6 +89,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cmd = 'sudo reboot';
                 break;
 
+            case 'git_pull':
+                $cmd = 'cd ' . escapeshellarg(__DIR__) . ' && sudo git pull origin master 2>&1';
+                break;
+
             case 'cmd':
                 $raw = trim($_POST['cmd'] ?? '');
                 if ($raw !== '') {
@@ -392,6 +396,29 @@ $dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
                         <button type="submit" class="btn btn-danger">
                             <i class="fa fa-refresh"></i> Reboot
                         </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Update from GitHub -->
+            <form method="post" onsubmit="return confirm('Pull the latest version from GitHub now?\n\nThis runs: git pull origin master')">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="git_pull">
+                <div class="form-group row">
+                    <label class="col-sm-3 control-label">
+                        Update GumCP
+                        <small class="text-muted"><br>from GitHub</small>
+                    </label>
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fa fa-cloud-download"></i> Pull latest version
+                        </button>
+                        <small class="text-muted" style="display:block; margin-top:4px">
+                            Runs <code>git pull origin master</code> in <code><?php echo $dir; ?></code>.
+                            Your <code>config.php</code>, buttons and logs are preserved.
+                        </small>
                     </div>
                 </div>
             </form>
