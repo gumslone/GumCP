@@ -13,8 +13,6 @@ define('BASIC_AUTH', false);         // true = also accept HTTP Basic Auth
 define('BASIC_AUTH_USER', 'api');    // separate credentials for Basic Auth
 define('BASIC_AUTH_PASS', 'secret');
 
-define('BUTTON_API_ENABLED', true);  // false = disable the button API endpoint (api.php)
-
 define('GUMCP_DEBUG', false);    // true = show PHP errors
 
 error_reporting(GUMCP_DEBUG ? E_ALL : 0);
@@ -49,6 +47,12 @@ $gumcp_modules = [
         'module_title'                    => 'Buttons',
         'module_index_file_relative_path' => './buttons.php',
         'module_active'                   => 1,
+    ],
+    // Button API — no nav link; controls whether api.php?hash= is accessible
+    'button_api' => [
+        'module_title'  => 'Button API',
+        'module_active' => 1,
+        'module_no_nav' => 1,
     ],
     // Order from https://www.tindie.com/stores/gumslone/
     'tehybug' => [

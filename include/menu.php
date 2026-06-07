@@ -29,6 +29,7 @@ if (is_readable($order_file)) {
 
 <?php foreach ($gumcp_modules as $key => $module): ?>
     <?php if (($module['module_active'] ?? 0) != 1) continue; ?>
+    <?php if (!empty($module['module_no_nav'])) continue; ?>
     <?php
     $title     = htmlspecialchars($module['module_title'] ?? '', ENT_QUOTES, 'UTF-8');
     $is_active = $active_page === $key ? 'active' : '';

@@ -16,7 +16,7 @@ define('GUMCP_API_REQUEST', true);
 require_once(__DIR__ . '/include/init.php');
 require_once(__DIR__ . '/include/ssh.php');
 
-if (!defined('BUTTON_API_ENABLED') || BUTTON_API_ENABLED !== true) {
+if (empty($gumcp_modules['button_api']['module_active'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Button API is disabled']);
     exit();

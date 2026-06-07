@@ -56,7 +56,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
     <script src="./static/js.php" type="text/javascript"></script>
     <script>
     var CSRF_TOKEN       = <?php echo json_encode($_SESSION['csrf_token']); ?>;
-    var BUTTON_API_ENABLED = <?php echo json_encode(defined('BUTTON_API_ENABLED') && BUTTON_API_ENABLED === true); ?>;
+    var BUTTON_API_ENABLED = <?php echo json_encode(!empty($gumcp_modules['button_api']['module_active'])); ?>;
 
     /* ── modal helpers ──────────────────────────────────────────────────── */
     function openButtonModal(title, buttonId) {
