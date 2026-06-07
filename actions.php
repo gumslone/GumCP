@@ -158,8 +158,9 @@ if ($cmd !== '') {
 $log_files = [];
 if (is_dir($command_logs_dir)) {
     foreach (array_diff(scandir($command_logs_dir), ['.', '..']) as $file) {
+        if ($file[0] === '.') continue; // skip .htaccess and other dot-files
         $path = $command_logs_dir . '/' . $file;
-        if (is_file($path)) {
+        if (is_file($path) && substr($file, -4) === '.log') {
             $log_files[] = ['name' => $file, 'mtime' => (int)filemtime($path)];
         }
     }

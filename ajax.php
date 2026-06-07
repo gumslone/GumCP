@@ -262,7 +262,7 @@ switch ($action) {
     // The log files are local to the server — no SSH needed, just unlink().
     case 'delete_log':
         $file = basename(trim((string)($_POST['log_file'] ?? '')));
-        if ($file === '' || $file === '..' || $file === '.') {
+        if ($file === '' || $file[0] === '.' || substr($file, -4) !== '.log') {
             $out = err('Invalid filename');
             break;
         }
