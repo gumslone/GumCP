@@ -136,6 +136,8 @@ define('LOGIN_PASS', 'raspberry');
 define('BASIC_AUTH', false);     // true = also accept HTTP Basic Auth
 define('BASIC_AUTH_USER', 'api');
 define('BASIC_AUTH_PASS', 'secret');
+
+define('BUTTON_API_ENABLED', true); // false = disable api.php entirely
 ```
 
 ---
@@ -191,7 +193,13 @@ Toggle between modes with the **Direct execution** checkbox when creating or edi
 
 ### Button API
 
-Every button gets a unique secret hash. Use it to trigger the button from any HTTP client without logging in:
+Enabled by default. Disable in `config.php` if not needed:
+
+```php
+define('BUTTON_API_ENABLED', false);
+```
+
+Every button gets a unique secret hash. Use it to trigger the button from any HTTP client without logging in — no session or Basic Auth required:
 
 ```bash
 curl http://<your-pi-ip>/GumCP/api.php?hash=<32-char-hash>
@@ -203,9 +211,9 @@ Response:
 {"success": true, "button": "Restart Apache", "output": ""}
 ```
 
-The API URL is shown in the button's Edit dialog. Use **Regenerate hash** to invalidate an old URL and get a new one.
+The API URL is shown in the button's **Edit** dialog. Use **Regenerate hash** to invalidate an old URL and get a new one instantly.
 
-Every API call is logged to `command_logs/api_calls.log` (JSON lines) with timestamp, IP, user-agent, and command output.
+Every API call is logged to `command_logs/api_calls.log` (JSON lines) with timestamp, IP, user-agent, and command output. Log files are not accessible via the browser.
 
 **Example: trigger from Home Assistant**
 
@@ -293,7 +301,9 @@ sudo apt-get install -y php-sqlite3
 
 - **Change default credentials** in `include/config.php` before putting GumCP on any network
 - Enable `LOGIN_REQUIRED` and/or `BASIC_AUTH` in `config.php` for protected access
+- Button API is enabled by default — set `BUTTON_API_ENABLED=false` to disable it if you don't use it
 - Button API hashes are secret URLs — treat them like passwords; use **Regenerate hash** if a hash is compromised
+- `command_logs/` and `buttons/` are blocked from direct web access via `.htaccess`
 - GumCP executes commands as the SSH user — use a dedicated user with only the permissions it needs
 - `robots.txt` is included and blocks all search crawlers from indexing GumCP
 
