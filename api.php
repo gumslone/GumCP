@@ -94,7 +94,7 @@ if ($result['success']) {
 }
 
 // ── Logging ───────────────────────────────────────────────────────────────────
-function api_log(string $hash, ?array $button, string $status, string $output, string $error): void {
+function api_log(string $hash, $button, string $status, string $output, string $error) {
     $log_dir = dirname(API_LOG_FILE);
     if (!is_dir($log_dir)) {
         @mkdir($log_dir, 0755, true);
