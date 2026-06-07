@@ -13,6 +13,8 @@ define('BASIC_AUTH', false);         // true = also accept HTTP Basic Auth
 define('BASIC_AUTH_USER', 'api');    // separate credentials for Basic Auth
 define('BASIC_AUTH_PASS', 'secret');
 
+define('BUTTON_API_ENABLED', false); // true = allow buttons to be triggered via api.php?hash=
+
 define('GUMCP_DEBUG', false);    // true = show PHP errors
 
 error_reporting(GUMCP_DEBUG ? E_ALL : 0);

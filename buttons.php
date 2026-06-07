@@ -55,7 +55,8 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="./static/js.php" type="text/javascript"></script>
     <script>
-    var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var CSRF_TOKEN       = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var BUTTON_API_ENABLED = <?php echo json_encode(defined('BUTTON_API_ENABLED') && BUTTON_API_ENABLED === true); ?>;
 
     /* ── modal helpers ──────────────────────────────────────────────────── */
     function openButtonModal(title, buttonId) {
@@ -93,7 +94,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                 $('#modal-button-size').val(data.button_size   || 'btn-md');
                 $('#modal-button-direct').prop('checked', !!data.button_direct);
                 var hash = data.button_hash || '';
-                if (hash) {
+                if (hash && BUTTON_API_ENABLED) {
                     var apiUrl = window.location.href.replace(/\/[^\/]*$/, '/api.php?hash=' + hash);
                     $('#modal-api-hash').val(hash);
                     $('#modal-api-url').val(apiUrl);
