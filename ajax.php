@@ -26,49 +26,7 @@ function err(string $message): array {
 }
 
 // ── SSH helper ────────────────────────────────────────────────────────────────
-// Connects, authenticates, runs $cmd, captures stdout+stderr, disconnects.
-// Returns ['success'=>true,'output'=>string] or ['success'=>false,'error'=>string].
-function ssh_run(string $cmd, bool $capture = true): array {
-    if (!function_exists('ssh2_connect')) {
-        return ['success' => false, 'error' => 'php-ssh2 extension is not installed'];
-    }
-
-    $conn = null;
-    try {
-        $conn = @ssh2_connect('localhost', (int)SSH_PORT);
-        if ($conn === false) {
-            throw new Exception('Could not connect to SSH on port ' . SSH_PORT);
-        }
-        if (!@ssh2_auth_password($conn, SSH_USER, SSH_PASS)) {
-            throw new Exception('SSH authentication failed — check SSH_USER / SSH_PASS in config.php');
-        }
-
-        $stream = ssh2_exec($conn, $cmd);
-        if ($stream === false) {
-            throw new Exception('ssh2_exec failed');
-        }
-
-        $output = '';
-        if ($capture) {
-            stream_set_blocking($stream, true);
-            $stdout = ssh2_fetch_stream($stream, SSH2_STREAM_STDIO);
-            $stderr = ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
-            $out_s  = (string)stream_get_contents($stdout);
-            $err_s  = (string)stream_get_contents($stderr);
-            fclose($stdout);
-            fclose($stderr);
-            $output = trim($out_s . ($err_s !== '' ? "\n[stderr]\n" . $err_s : ''));
-        }
-
-        @ssh2_exec($conn, 'exit');
-        return ['success' => true, 'output' => $output];
-
-    } catch (Exception $e) {
-        return ['success' => false, 'error' => $e->getMessage()];
-    } finally {
-        unset($conn);
-    }
-}
+require_once(__DIR__ . '/include/ssh.php');
 
 // ── Button storage helpers ────────────────────────────────────────────────────
 const BUTTONS_FILE = __DIR__ . '/buttons/buttons.json';
@@ -142,9 +100,13 @@ switch ($action) {
 
         $btn_id = $_POST['button_id'] ?? '';
         if ($btn_id !== '' && validate_button_id($btn_id)) {
+            // Preserve existing hash on edit
+            $existing_hash = $buttons[(int)$btn_id]['button_hash'] ?? bin2hex(random_bytes(16));
+            $data['button_hash'] = $existing_hash;
             $buttons[(int)$btn_id] = $data;
             $msg = 'Button updated';
         } else {
+            $data['button_hash'] = bin2hex(random_bytes(16));
             $buttons[] = $data;
             $msg = 'Button created';
         }
@@ -166,6 +128,24 @@ switch ($action) {
             break;
         }
         $out = $buttons[$idx]; // return raw button data (not a type/message envelope)
+        break;
+
+    // ── Buttons: regenerate API hash ─────────────────────────────────────────
+    case 'regenerate_button_hash':
+        if (!isset($_POST['button_id']) || !validate_button_id($_POST['button_id'])) {
+            $out = err('Invalid button ID');
+            break;
+        }
+        $buttons = load_buttons();
+        $idx = (int)$_POST['button_id'];
+        if ($buttons === null || !isset($buttons[$idx])) {
+            $out = err('Button not found');
+            break;
+        }
+        $new_hash = bin2hex(random_bytes(16));
+        $buttons[$idx]['button_hash'] = $new_hash;
+        $save_err = save_buttons($buttons);
+        $out = $save_err === '' ? ok('Hash regenerated', ['button_hash' => $new_hash]) : err($save_err);
         break;
 
     // ── Buttons: execute ──────────────────────────────────────────────────────

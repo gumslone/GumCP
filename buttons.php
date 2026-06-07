@@ -63,6 +63,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
         $('#button-modal-form')[0].reset();
         $('#modal-button-id').val(buttonId !== undefined ? buttonId : '');
         $('#modal-button-direct').prop('checked', false);
+        $('#modal-api-section').hide();
         $('#button-modal').modal('show');
     }
 
@@ -91,6 +92,15 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                 $('#modal-button-style').val(data.button_style  || 'btn-default');
                 $('#modal-button-size').val(data.button_size   || 'btn-md');
                 $('#modal-button-direct').prop('checked', !!data.button_direct);
+                var hash = data.button_hash || '';
+                if (hash) {
+                    var apiUrl = window.location.href.replace(/\/[^\/]*$/, '/api.php?hash=' + hash);
+                    $('#modal-api-hash').val(hash);
+                    $('#modal-api-url').val(apiUrl);
+                    $('#modal-api-section').show();
+                } else {
+                    $('#modal-api-section').hide();
+                }
             },
             error: function() {
                 alert('Error loading button data');
@@ -172,6 +182,35 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                 $('#exec-modal-footer-run').hide();
                 $('#exec-modal-footer-close').show();
             }
+        });
+    }
+
+    /* ── API hash helpers ───────────────────────────────────────────────── */
+    function copyApiUrl() {
+        var $inp = $('#modal-api-url');
+        $inp[0].select();
+        try {
+            document.execCommand('copy');
+            var $btn = $inp.closest('.input-group').find('button');
+            $btn.html('<i class="fa fa-check"></i>');
+            setTimeout(function() { $btn.html('<i class="fa fa-copy"></i>'); }, 1500);
+        } catch(e) {}
+    }
+
+    function regenerateHash() {
+        var btnId = $('#modal-button-id').val();
+        if (!btnId) return;
+        if (!confirm('Regenerate the API hash? The old URL will stop working immediately.')) return;
+        $.ajax({
+            type: 'POST', url: 'ajax.php', dataType: 'json',
+            data: { action: 'regenerate_button_hash', button_id: btnId, csrf_token: CSRF_TOKEN },
+            success: function(data) {
+                if (data.type !== 'success') { alert(data.message || 'Error'); return; }
+                var newUrl = window.location.href.replace(/\/[^\/]*$/, '/api.php?hash=' + data.button_hash);
+                $('#modal-api-hash').val(data.button_hash);
+                $('#modal-api-url').val(newUrl);
+            },
+            error: function() { alert('Error regenerating hash'); }
         });
     }
 
@@ -287,6 +326,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                         $icon    = htmlspecialchars($button['button_icon']    ?? '',         ENT_QUOTES, 'UTF-8');
                         $idx     = (int) $index;
                         $direct  = !empty($button['button_direct']);
+                        $has_api = !empty($button['button_hash']);
                         $onclick = $direct
                             ? 'executeDirectButton(' . $idx . ', this)'
                             : 'executeButton(' . $idx . ', ' . htmlspecialchars(json_encode($button['button_title'] ?? 'Untitled'), ENT_QUOTES, 'UTF-8') . ', ' . htmlspecialchars(json_encode($button['button_command'] ?? ''), ENT_QUOTES, 'UTF-8') . ')';
@@ -319,6 +359,14 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                                             <i class="fa fa-edit"></i> Edit
                                         </a>
                                     </li>
+                                    <?php if ($has_api): ?>
+                                    <li>
+                                        <a href="#" onclick="editButton(<?php echo $idx; ?>); return false;"
+                                           title="Has API URL — open Edit to copy it">
+                                            <i class="fa fa-link"></i> API URL
+                                        </a>
+                                    </li>
+                                    <?php endif; ?>
                                     <li role="separator" class="divider"></li>
                                     <li>
                                         <a href="#" onclick="deleteButton(<?php echo $idx; ?>); return false;" class="text-danger">
@@ -458,7 +506,29 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                         </div>
                     </div>
 
-                    <div class="alert alert-warning" role="alert">
+                    <div id="modal-api-section" style="display:none">
+                        <hr style="margin:10px 0">
+                        <label><i class="fa fa-link"></i> API URL <small class="text-muted">(GET to execute this button)</small></label>
+                        <div class="input-group" style="margin-bottom:6px">
+                            <input type="text" class="form-control input-sm" id="modal-api-url" readonly
+                                   onclick="this.select()" style="font-family:monospace; font-size:11px">
+                            <span class="input-group-btn">
+                                <button type="button" class="btn btn-default btn-sm" title="Copy URL"
+                                        onclick="copyApiUrl()">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                            </span>
+                        </div>
+                        <input type="hidden" id="modal-api-hash">
+                        <button type="button" class="btn btn-xs btn-warning" onclick="regenerateHash()">
+                            <i class="fa fa-refresh"></i> Regenerate hash
+                        </button>
+                        <span class="text-muted" style="font-size:11px; margin-left:6px">
+                            Invalidates the old URL immediately.
+                        </span>
+                    </div>
+
+                    <div class="alert alert-warning" style="margin-top:10px" role="alert">
                         <i class="fa fa-exclamation-triangle"></i>
                         Commands run with the SSH user's permissions. Only save commands you trust.
                     </div>
