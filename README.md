@@ -18,10 +18,13 @@ More screenshots in the [screenshots folder](https://github.com/gumslone/GumCP/b
 - **Services** — list all system services with their status; start or stop any service with one click (loads asynchronously so the page appears instantly)
 - **Processes** — browse running processes sorted by memory usage; kill by PID or name
 - **GPIO control** — view and toggle pin mode (IN/OUT), voltage (HIGH/LOW) and pull-up/down for all header pins; auto-detects WiringPi (Pi 1–4) or raspi-gpio (Pi 5)
-- **Command Buttons** — create custom one-click buttons for any shell command (restart a service, run a script, toggle a GPIO pin, etc.); output shown inline in a modal
+- **Command Buttons** — create custom one-click buttons for any shell command; choose between a confirmation modal or direct execution with inline output; drag to reorder
+- **Button API** — every button gets a unique secret URL; call it from curl, Home Assistant, or any automation tool without logging in
 - **Actions** — execute arbitrary shell commands over SSH; run commands in the background with output saved to a log file; reboot
 - **phpinfo** — view PHP configuration directly from the browser
 - **System Check** — built-in diagnostic page (`check.php`) that verifies PHP extensions, directory permissions, SSH connectivity and GPIO tools; Fix buttons repair common issues over SSH without touching the terminal
+- **Menu reorder** — drag and drop navbar items into any order; preference saved automatically
+- **Authentication** — optional login page, HTTP Basic Auth, or both simultaneously with separate credentials
 - **Optional modules** — File Manager, Database Manager, TeHyBug sensor support (temperature, humidity, barometric pressure)
 
 ## Compatibility
@@ -126,20 +129,91 @@ define('SSH_PORT', '22');        // SSH port
 define('SSH_USER', 'pi');        // SSH username
 define('SSH_PASS', 'raspberry'); // SSH password
 
-define('LOGIN_REQUIRED', false); // set true to enable the login page
+define('LOGIN_REQUIRED', false); // true = require login via the login page
 define('LOGIN_USER', 'pi');
 define('LOGIN_PASS', 'raspberry');
+
+define('BASIC_AUTH', false);     // true = also accept HTTP Basic Auth
+define('BASIC_AUTH_USER', 'api');
+define('BASIC_AUTH_PASS', 'secret');
 ```
 
 ---
 
 ## Upgrade
 
-`include/config.php` is **not tracked by git** — your credentials and settings are preserved across upgrades automatically.
+`include/config.php`, `buttons/` and `command_logs/` are **not tracked by git** — your credentials, buttons and logs are preserved across upgrades automatically.
 
 ```bash
 cd /var/www/html/GumCP
 sudo git pull origin master
+```
+
+---
+
+## Authentication
+
+GumCP supports three modes, configurable independently:
+
+| Mode | Config | Description |
+|---|---|---|
+| Open | both `false` | No login required (local network use) |
+| Login page | `LOGIN_REQUIRED=true` | Browser redirected to login form |
+| Basic Auth | `BASIC_AUTH=true` | Browser shows native credentials dialog; curl/API clients send `Authorization` header |
+| Both | both `true` | Either method grants access; separate credentials for each |
+
+```php
+// Login page
+define('LOGIN_REQUIRED', true);
+define('LOGIN_USER', 'admin');
+define('LOGIN_PASS', 'changeme');
+
+// HTTP Basic Auth (separate credentials — useful for API/curl access)
+define('BASIC_AUTH', true);
+define('BASIC_AUTH_USER', 'api');
+define('BASIC_AUTH_PASS', 'secret');
+```
+
+---
+
+## Command Buttons
+
+Create one-click buttons for any shell command from the **Buttons** page.
+
+### Execution modes
+
+| Mode | Behaviour |
+|---|---|
+| Modal (default) | Click opens a dialog showing the command; press Execute to run; output shown in the dialog |
+| Direct | Click runs immediately; output appears inline below the button |
+
+Toggle between modes with the **Direct execution** checkbox when creating or editing a button.
+
+### Button API
+
+Every button gets a unique secret hash. Use it to trigger the button from any HTTP client without logging in:
+
+```bash
+curl http://<your-pi-ip>/GumCP/api.php?hash=<32-char-hash>
+```
+
+Response:
+
+```json
+{"success": true, "button": "Restart Apache", "output": ""}
+```
+
+The API URL is shown in the button's Edit dialog. Use **Regenerate hash** to invalidate an old URL and get a new one.
+
+Every API call is logged to `command_logs/api_calls.log` (JSON lines) with timestamp, IP, user-agent, and command output.
+
+**Example: trigger from Home Assistant**
+
+```yaml
+rest_command:
+  restart_apache:
+    url: "http://192.168.1.10/GumCP/api.php?hash=a3f8c2d1e4b79056..."
+    method: GET
 ```
 
 ---
@@ -194,6 +268,15 @@ Or use the System Check page's Fix button.
 - **Pi 1–4:** Install WiringPi (see above) and verify with `gpio readall`
 - **Pi 5:** Install `raspi-gpio`: `sudo apt-get install -y raspi-gpio` and verify with `raspi-gpio get`
 
+### Basic Auth not working (login page still shown)
+
+Apache strips the `Authorization` header by default. The included `.htaccess` passes it through via `RewriteRule`. Make sure `mod_rewrite` is enabled:
+
+```bash
+sudo a2enmod rewrite
+sudo systemctl restart apache2
+```
+
 ### TeHyBug module
 
 TeHyBug is a low-power temperature/humidity/pressure Wi-Fi tracker available at [Tindie](https://www.tindie.com/stores/gumslone/).
@@ -209,14 +292,10 @@ sudo apt-get install -y php-sqlite3
 ## Security Notes
 
 - **Change default credentials** in `include/config.php` before putting GumCP on any network
-- Enable `LOGIN_REQUIRED` in `config.php` for password-protected access
+- Enable `LOGIN_REQUIRED` and/or `BASIC_AUTH` in `config.php` for protected access
+- Button API hashes are secret URLs — treat them like passwords; use **Regenerate hash** if a hash is compromised
 - GumCP executes commands as the SSH user — use a dedicated user with only the permissions it needs
-- If your Pi is reachable from the internet, block GumCP from search crawlers (`/var/www/html/robots.txt`):
-
-```
-User-agent: *
-Disallow: /GumCP/
-```
+- `robots.txt` is included and blocks all search crawlers from indexing GumCP
 
 ---
 
