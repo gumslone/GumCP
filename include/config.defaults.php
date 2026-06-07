@@ -19,4 +19,4 @@ defined('BASIC_AUTH_PASS') || define('BASIC_AUTH_PASS', 'secret');
 
 defined('GUMCP_DEBUG')          || define('GUMCP_DEBUG',          false);
 
-defined('BUTTON_API_ENABLED')   || define('BUTTON_API_ENABLED',   false);
+defined('BUTTON_API_ENABLED')   || define('BUTTON_API_ENABLED',   true);
