@@ -386,45 +386,6 @@ $dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
 
             <hr>
 
-            <!-- Reboot -->
-            <form method="post" onsubmit="return confirm('Reboot the Raspberry Pi now?')">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
-                <input type="hidden" name="action"     value="reboot">
-                <div class="form-group row">
-                    <label class="col-sm-3 control-label">Reboot Raspberry Pi</label>
-                    <div class="col-sm-4">
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fa fa-refresh"></i> Reboot
-                        </button>
-                    </div>
-                </div>
-            </form>
-
-            <hr>
-
-            <!-- Update from GitHub -->
-            <form method="post" onsubmit="return confirm('Pull the latest version from GitHub now?\n\nThis runs: git pull origin master')">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
-                <input type="hidden" name="action"     value="git_pull">
-                <div class="form-group row">
-                    <label class="col-sm-3 control-label">
-                        Update GumCP
-                        <small class="text-muted"><br>from GitHub</small>
-                    </label>
-                    <div class="col-sm-6">
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fa fa-cloud-download"></i> Pull latest version
-                        </button>
-                        <small class="text-muted" style="display:block; margin-top:4px">
-                            Runs <code>git pull origin master</code> in <code><?php echo $dir; ?></code>.
-                            Your <code>config.php</code>, buttons and logs are preserved.
-                        </small>
-                    </div>
-                </div>
-            </form>
-
-            <hr>
-
             <!-- Advanced command -->
             <form method="post" id="advanced-command-form">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
@@ -448,6 +409,53 @@ $dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
                         <button type="submit" class="btn btn-primary">
                             <i class="fa fa-terminal"></i> Execute
                         </button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Reboot & Update -->
+    <div class="panel panel-warning" style="margin-top:10px">
+        <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-wrench"></i> System</h3>
+        </div>
+        <div class="panel-body">
+
+            <!-- Reboot -->
+            <form method="post" onsubmit="return confirm('Reboot the Raspberry Pi now?')">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="reboot">
+                <div class="form-group row" style="margin-bottom:0">
+                    <label class="col-sm-3 control-label">Reboot Raspberry Pi</label>
+                    <div class="col-sm-9">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-refresh"></i> Reboot
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Update from GitHub -->
+            <form method="post" onsubmit="return confirm('Pull the latest version from GitHub now?\n\nThis runs: git pull origin master')">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="action"     value="git_pull">
+                <div class="form-group row" style="margin-bottom:0">
+                    <label class="col-sm-3 control-label">
+                        Update GumCP
+                        <small class="text-muted"><br>from GitHub</small>
+                    </label>
+                    <div class="col-sm-9">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fa fa-cloud-download"></i> Pull latest version
+                        </button>
+                        <small class="text-muted" style="display:block; margin-top:4px">
+                            Runs <code>git pull origin master</code> in <code><?php echo $dir; ?></code>.
+                            Your <code>config.php</code>, buttons and logs are preserved.
+                        </small>
                     </div>
                 </div>
             </form>
