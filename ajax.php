@@ -115,6 +115,7 @@ function sanitize_button(array $post): array {
         'button_icon'    => preg_replace('/[^a-z0-9\-]/', '', strtolower($post['button_icon'] ?? '')),
         'button_style'   => in_array($post['button_style'] ?? '', $styles, true) ? $post['button_style'] : 'btn-default',
         'button_size'    => in_array($post['button_size']  ?? '', $sizes,  true) ? $post['button_size']  : 'btn-md',
+        'button_direct'  => !empty($post['button_direct']) ? 1 : 0,
     ];
 }
 

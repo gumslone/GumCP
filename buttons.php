@@ -62,6 +62,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
         $('#button-modal .modal-title').text(title);
         $('#button-modal-form')[0].reset();
         $('#modal-button-id').val(buttonId !== undefined ? buttonId : '');
+        $('#modal-button-direct').prop('checked', false);
         $('#button-modal').modal('show');
     }
 
@@ -89,6 +90,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                 $('#modal-button-icon').val(data.button_icon    || '');
                 $('#modal-button-style').val(data.button_style  || 'btn-default');
                 $('#modal-button-size').val(data.button_size   || 'btn-md');
+                $('#modal-button-direct').prop('checked', !!data.button_direct);
             },
             error: function() {
                 alert('Error loading button data');
@@ -173,6 +175,37 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
         });
     }
 
+    /* ── direct execute (no modal, inline output) ──────────────────────── */
+    function executeDirectButton(buttonId, triggerEl) {
+        var $btn    = $(triggerEl);
+        var $wrap   = $('#direct-output-' + buttonId);
+        var $pre    = $wrap.find('pre');
+        var origHtml = $btn.html();
+
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+        $wrap.hide();
+        $pre.removeClass('text-success text-danger').text('');
+
+        $.ajax({
+            type: 'POST',
+            url: 'ajax.php',
+            data: { action: 'execute_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
+            dataType: 'json',
+            success: function(data) {
+                var ok     = data.type === 'success';
+                var output = (data.output || '').trim() || (ok ? '(no output)' : data.message || 'Command failed');
+                $pre.addClass(ok ? 'text-success' : 'text-danger').text(output);
+                $wrap.show();
+                $btn.prop('disabled', false).html(origHtml);
+            },
+            error: function() {
+                $pre.addClass('text-danger').text('Request failed — could not reach the server.');
+                $wrap.show();
+                $btn.prop('disabled', false).html(origHtml);
+            }
+        });
+    }
+
     /* ── delete ─────────────────────────────────────────────────────────── */
     function deleteButton(buttonId) {
         if (!confirm('Delete this button?')) return;
@@ -253,15 +286,19 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                         $command = htmlspecialchars($button['button_command'] ?? '',         ENT_QUOTES, 'UTF-8');
                         $icon    = htmlspecialchars($button['button_icon']    ?? '',         ENT_QUOTES, 'UTF-8');
                         $idx     = (int) $index;
+                        $direct  = !empty($button['button_direct']);
+                        $onclick = $direct
+                            ? 'executeDirectButton(' . $idx . ', this)'
+                            : 'executeButton(' . $idx . ', ' . htmlspecialchars(json_encode($button['button_title'] ?? 'Untitled'), ENT_QUOTES, 'UTF-8') . ', ' . htmlspecialchars(json_encode($button['button_command'] ?? ''), ENT_QUOTES, 'UTF-8') . ')';
                     ?>
                         <div class="btn-draggable" data-idx="<?php echo $idx; ?>"
-                             draggable="true" style="display:inline-block; margin:5px; cursor:grab">
+                             draggable="true" style="display:inline-block; margin:5px; cursor:grab; vertical-align:top">
                         <div class="btn-group" role="group">
                             <button
                                 id="execute-btn-<?php echo $idx; ?>"
                                 type="button"
                                 class="btn <?php echo $style; ?> <?php echo $size; ?>"
-                                onclick="executeButton(<?php echo $idx; ?>, <?php echo htmlspecialchars(json_encode($button['button_title'] ?? 'Untitled'), ENT_QUOTES, 'UTF-8'); ?>, <?php echo htmlspecialchars(json_encode($button['button_command'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)">
+                                onclick="<?php echo $onclick; ?>">
                                 <?php if ($icon !== ''): ?>
                                     <i class="fa <?php echo $icon; ?>" aria-hidden="true"></i>
                                 <?php endif; ?>
@@ -291,6 +328,15 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                                 </ul>
                             </div>
                         </div>
+                        <?php if ($direct): ?>
+                        <div id="direct-output-<?php echo $idx; ?>"
+                             style="display:none; margin-top:4px; max-width:400px">
+                            <pre style="font-size:11px; max-height:150px; overflow-y:auto;
+                                        margin:0; padding:6px; background:#f5f5f5;
+                                        border:1px solid #ddd; border-radius:3px;
+                                        word-break:break-all; white-space:pre-wrap"></pre>
+                        </div>
+                        <?php endif; ?>
                         </div><!-- /.btn-draggable -->
                     <?php endforeach; ?>
                 </div>
@@ -400,6 +446,15 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                                     <option value="btn-xs">Extra Small</option>
                                 </select>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" id="modal-button-direct" name="button_direct" value="1">
+                                <strong>Direct execution</strong> — run immediately on click, show output inline (no confirmation modal)
+                            </label>
                         </div>
                     </div>
 
