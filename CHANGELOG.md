@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.2.0] — 2026-06-07
+
+### Added
+- **Update from GitHub** — new button on the Actions page pulls the latest version without needing a terminal. A dropdown lets you choose between the master branch or any specific release tag; the correct `git` command is shown in the confirmation dialog before anything runs.
+- **uninstall.sh** — interactive uninstall script; offers to back up `config.php`, buttons and logs to `~/gumcp_backup_<timestamp>/` before removing `/var/www/html/GumCP/`. Leaves Apache, PHP and WiringPi untouched.
+
+### Changed
+- Reboot and Update GumCP moved into a dedicated **System** panel on the Actions page, separate from the process/service actions.
+
+---
+
 ## [2.1.1] — 2026-06-07
 
 ### Fixed
