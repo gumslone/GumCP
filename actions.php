@@ -90,7 +90,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'git_pull':
-                $cmd = 'cd ' . escapeshellarg(__DIR__) . ' && sudo git pull origin master 2>&1';
+                $git_target = trim((string)($_POST['git_target'] ?? 'master'));
+                $base       = 'cd ' . escapeshellarg(__DIR__);
+                if ($git_target === 'master') {
+                    $cmd = $base . ' && sudo git pull origin master 2>&1';
+                } else {
+                    // Validate: tags are version strings like 1.0.0 or v1.2.3
+                    if (preg_match('/^v?[0-9]+\.[0-9]+(\.[0-9]+)?$/', $git_target)) {
+                        $cmd = $base
+                            . ' && sudo git fetch --tags origin 2>&1'
+                            . ' && sudo git reset --hard ' . escapeshellarg('refs/tags/' . $git_target) . ' 2>&1';
+                    } else {
+                        $message      = 'Invalid release tag.';
+                        $message_type = 'danger';
+                    }
+                }
                 break;
 
             case 'cmd':
@@ -173,6 +187,16 @@ if (is_dir($command_logs_dir)) {
 
 $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 $dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
+
+// ── Available git tags (for the update dropdown) ──────────────────────────────
+$git_tags = [];
+$raw_tags = shell_exec('git -C ' . escapeshellarg(__DIR__) . ' tag --sort=-v:refname 2>/dev/null');
+if ($raw_tags !== null) {
+    foreach (explode("\n", trim($raw_tags)) as $t) {
+        $t = trim($t);
+        if ($t !== '') $git_tags[] = $t;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -189,6 +213,16 @@ $dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
     <script src="./static/js.php" type="text/javascript"></script>
     <script>
     var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+
+    function confirmGitUpdate() {
+        var sel = document.getElementById('git-target');
+        var val = sel.value;
+        var label = sel.options[sel.selectedIndex].text.trim();
+        var msg = val === 'master'
+            ? 'Pull the latest master branch from GitHub?\n\nRuns: git pull origin master'
+            : 'Switch to ' + label + ' from GitHub?\n\nRuns: git fetch --tags && git reset --hard refs/tags/' + val + '\n\nThis will overwrite any local file changes.';
+        return confirm(msg);
+    }
 
     $(document).ready(function() {
 
@@ -440,7 +474,7 @@ $dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
             <hr>
 
             <!-- Update from GitHub -->
-            <form method="post" onsubmit="return confirm('Pull the latest version from GitHub now?\n\nThis runs: git pull origin master')">
+            <form method="post" id="git-update-form" onsubmit="return confirmGitUpdate()">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                 <input type="hidden" name="action"     value="git_pull">
                 <div class="form-group row" style="margin-bottom:0">
@@ -449,11 +483,22 @@ $dir  = htmlspecialchars(__DIR__, ENT_QUOTES, 'UTF-8');
                         <small class="text-muted"><br>from GitHub</small>
                     </label>
                     <div class="col-sm-9">
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fa fa-cloud-download"></i> Pull latest version
-                        </button>
+                        <div class="input-group" style="max-width:320px">
+                            <select name="git_target" id="git-target" class="form-control">
+                                <option value="master">Latest (master branch)</option>
+                                <?php foreach ($git_tags as $tag): ?>
+                                    <option value="<?php echo htmlspecialchars($tag, ENT_QUOTES, 'UTF-8'); ?>">
+                                        Release <?php echo htmlspecialchars($tag, ENT_QUOTES, 'UTF-8'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fa fa-cloud-download"></i> Update
+                                </button>
+                            </span>
+                        </div>
                         <small class="text-muted" style="display:block; margin-top:4px">
-                            Runs <code>git pull origin master</code> in <code><?php echo $dir; ?></code>.
                             Your <code>config.php</code>, buttons and logs are preserved.
                         </small>
                     </div>
