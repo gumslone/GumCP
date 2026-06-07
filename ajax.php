@@ -127,6 +127,11 @@ switch ($action) {
             $out = err('Button not found');
             break;
         }
+        // Backfill hash for buttons created before the API feature was added
+        if (empty($buttons[$idx]['button_hash'])) {
+            $buttons[$idx]['button_hash'] = bin2hex(random_bytes(16));
+            save_buttons($buttons);
+        }
         $out = $buttons[$idx]; // return raw button data (not a type/message envelope)
         break;
 
