@@ -1,62 +1,48 @@
 <?php
-$offset = 60 * 60 * 24 * 30; // Cache for a day
-header("Content-type: text/javascript");
-header ("Cache-Control: max-age=" . $offset . ", must-revalidate");
-header ("Expires: " . gmdate ("D, d M Y H:i:s", time() + $offset) . " GMT");
-function compress($buffer) {
-	/* remove comments and empty lines */
-	//$buffer = preg_replace('!/\*.*?\*/!s', '', $buffer);
-	#$pattern = '/(?:(?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:(?<!\:|\\\|\')\/\/.*))/';
-	#$buffer = preg_replace($pattern, '', $buffer);
-	//$buffer = preg_replace('/(?:(?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:(?<!\:|\\\)\/\/[^"\'].*))/', '', $buffer);
-	//$buffer = preg_replace( "/(?:(?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:(?<!\:)\/\/.*))/", "", $buffer ); //Yancharuk's code/regex
-	//$buffer = preg_replace("/\/\*[\s\S]*?\*\//", '', $buffer);
+declare(strict_types=1);
 
-	//$buffer = preg_replace('/\/\*[*.\S\s]+[^*\/]/s', '', $buffer);
-	
-	$replace = array(
-    '#\'([^\n\']*?)/\*([^\n\']*)\'#' => "'\1/'+\'\'+'*\2'", // remove comments from ' strings
-    '#\"([^\n\"]*?)/\*([^\n\"]*)\"#' => '"\1/"+\'\'+"*\2"', // remove comments from " strings
-    '#/\*.*?\*/#s'            => "",      // strip C style comments
-    '#[\r\n]+#'               => "\n",    // remove blank lines and \r's
-    '#\n([ \t]*//.*?\n)*#s'   => "\n",    // strip line comments (whole line only)
-    '#([^\\])//([^\'"\n]*)\n#s' => "\\1\n",
-                                          // strip line comments
-                                          // (that aren't possibly in strings or regex's)
-    '#\n\s+#'                 => "\n",    // strip excess whitespace
-    '#\s+\n#'                 => "\n",    // strip excess whitespace
-    '#(//[^\n]*\n)#s'         => "\\1\n", // extra line feed after any comments left
-                                          // (important given later replacements)
-    '#/([\'"])\+\'\'\+([\'"])\*#' => "/*" // restore comments in strings
-  );
+// ── Cache headers ─────────────────────────────────────────────────────────────
+$offset = 60 * 60 * 24 * 30; // 30 days
+header('Content-Type: text/javascript; charset=UTF-8');
+header('Cache-Control: max-age=' . $offset . ', must-revalidate');
+header('Expires: ' . gmdate('D, d M Y H:i:s', time() + $offset) . ' GMT');
 
-  #$search = array_keys( $replace );
-  #$buffer = preg_replace( $search, $replace, $buffer );
-	#$buffer = preg_replace("@/\*(.*?)\*/@s","\n",$buffer);
-	$buffer = preg_replace('(// .+)', '', $buffer);
-	$buffer = str_replace(array("//\r\n", "//\n", "\t"), '', $buffer);
-	$buffer = preg_replace('/\n\s*\n/', "\n", $buffer);
-	//$buffer = preg_replace('/\s+/', ' ', $buffer);
-	
-	return $buffer;
-}
-ob_start();
-include('./js/wow.min.js');
-include('./js/jquery-2.2.4.min.js');
-include('./js/bootstrap.min.js');
-include('./js/bootstrap-switch.js');
-include('./js/jquery.easing.min.js');
-include('./js/jquery.easypiechart.min.js');
-include('./js/gumcp.js');
-
-$out = ob_get_contents();
-ob_end_clean();
-$out = compress($out);
-if(strstr($_SERVER["HTTP_ACCEPT_ENCODING"],"gzip"))
+// ── Light compressor ──────────────────────────────────────────────────────────
+// The bundled files are already minified; this pass only trims line comments
+// and collapses blank lines that may appear at file boundaries.
+function compress_js(string $js): string
 {
-	header("Content-Encoding: gzip");
-	header("Vary: Accept-Encoding");
-	ob_start('ob_gzhandler');
+    // Strip standalone // line comments (whole lines only — avoids touching
+    // protocol strings like "https://" inside code or minified expressions).
+    $js = (string)preg_replace('/^\s*\/\/[^\n]*$/m', '', $js);
+    // Remove leftover bare "//" on their own line (from comment-only lines)
+    $js = str_replace(["//\r\n", "//\n"], "\n", $js);
+    // Collapse consecutive blank lines to one
+    $js = (string)preg_replace('/\n{3,}/', "\n\n", $js);
+    return trim($js);
 }
-echo $out;
-?>
+
+// ── Bundle ────────────────────────────────────────────────────────────────────
+ob_start();
+include __DIR__ . '/js/wow.min.js';
+include __DIR__ . '/js/jquery-2.2.4.min.js';
+include __DIR__ . '/js/bootstrap.min.js';
+include __DIR__ . '/js/bootstrap-switch.js';
+include __DIR__ . '/js/jquery.easing.min.js';
+include __DIR__ . '/js/jquery.easypiechart.min.js';
+include __DIR__ . '/js/gumcp.js';
+$out = (string)ob_get_clean();
+
+$out = compress_js($out);
+
+// ── Output (with optional gzip) ───────────────────────────────────────────────
+$accept = (string)($_SERVER['HTTP_ACCEPT_ENCODING'] ?? '');
+if (strpos($accept, 'gzip') !== false) {
+    header('Content-Encoding: gzip');
+    header('Vary: Accept-Encoding');
+    ob_start('ob_gzhandler');
+    echo $out;
+    ob_end_flush();
+} else {
+    echo $out;
+}

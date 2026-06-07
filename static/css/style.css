@@ -156,3 +156,72 @@ body {
 .angular .chart {
   margin-top: 0;
 }
+
+/*
+ * Footer
+ */
+.footer {
+  margin-top: 40px;
+  padding: 15px 0;
+  border-top: 1px solid #e5e5e5;
+  color: #777;
+}
+
+/*
+ * Drag-and-drop sortable buttons
+ */
+.btn-draggable {
+  display: inline-block;
+  margin: 5px;
+  vertical-align: top;
+  cursor: grab;
+}
+.btn-draggable:active {
+  cursor: grabbing;
+}
+
+/*
+ * Direct-execution inline output
+ */
+.direct-output {
+  display: none;
+  margin-top: 4px;
+  max-width: 400px;
+}
+.direct-output pre {
+  font-size: 11px;
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+/*
+ * Menu reorder modal list
+ */
+#menu-sortable-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#menu-sortable-list li {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin-bottom: 4px;
+  background: #fff;
+  cursor: grab;
+}
+#menu-sortable-list li:active {
+  cursor: grabbing;
+}
+#menu-sortable-list li.menu-item-fixed {
+  background: #f5f5f5;
+  color: #999;
+  cursor: default;
+}

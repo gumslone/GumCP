@@ -418,88 +418,7 @@ $temp_color = $sys['cpu_temp'] >= 80 ? 'danger' : ($sys['cpu_temp'] >= 70 ? 'war
 </footer>
 
 <script>
-// Live-update stat boxes and bars via server_info AJAX — no full page reload needed.
-function barColor(pct) {
-    return pct >= 90 ? 'danger' : (pct >= 70 ? 'warning' : 'success');
-}
-
-function setBar(id, pct, label) {
-    var c = barColor(pct);
-    var $b = $('#' + id);
-    $b.css('width', Math.min(pct, 100) + '%')
-      .attr('aria-valuenow', pct)
-      .text(label)
-      .removeClass('progress-bar-success progress-bar-warning progress-bar-danger')
-      .addClass('progress-bar-' + c);
-}
-
-function setStat(id, text, pct) {
-    var c = barColor(pct);
-    $('#' + id)
-      .text(text)
-      .removeClass('text-success text-warning text-danger')
-      .addClass('text-' + c);
-}
-
-function fmtKB(kb) {
-    var units = ['KB', 'MB', 'GB', 'TB'], i = 0, v = kb;
-    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
-    return v.toFixed(2) + ' ' + units[i];
-}
-
-function refreshStats() {
-    $.ajax({
-        type: 'GET',
-        url: 'ajax.php',
-        data: { action: 'server_info' },
-        dataType: 'json',
-        success: function(d) {
-            if (!d || d.type === 'error') return;
-
-            // Stat boxes
-            var tempColor = d.temp >= 80 ? 'danger' : (d.temp >= 70 ? 'warning' : 'success');
-            setStat('stat-cpu',  d.cpuusage + '%',  d.cpuusage);
-            setStat('stat-mem',  d.memory_percentage + '%', d.memory_percentage);
-            setStat('stat-disk', d.disk_percentage + '%',   d.disk_percentage);
-            $('#stat-temp')
-                .text(d.temp + '°C')
-                .removeClass('text-success text-warning text-danger')
-                .addClass('text-' + tempColor);
-
-            // Progress bars
-            setBar('bar-cpu',  d.cpuusage, d.cpuusage + '%');
-            var memLabel = d.memory_percentage + '% (' + fmtKB(d.memory_used) + ' / ' + fmtKB(d.memory_total) + ')';
-            setBar('bar-mem',  d.memory_percentage, memLabel);
-            setBar('bar-disk', d.disk_percentage,
-                d.disk_percentage + '% (' + d.disk_used + ' / ' + d.disk_total + ')');
-            setBar('bar-temp', Math.min(d.temp, 100), d.temp + '°C');
-
-            // Memory details
-            $('#mem-total').text(fmtKB(d.memory_total));
-            $('#mem-used').text(fmtKB(d.memory_used));
-            $('#mem-buffers').text(fmtKB(d.memory_buffers));
-            $('#mem-cached').text(fmtKB(d.memory_cached));
-
-            // Info table
-            $('#info-uptime').text(d.uptime);
-            $('#info-date').text(d.date);
-            $('#info-processes').text(d.processes);
-            $('#info-load').text(d.load0 + ', ' + d.load1 + ', ' + d.load2);
-
-            // Pre blocks (escape server output before inserting)
-            function esc(s) {
-                return $('<div>').text(s || '').html();
-            }
-            $('#info-top').html(esc(d.top));
-            $('#info-users').html(esc(d.users));
-            $('#info-disks').html(esc(d.disks));
-        }
-    });
-}
-
-$(function() {
-    setInterval(refreshStats, 30000);
-});
+var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
 </script>
 
 <?php
@@ -535,20 +454,17 @@ foreach ($gumcp_modules as $k => $m) {
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 <h4 class="modal-title"><i class="fa fa-bars"></i> Reorder Menu</h4>
             </div>
-            <div class="modal-body" style="padding:10px">
+            <div class="modal-body">
                 <p class="text-muted" style="font-size:12px; margin-bottom:8px">
                     Drag items to reorder. Dashboard is always first.
                 </p>
-                <ul id="menu-sortable-list" style="list-style:none; padding:0; margin:0; cursor:grab">
-                    <li style="padding:7px 10px; border:1px solid #ddd; border-radius:3px;
-                                margin-bottom:4px; background:#f5f5f5; color:#999; cursor:default">
+                <ul id="menu-sortable-list">
+                    <li class="menu-item-fixed">
                         <i class="fa fa-home fa-fw"></i> Dashboard
                     </li>
                     <?php foreach ($modal_modules as $key => $mod): ?>
                     <li data-key="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"
-                        draggable="true"
-                        style="padding:7px 10px; border:1px solid #ddd; border-radius:3px;
-                               margin-bottom:4px; background:#fff; cursor:grab">
+                        draggable="true">
                         <i class="fa fa-bars fa-fw text-muted"></i>
                         <?php echo htmlspecialchars($mod['module_title'] ?? $key, ENT_QUOTES, 'UTF-8'); ?>
                     </li>
@@ -565,82 +481,6 @@ foreach ($gumcp_modules as $k => $m) {
         </div>
     </div>
 </div>
-
-<script>
-function openMenuReorder() {
-    $('#menu-reorder-modal').modal('show');
-}
-
-// HTML5 drag-and-drop reorder
-(function() {
-    var list, dragged;
-
-    document.addEventListener('DOMContentLoaded', function() {
-        list = document.getElementById('menu-sortable-list');
-        if (!list) return;
-
-        list.addEventListener('dragstart', function(e) {
-            dragged = e.target.closest('li[data-key]');
-            if (!dragged) { e.preventDefault(); return; }
-            e.dataTransfer.effectAllowed = 'move';
-            setTimeout(function() { dragged.style.opacity = '0.4'; }, 0);
-        });
-
-        list.addEventListener('dragend', function() {
-            if (dragged) dragged.style.opacity = '';
-            dragged = null;
-            list.querySelectorAll('li').forEach(function(li) {
-                li.style.borderColor = '#ddd';
-            });
-        });
-
-        list.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            var over = e.target.closest('li[data-key]');
-            if (!over || over === dragged) return;
-            list.querySelectorAll('li[data-key]').forEach(function(li) {
-                li.style.borderColor = '#ddd';
-            });
-            over.style.borderColor = '#66afe9';
-        });
-
-        list.addEventListener('drop', function(e) {
-            e.preventDefault();
-            var over = e.target.closest('li[data-key]');
-            if (!over || !dragged || over === dragged) return;
-            var items = Array.from(list.querySelectorAll('li'));
-            var dragIdx = items.indexOf(dragged);
-            var overIdx = items.indexOf(over);
-            if (dragIdx < overIdx) {
-                list.insertBefore(dragged, over.nextSibling);
-            } else {
-                list.insertBefore(dragged, over);
-            }
-        });
-    });
-})();
-
-function saveMenuOrder() {
-    var btn = document.getElementById('menu-reorder-save-btn');
-    btn.disabled = true;
-    var order = [];
-    document.querySelectorAll('#menu-sortable-list li[data-key]').forEach(function(li) {
-        order.push(li.getAttribute('data-key'));
-    });
-    $.ajax({
-        type: 'POST',
-        url: './ajax.php?action=save_menu_order',
-        dataType: 'json',
-        data: { order: order, csrf_token: <?php echo json_encode($_SESSION['csrf_token']); ?> },
-        success: function() { location.reload(); },
-        error: function() {
-            alert('Failed to save menu order');
-            btn.disabled = false;
-        }
-    });
-}
-</script>
 
 </body>
 </html>

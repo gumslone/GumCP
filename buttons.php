@@ -55,216 +55,8 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="./static/js.php" type="text/javascript"></script>
     <script>
-    var CSRF_TOKEN       = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var CSRF_TOKEN         = <?php echo json_encode($_SESSION['csrf_token']); ?>;
     var BUTTON_API_ENABLED = <?php echo json_encode(!empty($gumcp_modules['button_api']['module_active'])); ?>;
-
-    /* ── modal helpers ──────────────────────────────────────────────────── */
-    function openButtonModal(title, buttonId) {
-        $('#button-modal .modal-title').text(title);
-        $('#button-modal-form')[0].reset();
-        $('#modal-button-id').val(buttonId !== undefined ? buttonId : '');
-        $('#modal-button-direct').prop('checked', false);
-        $('#modal-api-section').hide();
-        $('#button-modal').modal('show');
-    }
-
-    function addButton() {
-        openButtonModal('Add Command Button');
-    }
-
-    /* ── edit ───────────────────────────────────────────────────────────── */
-    function editButton(buttonId) {
-        openButtonModal('Edit Command Button', buttonId);
-
-        $.ajax({
-            type: 'POST',
-            url: 'ajax.php',
-            data: { action: 'edit_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
-            dataType: 'json',
-            success: function(data) {
-                if (data.type === 'error') {
-                    alert(data.message);
-                    $('#button-modal').modal('hide');
-                    return;
-                }
-                $('#modal-button-title').val(data.button_title   || '');
-                $('#modal-button-command').val(data.button_command || '');
-                $('#modal-button-icon').val(data.button_icon    || '');
-                $('#modal-button-style').val(data.button_style  || 'btn-default');
-                $('#modal-button-size').val(data.button_size   || 'btn-md');
-                $('#modal-button-direct').prop('checked', !!data.button_direct);
-                var hash = data.button_hash || '';
-                if (hash && BUTTON_API_ENABLED) {
-                    var apiUrl = window.location.href.replace(/\/[^\/]*$/, '/api.php?hash=' + hash);
-                    $('#modal-api-hash').val(hash);
-                    $('#modal-api-url').val(apiUrl);
-                    $('#modal-api-section').show();
-                } else {
-                    $('#modal-api-section').hide();
-                }
-            },
-            error: function() {
-                alert('Error loading button data');
-                $('#button-modal').modal('hide');
-            }
-        });
-    }
-
-    /* ── save (add + edit share the same form) ──────────────────────────── */
-    function saveButton() {
-        var $btn = $('#modal-save-btn');
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Saving...');
-
-        var formData = $('#button-modal-form').serializeArray();
-        formData.push({ name: 'csrf_token', value: CSRF_TOKEN });
-
-        $.ajax({
-            type: 'POST',
-            url: 'ajax.php',
-            data: formData,
-            dataType: 'json',
-            success: function(data) {
-                if (data.type === 'success') {
-                    $('#button-modal').modal('hide');
-                    location.reload();
-                } else {
-                    alert(data.message || 'An error occurred');
-                    $btn.prop('disabled', false).text('Save');
-                }
-            },
-            error: function() {
-                alert('Error saving button');
-                $btn.prop('disabled', false).text('Save');
-            }
-        });
-    }
-
-    /* ── execute ────────────────────────────────────────────────────────── */
-    var _execButtonId = null;
-
-    function executeButton(buttonId, title, command) {
-        _execButtonId = buttonId;
-        $('#exec-modal-title').text(title);
-        $('#exec-modal-command').text(command);
-        $('#exec-modal-output-wrap').hide();
-        $('#exec-modal-output').text('');
-        $('#exec-modal-footer-run').show();
-        $('#exec-modal-footer-close').hide().text('Close');
-        $('#exec-run-btn').prop('disabled', false).html('<i class="fa fa-play"></i> Execute');
-        $('#exec-modal').modal('show');
-    }
-
-    function runExecCommand() {
-        var buttonId = _execButtonId;
-        var $runBtn  = $('#exec-run-btn');
-        $runBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Running&hellip;');
-        $('#exec-modal-output-wrap').hide();
-
-        $.ajax({
-            type: 'POST',
-            url: 'ajax.php',
-            data: { action: 'execute_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
-            dataType: 'json',
-            success: function(data) {
-                var ok     = data.type === 'success';
-                var output = (data.output || '').trim() || (ok ? '(no output)' : data.message || 'Command failed');
-                $('#exec-modal-output')
-                    .removeClass('text-success text-danger')
-                    .addClass(ok ? 'text-success' : 'text-danger')
-                    .text(output);
-                $('#exec-modal-output-wrap').show();
-                $('#exec-modal-footer-run').hide();
-                $('#exec-modal-footer-close').show();
-            },
-            error: function() {
-                $('#exec-modal-output').removeClass('text-success text-danger').addClass('text-danger')
-                    .text('Request failed — could not reach the server.');
-                $('#exec-modal-output-wrap').show();
-                $('#exec-modal-footer-run').hide();
-                $('#exec-modal-footer-close').show();
-            }
-        });
-    }
-
-    /* ── API hash helpers ───────────────────────────────────────────────── */
-    function copyApiUrl() {
-        var $inp = $('#modal-api-url');
-        $inp[0].select();
-        try {
-            document.execCommand('copy');
-            var $btn = $inp.closest('.input-group').find('button');
-            $btn.html('<i class="fa fa-check"></i>');
-            setTimeout(function() { $btn.html('<i class="fa fa-copy"></i>'); }, 1500);
-        } catch(e) {}
-    }
-
-    function regenerateHash() {
-        var btnId = $('#modal-button-id').val();
-        if (!btnId) return;
-        if (!confirm('Regenerate the API hash? The old URL will stop working immediately.')) return;
-        $.ajax({
-            type: 'POST', url: 'ajax.php', dataType: 'json',
-            data: { action: 'regenerate_button_hash', button_id: btnId, csrf_token: CSRF_TOKEN },
-            success: function(data) {
-                if (data.type !== 'success') { alert(data.message || 'Error'); return; }
-                var newUrl = window.location.href.replace(/\/[^\/]*$/, '/api.php?hash=' + data.button_hash);
-                $('#modal-api-hash').val(data.button_hash);
-                $('#modal-api-url').val(newUrl);
-            },
-            error: function() { alert('Error regenerating hash'); }
-        });
-    }
-
-    /* ── direct execute (no modal, inline output) ──────────────────────── */
-    function executeDirectButton(buttonId, triggerEl) {
-        var $btn    = $(triggerEl);
-        var $wrap   = $('#direct-output-' + buttonId);
-        var $pre    = $wrap.find('pre');
-        var origHtml = $btn.html();
-
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
-        $wrap.hide();
-        $pre.removeClass('text-success text-danger').text('');
-
-        $.ajax({
-            type: 'POST',
-            url: 'ajax.php',
-            data: { action: 'execute_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
-            dataType: 'json',
-            success: function(data) {
-                var ok     = data.type === 'success';
-                var output = (data.output || '').trim() || (ok ? '(no output)' : data.message || 'Command failed');
-                $pre.addClass(ok ? 'text-success' : 'text-danger').text(output);
-                $wrap.show();
-                $btn.prop('disabled', false).html(origHtml);
-            },
-            error: function() {
-                $pre.addClass('text-danger').text('Request failed — could not reach the server.');
-                $wrap.show();
-                $btn.prop('disabled', false).html(origHtml);
-            }
-        });
-    }
-
-    /* ── delete ─────────────────────────────────────────────────────────── */
-    function deleteButton(buttonId) {
-        if (!confirm('Delete this button?')) return;
-
-        $.ajax({
-            type: 'POST',
-            url: 'ajax.php',
-            data: { action: 'delete_button', button_id: buttonId, csrf_token: CSRF_TOKEN },
-            dataType: 'json',
-            success: function(data) {
-                if (data.type === 'success') {
-                    location.reload();
-                } else {
-                    alert(data.message || 'Delete failed');
-                }
-            },
-            error: function() { alert('Error deleting button'); }
-        });
-    }
     </script>
 </head>
 
@@ -333,7 +125,7 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                             : 'executeButton(' . $idx . ', ' . htmlspecialchars(json_encode($button['button_title'] ?? 'Untitled'), ENT_QUOTES, 'UTF-8') . ', ' . htmlspecialchars(json_encode($button['button_command'] ?? ''), ENT_QUOTES, 'UTF-8') . ')';
                     ?>
                         <div class="btn-draggable" data-idx="<?php echo $idx; ?>"
-                             draggable="true" style="display:inline-block; margin:5px; cursor:grab; vertical-align:top">
+                             draggable="true">
                         <div class="btn-group" role="group">
                             <button
                                 id="execute-btn-<?php echo $idx; ?>"
@@ -378,12 +170,8 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
                             </div>
                         </div>
                         <?php if ($direct): ?>
-                        <div id="direct-output-<?php echo $idx; ?>"
-                             style="display:none; margin-top:4px; max-width:400px">
-                            <pre style="font-size:11px; max-height:150px; overflow-y:auto;
-                                        margin:0; padding:6px; background:#f5f5f5;
-                                        border:1px solid #ddd; border-radius:3px;
-                                        word-break:break-all; white-space:pre-wrap"></pre>
+                        <div id="direct-output-<?php echo $idx; ?>" class="direct-output">
+                            <pre></pre>
                         </div>
                         <?php endif; ?>
                         </div><!-- /.btn-draggable -->
@@ -588,66 +376,6 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
         </p>
     </div>
 </footer>
-
-<script>
-(function() {
-    var container = document.getElementById('buttons-sortable');
-    if (!container) return;
-
-    var dragged = null;
-
-    container.addEventListener('dragstart', function(e) {
-        dragged = e.target.closest('.btn-draggable');
-        if (!dragged) { e.preventDefault(); return; }
-        e.dataTransfer.effectAllowed = 'move';
-        setTimeout(function() { dragged.style.opacity = '0.4'; }, 0);
-    });
-
-    container.addEventListener('dragend', function() {
-        if (dragged) dragged.style.opacity = '';
-        dragged = null;
-        container.querySelectorAll('.btn-draggable').forEach(function(el) {
-            el.style.outline = '';
-        });
-    });
-
-    container.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        var over = e.target.closest('.btn-draggable');
-        container.querySelectorAll('.btn-draggable').forEach(function(el) {
-            el.style.outline = '';
-        });
-        if (over && over !== dragged) {
-            over.style.outline = '2px solid #66afe9';
-        }
-    });
-
-    container.addEventListener('drop', function(e) {
-        e.preventDefault();
-        var over = e.target.closest('.btn-draggable');
-        if (!over || !dragged || over === dragged) return;
-        var items = Array.from(container.querySelectorAll('.btn-draggable'));
-        if (items.indexOf(dragged) < items.indexOf(over)) {
-            container.insertBefore(dragged, over.nextSibling);
-        } else {
-            container.insertBefore(dragged, over);
-        }
-        saveButtonOrder();
-    });
-
-    function saveButtonOrder() {
-        var order = [];
-        container.querySelectorAll('.btn-draggable').forEach(function(el) {
-            order.push(el.getAttribute('data-idx'));
-        });
-        $.post('./ajax.php?action=reorder_buttons', {
-            order: order,
-            csrf_token: CSRF_TOKEN
-        }, null, 'json');
-    }
-})();
-</script>
 
 </body>
 </html>
