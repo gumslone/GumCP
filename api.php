@@ -4,33 +4,20 @@ declare(strict_types=1);
 // GumCP Button API
 // Execute a button by its hash:  GET /api.php?hash=<32-char-hex>
 // Returns JSON: {"success":true,"output":"..."} or {"success":false,"error":"..."}
+//
+// No login required — the hash is the auth token.
+// Accessible even when LOGIN_REQUIRED or BASIC_AUTH is enabled.
 
 header('Content-Type: application/json; charset=UTF-8');
 
-define('BUTTONS_FILE', __DIR__ . '/buttons/buttons.json');
-define('API_LOG_FILE', __DIR__ . '/command_logs/api_calls.log');
-
-// Load config for SSH constants (no auth gate — hash IS the token)
-// We suppress the auth gate by defining a flag before including config.
+// Tell config.php to skip the auth gate for this request.
 define('GUMCP_API_REQUEST', true);
 
+require_once(__DIR__ . '/include/config.php');
 require_once(__DIR__ . '/include/ssh.php');
 
-// ── Load config constants only (skip auth gate) ───────────────────────────────
-// We need SSH_PORT, SSH_USER, SSH_PASS — parse them without triggering the gate.
-$_config_raw = @file_get_contents(__DIR__ . '/include/config.php');
-if ($_config_raw !== false) {
-    // Extract define() calls for SSH constants only
-    preg_match_all("/define\s*\(\s*'(SSH_PORT|SSH_USER|SSH_PASS)'\s*,\s*'([^']*)'\s*\)/", $_config_raw, $_m);
-    foreach ($_m[1] as $i => $name) {
-        if (!defined($name)) define($name, $_m[2][$i]);
-    }
-}
-unset($_config_raw, $_m);
-
-if (!defined('SSH_PORT')) define('SSH_PORT', '22');
-if (!defined('SSH_USER')) define('SSH_USER', 'pi');
-if (!defined('SSH_PASS')) define('SSH_PASS', 'raspberry');
+define('BUTTONS_FILE', __DIR__ . '/buttons/buttons.json');
+define('API_LOG_FILE', __DIR__ . '/command_logs/api_calls.log');
 
 // ── Validate hash ─────────────────────────────────────────────────────────────
 $hash = trim((string)($_REQUEST['hash'] ?? ''));

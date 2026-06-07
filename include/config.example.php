@@ -100,8 +100,10 @@ if (!empty($_POST['login_user']) && !empty($_POST['login_pass'])) {
 }
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
+// Skipped for API requests — api.php authenticates via button hash instead.
 
-$_gumcp_need_auth = (LOGIN_REQUIRED === true) || (defined('BASIC_AUTH') && BASIC_AUTH === true);
+$_gumcp_need_auth = !defined('GUMCP_API_REQUEST')
+                 && ((LOGIN_REQUIRED === true) || (defined('BASIC_AUTH') && BASIC_AUTH === true));
 
 if ($_gumcp_need_auth) {
     $authed = false;
