@@ -97,6 +97,21 @@ $sections['Directories'] = [
         is_readable($config_file) ? 'readable' : 'cannot read config — GumCP will not load',
         'gumcp_chown'
     ),
+    chk(
+        file_exists($buttons_dir . '/.htaccess'),
+        'buttons/ protected from web access',
+        file_exists($buttons_dir . '/.htaccess') ? '.htaccess present' : 'missing .htaccess — buttons.json may be publicly downloadable'
+    ),
+    chk(
+        file_exists($logs_dir . '/.htaccess'),
+        'command_logs/ protected from web access',
+        file_exists($logs_dir . '/.htaccess') ? '.htaccess present' : 'missing .htaccess — log files may be publicly downloadable'
+    ),
+    chk(
+        file_exists(__DIR__ . '/include/config.defaults.php'),
+        'include/config.defaults.php present',
+        file_exists(__DIR__ . '/include/config.defaults.php') ? 'present' : 'missing — old config.php may lack new settings'
+    ),
 ];
 
 // SSH test (only if extension loaded)

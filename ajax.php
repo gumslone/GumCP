@@ -313,16 +313,19 @@ switch ($action) {
         $logs_dir   = $gumcp . '/command_logs';
 
         $checks = [
-            'php_version'     => $php_major > 7 || ($php_major === 7 && $php_minor >= 0),
-            'ext_ssh2'        => extension_loaded('ssh2'),
-            'ext_json'        => extension_loaded('json'),
-            'ext_sqlite3'     => extension_loaded('sqlite3'),
-            'ext_curl'        => extension_loaded('curl'),
-            'buttons_exists'  => is_dir($btns_dir),
-            'buttons_writable'=> is_dir($btns_dir) && is_writable($btns_dir),
-            'logs_exists'     => is_dir($logs_dir),
-            'logs_writable'   => is_dir($logs_dir) && is_writable($logs_dir),
-            'config_readable' => is_readable($gumcp . '/include/config.php'),
+            'php_version'      => $php_major > 7 || ($php_major === 7 && $php_minor >= 0),
+            'ext_ssh2'         => extension_loaded('ssh2'),
+            'ext_json'         => extension_loaded('json'),
+            'ext_sqlite3'      => extension_loaded('sqlite3'),
+            'ext_curl'         => extension_loaded('curl'),
+            'buttons_exists'   => is_dir($btns_dir),
+            'buttons_writable' => is_dir($btns_dir) && is_writable($btns_dir),
+            'buttons_htaccess' => file_exists($btns_dir . '/.htaccess'),
+            'logs_exists'      => is_dir($logs_dir),
+            'logs_writable'    => is_dir($logs_dir) && is_writable($logs_dir),
+            'logs_htaccess'    => file_exists($logs_dir . '/.htaccess'),
+            'config_readable'  => is_readable($gumcp . '/include/config.php'),
+            'defaults_exists'  => file_exists($gumcp . '/include/config.defaults.php'),
         ];
 
         // Pi model for GPIO context

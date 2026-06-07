@@ -1,57 +1,72 @@
 <?php
 declare(strict_types=1);
 
+// ── SSH ───────────────────────────────────────────────────────────────────────
+// Used by Actions, Buttons, GPIO and the System Check fix feature.
+// The SSH user must exist on the Pi and be permitted to run the commands you need.
 define('SSH_PORT', '22');        // SSH port (default: 22)
 define('SSH_USER', 'pi');        // SSH username
-define('SSH_PASS', 'raspberry'); // SSH password
+define('SSH_PASS', 'raspberry'); // SSH password — CHANGE THIS
 
-define('LOGIN_REQUIRED', false); // true = require login via the login page
+// ── Login page ────────────────────────────────────────────────────────────────
+// When LOGIN_REQUIRED is true, every page redirects to login.php until the user
+// authenticates. Set false for open access on a trusted local network.
+define('LOGIN_REQUIRED', false);
 define('LOGIN_USER', 'pi');
-define('LOGIN_PASS', 'raspberry');
+define('LOGIN_PASS', 'raspberry'); // CHANGE THIS
 
-define('BASIC_AUTH', false);         // true = also accept HTTP Basic Auth
-define('BASIC_AUTH_USER', 'api');    // separate credentials for Basic Auth
-define('BASIC_AUTH_PASS', 'secret');
+// ── HTTP Basic Auth ───────────────────────────────────────────────────────────
+// When BASIC_AUTH is true the browser shows a native credentials dialog.
+// Useful for curl / API clients. Can be active alongside LOGIN_REQUIRED —
+// both methods use independent credentials and either one grants access.
+define('BASIC_AUTH', false);
+define('BASIC_AUTH_USER', 'api');    // separate username for Basic Auth
+define('BASIC_AUTH_PASS', 'secret'); // separate password for Basic Auth — CHANGE THIS
 
-define('GUMCP_DEBUG', false);    // true = show PHP errors
+// ── Debug ─────────────────────────────────────────────────────────────────────
+// Set true to display PHP errors in the browser. Keep false in production.
+define('GUMCP_DEBUG', false);
 
 error_reporting(GUMCP_DEBUG ? E_ALL : 0);
 
+// ── Modules ───────────────────────────────────────────────────────────────────
+// Set module_active => 0 to hide a module from the navbar and disable it.
+// The order here is the default navbar order; drag to reorder in the browser.
 $gumcp_modules = [
     'services' => [
         'module_title'                    => 'Services',
         'module_index_file_relative_path' => './services.php',
-        'module_active'                   => 1,
+        'module_active'                   => 1, // list and control system services
     ],
     'processes' => [
         'module_title'                    => 'Processes',
         'module_index_file_relative_path' => './processes.php',
-        'module_active'                   => 1,
+        'module_active'                   => 1, // browse and kill running processes
     ],
     'phpinfo' => [
         'module_title'                    => 'PHP Info',
         'module_index_file_relative_path' => './phpinfo.php',
-        'module_active'                   => 1,
+        'module_active'                   => 1, // show phpinfo() output
     ],
     'actions' => [
         'module_title'                    => 'Actions',
         'module_index_file_relative_path' => './actions.php',
-        'module_active'                   => 1,
+        'module_active'                   => 1, // run arbitrary SSH commands
     ],
     'gpio' => [
         'module_title'                    => 'GPIO',
         'module_index_file_relative_path' => './gpio.php',
-        'module_active'                   => 1,
+        'module_active'                   => 1, // view and control GPIO pins
     ],
     'buttons' => [
         'module_title'                    => 'Buttons',
         'module_index_file_relative_path' => './buttons.php',
-        'module_active'                   => 1,
+        'module_active'                   => 1, // one-click command buttons
     ],
-    // Button API — no nav link; controls whether api.php?hash= is accessible
+    // Button API — no navbar link; set module_active => 0 to disable api.php
     'button_api' => [
         'module_title'  => 'Button API',
-        'module_active' => 1,
+        'module_active' => 1, // allow buttons to be triggered via api.php?hash=
         'module_no_nav' => 1,
     ],
     // Order from https://www.tindie.com/stores/gumslone/
