@@ -20,7 +20,7 @@ More screenshots in the [screenshots folder](https://github.com/gumslone/GumCP/b
 - **GPIO control** — view and toggle pin mode (IN/OUT), voltage (HIGH/LOW) and pull-up/down for all header pins; auto-detects WiringPi (Pi 1–4) or raspi-gpio (Pi 5)
 - **Command Buttons** — create custom one-click buttons for any shell command; choose between a confirmation modal or direct execution with inline output; drag to reorder
 - **Button API** — every button gets a unique secret URL; call it from curl, Home Assistant, or any automation tool without logging in
-- **Actions** — execute arbitrary shell commands over SSH; run commands in the background with output saved to a log file; reboot
+- **Actions** — execute arbitrary shell commands over SSH; run commands in the background with output saved to a log file; reboot; pull the latest GumCP version from GitHub with one click
 - **phpinfo** — view PHP configuration directly from the browser
 - **System Check** — built-in diagnostic page (`check.php`) that verifies PHP extensions, directory permissions, SSH connectivity and GPIO tools; Fix buttons repair common issues over SSH without touching the terminal
 - **Menu reorder** — drag and drop navbar items into any order; preference saved automatically
@@ -66,6 +66,19 @@ http://<your-pi-ip>/GumCP/
 > - Password: `raspberry`
 >
 > **Change these before exposing GumCP to any network.**
+
+---
+
+## Uninstall
+
+```bash
+wget https://raw.githubusercontent.com/gumslone/GumCP/master/uninstall.sh && bash ./uninstall.sh
+```
+
+The uninstaller will:
+- Ask whether to **back up** your `config.php`, buttons and logs to `~/gumcp_backup_<timestamp>/` before removing anything
+- Remove `/var/www/html/GumCP/`
+- Leave Apache, PHP, WiringPi and all other system packages untouched
 
 ---
 
@@ -148,6 +161,8 @@ define('BASIC_AUTH_PASS', 'secret');
 cd /var/www/html/GumCP
 sudo git pull origin master
 ```
+
+Or use the **Update GumCP** button on the Actions page — no terminal needed.
 
 ---
 
