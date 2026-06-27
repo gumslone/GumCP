@@ -302,7 +302,7 @@ function signal_quality($dbm): string {
                     <?php if (!$throttled['available']): ?>
                         <span class="text-muted">
                             <i class="fa fa-question-circle"></i>
-                            Not available (<code>vcgencmd</code> not found — non-Pi hardware?)
+                            <?php echo htmlspecialchars($throttled['reason'] ?? 'Not available', ENT_QUOTES, 'UTF-8'); ?>
                         </span>
                     <?php elseif ($throttled['healthy']): ?>
                         <span class="text-success">

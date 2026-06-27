@@ -133,8 +133,8 @@ function updateThrottleStatus(t) {
     if (!$box.length) return;
     var html;
     if (!t.available) {
-        html = '<span class="text-muted"><i class="fa fa-question-circle"></i> '
-             + 'Not available (<code>vcgencmd</code> not found — non-Pi hardware?)</span>';
+        var reason = t.reason ? $('<div>').text(t.reason).html() : 'Not available';
+        html = '<span class="text-muted"><i class="fa fa-question-circle"></i> ' + reason + '</span>';
     } else if (t.healthy) {
         html = '<span class="text-success"><i class="fa fa-check-circle"></i> '
              + 'Healthy — no under-voltage or throttling.</span>';

@@ -100,9 +100,25 @@ if (!function_exists('gumcp_swap_info')) {
      * Returns [available, healthy, messages]. messages is a list of human strings.
      */
     function gumcp_throttled_info(): array {
-        $raw = @shell_exec('vcgencmd get_throttled 2>/dev/null');
+        // Locate vcgencmd: it is often not on the web user's PATH.
+        $bin = '';
+        foreach (['/usr/bin/vcgencmd', '/opt/vc/bin/vcgencmd', 'vcgencmd'] as $cand) {
+            $found = @shell_exec('command -v ' . escapeshellarg($cand) . ' 2>/dev/null');
+            if (is_string($found) && trim($found) !== '') { $bin = trim($found); break; }
+        }
+        if ($bin === '') {
+            return ['available' => false, 'healthy' => true, 'messages' => [],
+                    'reason' => 'vcgencmd not found (non-Pi hardware, or usbutils/raspi tools not installed)'];
+        }
+
+        // Capture stderr too — when www-data lacks GPU access vcgencmd writes the
+        // error there and nothing parseable to stdout.
+        $raw = @shell_exec(escapeshellarg($bin) . ' get_throttled 2>&1');
         if (!is_string($raw) || !preg_match('/throttled=0x([0-9a-fA-F]+)/', $raw, $m)) {
-            return ['available' => false, 'healthy' => true, 'messages' => []];
+            $hint = (is_string($raw) && stripos($raw, 'permission') !== false || (is_string($raw) && stripos($raw, 'vchi') !== false))
+                ? 'web user cannot access the GPU — run: sudo usermod -aG video www-data && sudo systemctl restart apache2'
+                : 'vcgencmd returned no throttling data';
+            return ['available' => false, 'healthy' => true, 'messages' => [], 'reason' => $hint];
         }
 
         $bits = hexdec($m[1]);
@@ -132,6 +148,7 @@ if (!function_exists('gumcp_swap_info')) {
             'healthy'   => $messages === [],
             'current'   => $current,
             'messages'  => $messages,
+            'reason'    => '',
         ];
     }
 
