@@ -125,6 +125,10 @@ sudo mkdir -p buttons command_logs
 sudo chown -R www-data:www-data /var/www/html/GumCP
 sudo chmod -R 755 /var/www/html/GumCP
 sudo chmod 664 /var/www/html/GumCP/include/config.php
+
+# Allow the web server to read GPU throttling status (dashboard Power & Throttling panel)
+sudo usermod -aG video www-data
+sudo systemctl restart apache2
 ```
 
 ### 4. Configure
@@ -297,6 +301,17 @@ Apache strips the `Authorization` header by default. The included `.htaccess` pa
 sudo a2enmod rewrite
 sudo systemctl restart apache2
 ```
+
+### Dashboard "Power & Throttling" shows "not available"
+
+`vcgencmd` needs GPU access, which the `www-data` web user lacks by default. Add it to the `video` group:
+
+```bash
+sudo usermod -aG video www-data
+sudo systemctl restart apache2
+```
+
+(The installer does this automatically on Raspberry Pi hardware.) On non-Pi hardware the panel is expected to stay unavailable.
 
 ### TeHyBug module
 

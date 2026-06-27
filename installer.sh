@@ -150,6 +150,14 @@ sudo chmod -R 755 "$GUMCP_DIR"
 sudo chmod 664 "$GUMCP_DIR/include/config.php"
 print_message "Permissions set"
 
+# ── web-server group access ─────────────────────────────────────────────────────
+# Add www-data to the video group so the dashboard's Power & Throttling panel can
+# run `vcgencmd get_throttled` (needs GPU access). Harmless on non-Pi hardware.
+if getent group video >/dev/null 2>&1; then
+    print_message "Adding www-data to the 'video' group (for vcgencmd)..."
+    sudo usermod -aG video www-data
+fi
+
 # ── Apache ────────────────────────────────────────────────────────────────────
 print_message "Enabling Apache modules..."
 sudo a2enmod rewrite

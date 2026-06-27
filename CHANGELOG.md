@@ -4,6 +4,8 @@
 
 ### Changed
 - **Dashboard — Power & Throttling**: `gumcp_throttled_info()` now locates `vcgencmd` across common paths and captures stderr, so it can report *why* throttling data is unavailable (e.g. the web user not being in the `video` group) instead of always blaming non-Pi hardware. Fix for missing GPU access: `sudo usermod -aG video www-data && sudo systemctl restart apache2`.
+- **installer.sh**: adds `www-data` to the `video` group so the Power & Throttling panel works out of the box on Raspberry Pi.
+- **README**: documents the `video` group requirement in manual install and troubleshooting.
 
 ---
 
