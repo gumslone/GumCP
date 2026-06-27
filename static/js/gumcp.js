@@ -79,6 +79,9 @@ function refreshStats() {
             if (d.usb && d.usb.trim() !== '') {
                 $('#info-usb').removeClass('text-muted').html(esc(d.usb));
             }
+            if (d.blk && d.blk.trim() !== '') {
+                $('#info-blk').removeClass('text-muted').html(esc(d.blk));
+            }
 
             // Swap bar
             if (typeof d.swap_percentage !== 'undefined') {

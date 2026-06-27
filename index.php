@@ -29,6 +29,7 @@ function get_system_info(): array {
         'users'        => (string)(@shell_exec('who') ?: ''),
         'disks'        => (string)(@shell_exec('df -h') ?: ''),
         'usb'          => (string)(@shell_exec('lsusb 2>/dev/null') ?: ''),
+        'blk'          => (string)(@shell_exec('lsblk 2>/dev/null') ?: ''),
     ];
 }
 
@@ -532,6 +533,22 @@ function signal_quality(?int $dbm): string {
                         <pre id="info-usb" class="text-muted">No USB devices listed (<code>lsusb</code> not installed? <code>sudo apt-get install usbutils</code>)</pre>
                     <?php else: ?>
                         <pre id="info-usb"><?php echo htmlspecialchars($sys['usb'], ENT_QUOTES, 'UTF-8'); ?></pre>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Block devices -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading"><i class="fa fa-hdd-o"></i> Block Devices</div>
+                <div class="panel-body">
+                    <?php if (trim($sys['blk']) === ''): ?>
+                        <pre id="info-blk" class="text-muted">No block devices listed (<code>lsblk</code> not available?)</pre>
+                    <?php else: ?>
+                        <pre id="info-blk"><?php echo htmlspecialchars($sys['blk'], ENT_QUOTES, 'UTF-8'); ?></pre>
                     <?php endif; ?>
                 </div>
             </div>

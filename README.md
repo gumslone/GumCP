@@ -14,7 +14,7 @@ More screenshots in the [screenshots folder](https://github.com/gumslone/GumCP/b
 
 ## Features
 
-- **Dashboard** — live CPU usage, temperature, memory, swap & disk, uptime, load averages, active users, per-interface network stats (IP, RX/TX, Wi-Fi signal), Raspberry Pi power/throttling status, and configurable service status badges (auto-refreshes every 30 s without reloading the page)
+- **Dashboard** — live CPU usage, temperature, memory, swap & disk, uptime, load averages, active users, per-interface network stats (IP, RX/TX, Wi-Fi signal), Raspberry Pi power/throttling status, configurable service status badges, and connected USB & block devices (auto-refreshes every 30 s without reloading the page)
 - **Services** — list all system services with their status; start or stop any service with one click (loads asynchronously so the page appears instantly)
 - **Processes** — browse running processes sorted by memory usage; kill by PID or name
 - **GPIO control** — view and toggle pin mode (IN/OUT), voltage (HIGH/LOW) and pull-up/down for all header pins; auto-detects WiringPi (Pi 1–4) or raspi-gpio (Pi 5)

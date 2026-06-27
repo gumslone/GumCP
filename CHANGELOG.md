@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.3.0] — 2026-06-27
 
 ### Added
 - **Dashboard — Network panel**: per-interface IPv4 address, link state, RX/TX byte counters and Wi-Fi signal strength (dBm + quality), read from `/sys/class/net` and `/proc/net/wireless`.
@@ -8,6 +8,7 @@
 - **Dashboard — Swap usage**: swap bar in the Resource Usage panel.
 - **Dashboard — Service badges**: green/red status badges for a configurable list of services (`$gumcp_dashboard_services` in `config.php`), checked with `systemctl is-active`.
 - **Dashboard — Connected USB Devices**: `lsusb` output panel.
+- **Dashboard — Block Devices**: `lsblk` output panel.
 - `include/dashboard.php` — shared collectors used by both `index.php` (initial render) and `ajax.php` (30 s refresh).
 
 ---
