@@ -165,7 +165,7 @@ function service_label_class(string $state): string {
 }
 
 // Format Wi-Fi signal (dBm) to a short quality word.
-function signal_quality(?int $dbm): string {
+function signal_quality($dbm): string {
     if ($dbm === null) return '';
     if ($dbm >= -50) return 'excellent';
     if ($dbm >= -60) return 'good';

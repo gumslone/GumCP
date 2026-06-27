@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1] — 2026-06-27
+
+### Fixed
+- `index.php`: removed `?int` nullable type hint from `signal_quality()` — it requires PHP 7.1 and caused a 500 error on PHP 7.0. The project targets PHP 7.0.
+
+---
+
 ## [2.3.0] — 2026-06-27
 
 ### Added
