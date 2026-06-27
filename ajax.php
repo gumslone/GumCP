@@ -28,6 +28,9 @@ function err(string $message): array {
 // ── SSH helper ────────────────────────────────────────────────────────────────
 require_once(__DIR__ . '/include/ssh.php');
 
+// ── Dashboard collectors ──────────────────────────────────────────────────────
+require_once(__DIR__ . '/include/dashboard.php');
+
 // ── Button storage helpers ────────────────────────────────────────────────────
 const BUTTONS_FILE = __DIR__ . '/buttons/buttons.json';
 const BUTTONS_DIR  = __DIR__ . '/buttons';
@@ -458,6 +461,25 @@ function collect_server_info(): array {
     $info['memory_percentage'] = $mem['total'] > 0
         ? (int)round($used / $mem['total'] * 100)
         : 0;
+
+    // Swap
+    $swap = gumcp_swap_info();
+    $info['swap_total']      = $swap['total'];
+    $info['swap_used']       = $swap['used'];
+    $info['swap_free']       = $swap['free'];
+    $info['swap_percentage'] = $swap['percent'];
+
+    // Network interfaces
+    $info['network'] = gumcp_network_info();
+
+    // Throttling / under-voltage (Raspberry Pi)
+    $info['throttled'] = gumcp_throttled_info();
+
+    // Service status badges
+    global $gumcp_dashboard_services;
+    $info['services_status'] = gumcp_service_status(
+        is_array($gumcp_dashboard_services ?? null) ? $gumcp_dashboard_services : []
+    );
 
     return $info;
 }

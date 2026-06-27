@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Dashboard — Network panel**: per-interface IPv4 address, link state, RX/TX byte counters and Wi-Fi signal strength (dBm + quality), read from `/sys/class/net` and `/proc/net/wireless`.
+- **Dashboard — Power & Throttling**: Raspberry Pi under-voltage / throttling status via `vcgencmd get_throttled`, showing current and past warning flags.
+- **Dashboard — Swap usage**: swap bar in the Resource Usage panel.
+- **Dashboard — Service badges**: green/red status badges for a configurable list of services (`$gumcp_dashboard_services` in `config.php`), checked with `systemctl is-active`.
+- `include/dashboard.php` — shared collectors used by both `index.php` (initial render) and `ajax.php` (30 s refresh).
+
+---
+
 ## [2.2.0] — 2026-06-07
 
 ### Added

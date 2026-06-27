@@ -23,3 +23,8 @@ defined('GUMCP_DEBUG')          || define('GUMCP_DEBUG',          false);
 if (!isset($gumcp_modules['button_api'])) {
     $gumcp_modules['button_api'] = ['module_title' => 'Button API', 'module_active' => 1, 'module_no_nav' => 1];
 }
+
+// Services shown as status badges on the dashboard (systemctl is-active).
+if (!isset($gumcp_dashboard_services) || !is_array($gumcp_dashboard_services)) {
+    $gumcp_dashboard_services = ['ssh', 'apache2', 'cron'];
+}

@@ -29,6 +29,11 @@ define('GUMCP_DEBUG', false);
 
 error_reporting(GUMCP_DEBUG ? E_ALL : 0);
 
+// ── Dashboard service badges ────────────────────────────────────────────────────
+// Services shown as green/red status badges on the dashboard. Each is checked
+// with `systemctl is-active <name>`. Use the unit names from `systemctl list-units`.
+$gumcp_dashboard_services = ['ssh', 'apache2', 'cron'];
+
 // ── Modules ───────────────────────────────────────────────────────────────────
 // Set module_active => 0 to hide a module from the navbar and disable it.
 // The order here is the default navbar order; drag to reorder in the browser.

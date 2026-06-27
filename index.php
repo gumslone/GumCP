@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $active_page = 'index';
 require_once('./include/init.php');
+require_once('./include/dashboard.php');
 
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -142,6 +143,34 @@ $mem_color  = bar_color($mem['percent']);
 $disk_color = bar_color($disk['percent']);
 $temp_color = $sys['cpu_temp'] >= 80 ? 'danger' : ($sys['cpu_temp'] >= 70 ? 'warning' : 'success');
 
+// Extra dashboard data
+$swap       = gumcp_swap_info();
+$swap_color = bar_color($swap['percent']);
+$network    = gumcp_network_info();
+$throttled  = gumcp_throttled_info();
+$services   = gumcp_service_status(
+    is_array($gumcp_dashboard_services ?? null) ? $gumcp_dashboard_services : []
+);
+
+// Map a systemd state to a Bootstrap label class.
+function service_label_class(string $state): string {
+    switch ($state) {
+        case 'active':   return 'label-success';
+        case 'inactive': return 'label-default';
+        case 'failed':   return 'label-danger';
+        default:         return 'label-warning';
+    }
+}
+
+// Format Wi-Fi signal (dBm) to a short quality word.
+function signal_quality(?int $dbm): string {
+    if ($dbm === null) return '';
+    if ($dbm >= -50) return 'excellent';
+    if ($dbm >= -60) return 'good';
+    if ($dbm >= -70) return 'fair';
+    return 'weak';
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -244,6 +273,52 @@ $temp_color = $sys['cpu_temp'] >= 80 ? 'danger' : ($sys['cpu_temp'] >= 70 ? 'war
         </div>
     </div>
 
+    <!-- Service badges + power/throttle status -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading"><i class="fa fa-heartbeat"></i> Service Status</div>
+                <div class="panel-body" id="service-badges">
+                    <?php if (empty($services)): ?>
+                        <span class="text-muted">No services configured.
+                            Set <code>$gumcp_dashboard_services</code> in <code>config.php</code>.</span>
+                    <?php else: foreach ($services as $svc): ?>
+                        <span class="label <?php echo service_label_class($svc['state']); ?>"
+                              style="display:inline-block; margin:3px; padding:6px 10px; font-size:13px"
+                              title="<?php echo htmlspecialchars($svc['state'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <i class="fa fa-circle"></i>
+                            <?php echo htmlspecialchars($svc['name'], ENT_QUOTES, 'UTF-8'); ?>
+                        </span>
+                    <?php endforeach; endif; ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading"><i class="fa fa-bolt"></i> Power &amp; Throttling</div>
+                <div class="panel-body" id="throttle-status">
+                    <?php if (!$throttled['available']): ?>
+                        <span class="text-muted">
+                            <i class="fa fa-question-circle"></i>
+                            Not available (<code>vcgencmd</code> not found — non-Pi hardware?)
+                        </span>
+                    <?php elseif ($throttled['healthy']): ?>
+                        <span class="text-success">
+                            <i class="fa fa-check-circle"></i> Healthy — no under-voltage or throttling.
+                        </span>
+                    <?php else: ?>
+                        <?php foreach ($throttled['messages'] as $msg): ?>
+                            <div class="text-danger">
+                                <i class="fa fa-exclamation-triangle"></i>
+                                <?php echo htmlspecialchars($msg, ENT_QUOTES, 'UTF-8'); ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- System info + resource bars -->
     <div class="row">
         <div class="col-md-6">
@@ -307,6 +382,24 @@ $temp_color = $sys['cpu_temp'] >= 80 ? 'danger' : ($sys['cpu_temp'] >= 70 ? 'war
                     </div>
 
                     <div class="form-group">
+                        <label>Swap Usage</label>
+                        <div class="progress">
+                            <div id="bar-swap" class="progress-bar progress-bar-<?php echo $swap_color; ?>"
+                                 role="progressbar"
+                                 aria-valuenow="<?php echo $swap['percent']; ?>"
+                                 aria-valuemin="0" aria-valuemax="100"
+                                 style="width:<?php echo $swap['percent']; ?>%">
+                                <?php if ($swap['total'] > 0): ?>
+                                    <?php echo $swap['percent']; ?>%
+                                    (<?php echo fmt_kb($swap['used']); ?> / <?php echo fmt_kb($swap['total']); ?>)
+                                <?php else: ?>
+                                    No swap
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
                         <label>Disk Usage</label>
                         <div class="progress">
                             <div id="bar-disk" class="progress-bar progress-bar-<?php echo $disk_color; ?>"
@@ -362,6 +455,55 @@ $temp_color = $sys['cpu_temp'] >= 80 ? 'danger' : ($sys['cpu_temp'] >= 70 ? 'war
                             <p class="text-muted" id="mem-cached"><?php echo fmt_kb($mem['cached']); ?></p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Network -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-info">
+                <div class="panel-heading"><i class="fa fa-sitemap"></i> Network</div>
+                <div class="panel-body" style="padding:0">
+                    <table class="table table-condensed" style="margin-bottom:0" id="network-table">
+                        <thead>
+                            <tr>
+                                <th style="padding-left:15px">Interface</th>
+                                <th>IPv4</th>
+                                <th>State</th>
+                                <th>Signal</th>
+                                <th class="text-right">Received</th>
+                                <th class="text-right" style="padding-right:15px">Transmitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($network)): ?>
+                                <tr><td colspan="6" class="text-muted" style="padding-left:15px">No network interfaces found.</td></tr>
+                            <?php else: foreach ($network as $n):
+                                $up = $n['state'] === 'up';
+                                $sig = $n['signal'] !== null
+                                    ? $n['signal'] . ' dBm (' . signal_quality($n['signal']) . ')'
+                                    : ($n['wireless'] ? '—' : '');
+                            ?>
+                                <tr>
+                                    <td style="padding-left:15px">
+                                        <i class="fa <?php echo $n['wireless'] ? 'fa-wifi' : 'fa-exchange'; ?> text-muted"></i>
+                                        <strong><?php echo htmlspecialchars($n['iface'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                    </td>
+                                    <td><?php echo $n['ip'] !== '' ? htmlspecialchars($n['ip'], ENT_QUOTES, 'UTF-8') : '<span class="text-muted">—</span>'; ?></td>
+                                    <td>
+                                        <span class="label <?php echo $up ? 'label-success' : 'label-default'; ?>">
+                                            <?php echo htmlspecialchars($n['state'], ENT_QUOTES, 'UTF-8'); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($sig, ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td class="text-right"><?php echo gumcp_fmt_bytes((float)$n['rx']); ?></td>
+                                    <td class="text-right" style="padding-right:15px"><?php echo gumcp_fmt_bytes((float)$n['tx']); ?></td>
+                                </tr>
+                            <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

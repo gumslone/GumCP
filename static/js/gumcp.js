@@ -75,8 +75,113 @@ function refreshStats() {
             $('#info-top').html(esc(d.top));
             $('#info-users').html(esc(d.users));
             $('#info-disks').html(esc(d.disks));
+
+            // Swap bar
+            if (typeof d.swap_percentage !== 'undefined') {
+                if (d.swap_total > 0) {
+                    setBar('bar-swap', d.swap_percentage,
+                        d.swap_percentage + '% (' + fmtKB(d.swap_used) + ' / ' + fmtKB(d.swap_total) + ')');
+                } else {
+                    setBar('bar-swap', 0, 'No swap');
+                }
+            }
+
+            // Service badges
+            if (d.services_status) updateServiceBadges(d.services_status);
+
+            // Power / throttling status
+            if (d.throttled) updateThrottleStatus(d.throttled);
+
+            // Network table
+            if (d.network) updateNetworkTable(d.network);
         }
     });
+}
+
+function serviceLabelClass(state) {
+    switch (state) {
+        case 'active':   return 'label-success';
+        case 'inactive': return 'label-default';
+        case 'failed':   return 'label-danger';
+        default:         return 'label-warning';
+    }
+}
+
+function updateServiceBadges(services) {
+    var $box = $('#service-badges');
+    if (!$box.length || !services.length) return;
+    var html = '';
+    services.forEach(function(s) {
+        html += '<span class="label ' + serviceLabelClass(s.state) + '"'
+              + ' style="display:inline-block; margin:3px; padding:6px 10px; font-size:13px"'
+              + ' title="' + $('<div>').text(s.state).html() + '">'
+              + '<i class="fa fa-circle"></i> ' + $('<div>').text(s.name).html()
+              + '</span>';
+    });
+    $box.html(html);
+}
+
+function updateThrottleStatus(t) {
+    var $box = $('#throttle-status');
+    if (!$box.length) return;
+    var html;
+    if (!t.available) {
+        html = '<span class="text-muted"><i class="fa fa-question-circle"></i> '
+             + 'Not available (<code>vcgencmd</code> not found — non-Pi hardware?)</span>';
+    } else if (t.healthy) {
+        html = '<span class="text-success"><i class="fa fa-check-circle"></i> '
+             + 'Healthy — no under-voltage or throttling.</span>';
+    } else {
+        html = '';
+        (t.messages || []).forEach(function(m) {
+            html += '<div class="text-danger"><i class="fa fa-exclamation-triangle"></i> '
+                  + $('<div>').text(m).html() + '</div>';
+        });
+    }
+    $box.html(html);
+}
+
+function signalQuality(dbm) {
+    if (dbm === null || typeof dbm === 'undefined') return '';
+    if (dbm >= -50) return 'excellent';
+    if (dbm >= -60) return 'good';
+    if (dbm >= -70) return 'fair';
+    return 'weak';
+}
+
+function updateNetworkTable(network) {
+    var $tbody = $('#network-table tbody');
+    if (!$tbody.length) return;
+    var esc = function(s) { return $('<div>').text(s == null ? '' : s).html(); };
+    if (!network.length) {
+        $tbody.html('<tr><td colspan="6" class="text-muted" style="padding-left:15px">'
+            + 'No network interfaces found.</td></tr>');
+        return;
+    }
+    var html = '';
+    network.forEach(function(n) {
+        var up = n.state === 'up';
+        var sig = n.signal !== null && typeof n.signal !== 'undefined'
+            ? n.signal + ' dBm (' + signalQuality(n.signal) + ')'
+            : (n.wireless ? '—' : '');
+        html += '<tr>'
+            + '<td style="padding-left:15px"><i class="fa ' + (n.wireless ? 'fa-wifi' : 'fa-exchange')
+            + ' text-muted"></i> <strong>' + esc(n.iface) + '</strong></td>'
+            + '<td>' + (n.ip ? esc(n.ip) : '<span class="text-muted">—</span>') + '</td>'
+            + '<td><span class="label ' + (up ? 'label-success' : 'label-default') + '">'
+            + esc(n.state) + '</span></td>'
+            + '<td>' + esc(sig) + '</td>'
+            + '<td class="text-right">' + fmtBytes(n.rx) + '</td>'
+            + '<td class="text-right" style="padding-right:15px">' + fmtBytes(n.tx) + '</td>'
+            + '</tr>';
+    });
+    $tbody.html(html);
+}
+
+function fmtBytes(bytes) {
+    var units = ['B', 'KB', 'MB', 'GB', 'TB'], i = 0, v = bytes;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+    return v.toFixed(2) + ' ' + units[i];
 }
 
 $(function() {
