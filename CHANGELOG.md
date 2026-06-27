@@ -7,6 +7,7 @@
 - **Dashboard — Power & Throttling**: Raspberry Pi under-voltage / throttling status via `vcgencmd get_throttled`, showing current and past warning flags.
 - **Dashboard — Swap usage**: swap bar in the Resource Usage panel.
 - **Dashboard — Service badges**: green/red status badges for a configurable list of services (`$gumcp_dashboard_services` in `config.php`), checked with `systemctl is-active`.
+- **Dashboard — Connected USB Devices**: `lsusb` output panel.
 - `include/dashboard.php` — shared collectors used by both `index.php` (initial render) and `ajax.php` (30 s refresh).
 
 ---

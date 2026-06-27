@@ -447,6 +447,7 @@ function collect_server_info(): array {
     $info['top']   = (string)(@shell_exec('ps aux | sort -rk 4,4 | head -n 11') ?: '');
     $info['users'] = (string)(@shell_exec('who') ?: '');
     $info['disks'] = (string)(@shell_exec('df -h') ?: '');
+    $info['usb']   = (string)(@shell_exec('lsusb 2>/dev/null') ?: '');
     $info['date']  = date('Y-m-d H:i:s');
 
     // Memory (from /proc/meminfo — works on all Pi models and Pi OS versions)

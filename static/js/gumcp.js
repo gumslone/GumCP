@@ -76,6 +76,10 @@ function refreshStats() {
             $('#info-users').html(esc(d.users));
             $('#info-disks').html(esc(d.disks));
 
+            if (d.usb && d.usb.trim() !== '') {
+                $('#info-usb').removeClass('text-muted').html(esc(d.usb));
+            }
+
             // Swap bar
             if (typeof d.swap_percentage !== 'undefined') {
                 if (d.swap_total > 0) {
