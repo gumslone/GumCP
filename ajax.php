@@ -405,6 +405,19 @@ switch ($action) {
         }
         break;
 
+    // ── Update: fetch tags from origin and return the full release list ───────
+    case 'git_tags':
+        $dir = escapeshellarg(__DIR__);
+        // Fetch tags from the remote (needs network; via SSH for repo perms).
+        $fetch = ssh_run('sudo git -C ' . $dir . ' fetch --tags --prune origin 2>&1');
+        $raw   = (string)(@shell_exec('git -C ' . $dir . ' tag --sort=-v:refname 2>/dev/null') ?: '');
+        $tags  = array_values(array_filter(array_map('trim', explode("\n", trim($raw)))));
+        $out = ok('ok', [
+            'tags'  => $tags,
+            'error' => $fetch['success'] ? '' : (string)($fetch['error'] ?? 'fetch failed'),
+        ]);
+        break;
+
     // ── Packages: list upgradable (read-only, no sudo) ────────────────────────
     case 'pkg_list':
         $raw = (string)(@shell_exec('apt list --upgradable 2>/dev/null') ?: '');

@@ -224,6 +224,32 @@ if ($raw_tags !== null) {
         return confirm(msg);
     }
 
+    function refreshGitTags() {
+        var $b = $('#git-refresh-btn');
+        $b.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+        $.ajax({
+            type: 'POST', url: 'ajax.php', dataType: 'json',
+            data: { action: 'git_tags', csrf_token: CSRF_TOKEN },
+            success: function(d) {
+                var tags = (d && d.tags) || [];
+                var sel = document.getElementById('git-target');
+                var current = sel.value;
+                sel.options.length = 1; // keep "Latest (master branch)"
+                tags.forEach(function(t) {
+                    var o = document.createElement('option');
+                    o.value = t; o.textContent = 'Release ' + t;
+                    sel.appendChild(o);
+                });
+                sel.value = current; // restore selection if still present
+                if (d && d.error) {
+                    alert('Tags refreshed from local repo, but fetching from GitHub failed:\n' + d.error);
+                }
+            },
+            error: function() { alert('Request failed — check SSH settings.'); },
+            complete: function() { $b.prop('disabled', false).html('<i class="fa fa-refresh"></i>'); }
+        });
+    }
+
     $(document).ready(function() {
 
         // ── Background command form ───────────────────────────────────────────
@@ -493,12 +519,18 @@ if ($raw_tags !== null) {
                                 <?php endforeach; ?>
                             </select>
                             <span class="input-group-btn">
+                                <button type="button" class="btn btn-default" id="git-refresh-btn"
+                                        onclick="refreshGitTags()" title="Fetch latest releases from GitHub">
+                                    <i class="fa fa-refresh"></i>
+                                </button>
                                 <button type="submit" class="btn btn-warning">
                                     <i class="fa fa-cloud-download"></i> Update
                                 </button>
                             </span>
                         </div>
                         <small class="text-muted" style="display:block; margin-top:4px">
+                            Only releases this Pi has fetched are listed — click
+                            <i class="fa fa-refresh"></i> to fetch the newest from GitHub.
                             Your <code>config.php</code>, buttons and logs are preserved.
                         </small>
                     </div>
