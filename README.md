@@ -1,14 +1,16 @@
 <a href="https://www.buymeacoffee.com/gumslone" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
-# GumCP — Web Control Panel for Raspberry Pi
+# GumCP — Web Control Panel & Dashboard for Raspberry Pi
+
+**GumCP** is a lightweight, self-hosted **web control panel for Raspberry Pi** — a simple open-source alternative to Webmin and Cockpit. Monitor your Pi from any browser (system dashboard with CPU, memory, temperature, disk, swap and network stats), control **GPIO** pins, manage **systemd services** and processes, run shell commands over **SSH**, and trigger custom **command buttons** via a REST-style **HTTP API**. Built with PHP and Apache, it runs on every model from the Pi 1 to the Pi 5 and is ideal for homelab and home-automation setups.
 
 If you find GumCP useful, please **⭐️ star** the repo to help others find it!
 
-![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/dashboard.png)
+![GumCP dashboard for Raspberry Pi showing live CPU, memory, temperature, network and service status](screenshots/dashboard.png)
 
-More screenshots in the [screenshots folder](https://github.com/gumslone/GumCP/blob/master/screenshots/).
+More screenshots in the [screenshots folder](screenshots/).
 
-[![Web Control Panel for Raspberry Pi](https://github.com/gumslone/GumCP/blob/master/screenshots/video.png)](https://youtu.be/rCi9OGLOstU)
+[![Watch the GumCP Raspberry Pi control panel demo video](screenshots/video.png)](https://youtu.be/rCi9OGLOstU)
 
 ---
 
@@ -334,6 +336,28 @@ sudo apt-get install -y php-sqlite3
 - `command_logs/` and `buttons/` are blocked from direct web access via `.htaccess`
 - GumCP executes commands as the SSH user — use a dedicated user with only the permissions it needs
 - `robots.txt` is included and blocks all search crawlers from indexing GumCP
+
+---
+
+## FAQ
+
+**Is GumCP a Webmin or Cockpit alternative for Raspberry Pi?**
+Yes — it's a lightweight, single-purpose web control panel focused on Raspberry Pi: system monitoring, GPIO, services, processes and one-click command buttons. It installs in minutes on Raspberry Pi OS with no database required.
+
+**Which Raspberry Pi models are supported?**
+All of them — Pi 1, 2, 3, 4 and Pi 5. GPIO uses WiringPi on Pi 1–4 and `raspi-gpio` on Pi 5 automatically.
+
+**Can I monitor my Raspberry Pi remotely from a browser?**
+Yes. The dashboard shows live CPU, memory, swap, disk, temperature, throttling and per-interface network stats, auto-refreshing without a page reload. Protect remote access with the built-in login page or HTTP Basic Auth.
+
+**Can I trigger commands from Home Assistant or scripts?**
+Yes — every command button has a secret HTTP API URL you can call from Home Assistant, curl, or any automation tool.
+
+---
+
+## Keywords
+
+Raspberry Pi web control panel · Raspberry Pi dashboard · Raspberry Pi system monitor · Raspberry Pi GPIO web interface · Webmin alternative · Cockpit alternative · self-hosted Pi monitoring · homelab control panel · PHP Raspberry Pi admin panel · remote Raspberry Pi management.
 
 ---
 
