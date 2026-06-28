@@ -340,6 +340,7 @@ sudo apt-get install -y php-sqlite3
 - Button API hashes are secret URLs — treat them like passwords; use **Regenerate hash** if a hash is compromised
 - `command_logs/` and `buttons/` are blocked from direct web access via `.htaccess`
 - GumCP executes commands as the SSH user — use a dedicated user with only the permissions it needs
+- The Packages, Logs, Cron and Raspberry Pi pages run privileged commands (`apt`, `journalctl`, `raspi-config`, writing boot files) via `sudo` over SSH, which requires the SSH user to have passwordless `sudo` — the same assumption as the Actions page. Restrict the SSH user accordingly.
 - `robots.txt` is included and blocks all search crawlers from indexing GumCP
 
 ---
