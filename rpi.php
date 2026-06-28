@@ -114,9 +114,19 @@ $interfaces = [
     </div>
 
     <!-- Boot config editor -->
-    <div class="panel panel-warning">
+    <div class="panel panel-danger">
         <div class="panel-heading"><i class="fa fa-file-code-o"></i> Boot Configuration</div>
         <div class="panel-body">
+            <div class="alert alert-danger" style="margin-bottom:12px">
+                <i class="fa fa-exclamation-triangle fa-lg"></i>
+                <strong>Change with care.</strong>
+                These files control how the Raspberry Pi boots. A wrong value in
+                <code>config.txt</code> or <code>cmdline.txt</code> can make the Pi
+                <strong>fail to boot</strong> or lose network/SSH access — which may
+                require pulling the SD card and editing it on another computer to recover.
+                A timestamped backup (<code>.gumcp.bak</code>) is written before every save,
+                but only edit these if you know what each line does.
+            </div>
             <form class="form-inline" onsubmit="return false" style="margin-bottom:8px">
                 <div class="form-group">
                     <select class="form-control" id="boot-file">
@@ -132,7 +142,7 @@ $interfaces = [
                       style="font-family:monospace; font-size:12px" spellcheck="false"></textarea>
             <small class="help-block">
                 <i class="fa fa-shield"></i> A backup (<code>.gumcp.bak</code>) is written before each save.
-                Editing boot files incorrectly can prevent the Pi from booting.
+                Most changes take effect after a reboot.
             </small>
         </div>
     </div>
