@@ -25,6 +25,7 @@ More screenshots in the [screenshots folder](screenshots/).
 - **System Logs** — browse the systemd journal, `dmesg` and `/var/log` files with adjustable line count and text filtering
 - **Cron Jobs** — view, add and remove scheduled tasks in the user crontab; read-only view of `/etc/crontab`
 - **Users & Groups** — read-only listing of system users and groups from `/etc/passwd` and `/etc/group`
+- **Docker** — list containers, start/stop/restart/pause/remove them, view container logs, and browse images (disabled by default; enable in `config.php` if you run Docker)
 - **Command Buttons** — create custom one-click buttons for any shell command; choose between a confirmation modal or direct execution with inline output; drag to reorder
 - **Button API** — every button gets a unique secret URL; call it from curl, Home Assistant, or any automation tool without logging in
 - **Actions** — execute arbitrary shell commands over SSH; run commands in the background with output saved to a log file; reboot; pull the latest GumCP version from GitHub with one click

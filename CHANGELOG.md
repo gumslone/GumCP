@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Docker** (`docker.php`): list containers and start/stop/restart/pause/remove them, view container logs in a modal, and browse images. Disabled by default — enable `$gumcp_modules['docker']['module_active'] = 1`. Commands run via `sudo docker` over SSH; the page reports clearly when Docker is not installed or the daemon is down.
+
+---
+
 ## [2.4.0] — 2026-06-28
 
 ### Added — Webmin-style modules

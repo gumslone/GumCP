@@ -405,6 +405,82 @@ switch ($action) {
         }
         break;
 
+    // ── Docker: list containers ───────────────────────────────────────────────
+    case 'docker_ps':
+        $fmt = '{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.State}}\t{{.Status}}\t{{.Ports}}';
+        $r = ssh_run('sudo docker ps -a --format ' . escapeshellarg($fmt) . ' 2>&1');
+        if (!$r['success']) { $out = err($r['error']); break; }
+        $output = (string)$r['output'];
+        if (preg_match('/command not found|not installed/i', $output)) {
+            $out = ok('ok', ['available' => false, 'reason' => 'Docker is not installed.', 'containers' => []]);
+            break;
+        }
+        if (stripos($output, 'Cannot connect to the Docker daemon') !== false) {
+            $out = ok('ok', ['available' => false, 'reason' => 'Docker daemon is not running.', 'containers' => []]);
+            break;
+        }
+        $containers = [];
+        foreach (preg_split('/\r\n|\r|\n/', trim($output)) as $line) {
+            if ($line === '') continue;
+            $f = explode("\t", $line);
+            if (count($f) < 5) continue;
+            $containers[] = [
+                'id'     => $f[0],
+                'name'   => $f[1],
+                'image'  => $f[2],
+                'state'  => $f[3],
+                'status' => $f[4],
+                'ports'  => isset($f[5]) ? $f[5] : '',
+            ];
+        }
+        $out = ok('ok', ['available' => true, 'containers' => $containers]);
+        break;
+
+    // ── Docker: container action (start/stop/restart/pause/remove) ────────────
+    case 'docker_action':
+        $id  = trim((string)($_POST['id'] ?? ''));
+        $act = (string)($_POST['act'] ?? '');
+        if (!preg_match('/^[a-zA-Z0-9_.-]+$/', $id)) { $out = err('Invalid container id'); break; }
+        $map = [
+            'start'   => 'start',
+            'stop'    => 'stop',
+            'restart' => 'restart',
+            'pause'   => 'pause',
+            'unpause' => 'unpause',
+            'remove'  => 'rm -f',
+        ];
+        if (!isset($map[$act])) { $out = err('Unknown action'); break; }
+        $r = ssh_run('sudo docker ' . $map[$act] . ' ' . escapeshellarg($id) . ' 2>&1');
+        $out = $r['success'] ? ok(ucfirst($act) . ' done', ['output' => $r['output']]) : err($r['error']);
+        break;
+
+    // ── Docker: container logs ────────────────────────────────────────────────
+    case 'docker_logs':
+        $id    = trim((string)($_POST['id'] ?? ''));
+        $lines = (int)($_POST['lines'] ?? 200);
+        if (!preg_match('/^[a-zA-Z0-9_.-]+$/', $id)) { $out = err('Invalid container id'); break; }
+        if ($lines < 10)   $lines = 10;
+        if ($lines > 2000) $lines = 2000;
+        $r = ssh_run('sudo docker logs --tail ' . $lines . ' ' . escapeshellarg($id) . ' 2>&1');
+        $out = $r['success'] ? ok('ok', ['output' => $r['output']]) : err($r['error']);
+        break;
+
+    // ── Docker: list images ───────────────────────────────────────────────────
+    case 'docker_images':
+        $fmt = '{{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}';
+        $r = ssh_run('sudo docker images --format ' . escapeshellarg($fmt) . ' 2>&1');
+        $images = [];
+        if ($r['success']) {
+            foreach (preg_split('/\r\n|\r|\n/', trim((string)$r['output'])) as $line) {
+                if ($line === '') continue;
+                $f = explode("\t", $line);
+                if (count($f) < 4) continue;
+                $images[] = ['repo' => $f[0], 'tag' => $f[1], 'id' => $f[2], 'size' => $f[3]];
+            }
+        }
+        $out = ok('ok', ['images' => $images]);
+        break;
+
     // ── Update: fetch tags from origin and return the full release list ───────
     case 'git_tags':
         $dir = escapeshellarg(__DIR__);

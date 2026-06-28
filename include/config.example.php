@@ -73,6 +73,11 @@ $gumcp_modules = [
         'module_index_file_relative_path' => './rpi.php',
         'module_active'                   => 1, // vcgencmd, interfaces, boot config, temp/CPU history
     ],
+    'docker' => [
+        'module_title'                    => 'Docker',
+        'module_index_file_relative_path' => './docker.php',
+        'module_active'                   => 0, // containers & images (set 1 if you run Docker)
+    ],
     // System group — these render under a single "System" navbar dropdown.
     'packages' => [
         'module_title'                    => 'Packages',

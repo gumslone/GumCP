@@ -1,0 +1,255 @@
+<?php
+declare(strict_types=1);
+
+$active_page = 'docker';
+
+require_once('./include/init.php');
+
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="GumCP Docker">
+    <link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png">
+    <link rel="icon"          href="./static/images/raspberry.png" type="image/png">
+    <title>GumCP Docker</title>
+    <link href="./static/css.php" rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="./static/js.php" type="text/javascript"></script>
+    <script>var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;</script>
+</head>
+
+<body>
+<div class="container">
+
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                        data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="./index.php">
+                    <img src="./static/images/raspberry.png" alt="Logo"> GumCP
+                </a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <?php require_once('./include/menu.php'); ?>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <h1><i class="fa fa-cube"></i> Docker
+            <a href="#" onclick="dockerLoad(); return false;" class="btn btn-default btn-sm pull-right">
+                <i class="fa fa-refresh"></i> Refresh
+            </a>
+        </h1>
+    </div>
+
+    <div class="alert alert-warning" id="docker-unavailable" style="display:none">
+        <i class="fa fa-exclamation-triangle"></i> <span id="docker-unavailable-text"></span>
+    </div>
+
+    <!-- Containers -->
+    <div class="panel panel-default" id="docker-panel">
+        <div class="panel-heading"><i class="fa fa-cubes"></i> Containers</div>
+        <div class="table-responsive">
+            <table class="table table-condensed table-striped" style="margin-bottom:0">
+                <thead>
+                    <tr><th style="padding-left:15px">Name</th><th>Image</th><th>State</th>
+                        <th>Status</th><th>Ports</th><th style="text-align:right; padding-right:15px">Actions</th></tr>
+                </thead>
+                <tbody id="docker-tbody">
+                    <tr><td colspan="6" class="text-muted" style="padding-left:15px">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Images -->
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <a data-toggle="collapse" href="#docker-images" style="text-decoration:none; color:inherit; display:block">
+                <i class="fa fa-archive"></i> Images <i class="fa fa-caret-down pull-right"></i>
+            </a>
+        </div>
+        <div id="docker-images" class="collapse">
+            <table class="table table-condensed table-striped" style="margin-bottom:0">
+                <thead>
+                    <tr><th style="padding-left:15px">Repository</th><th>Tag</th><th>ID</th><th>Size</th></tr>
+                </thead>
+                <tbody id="docker-images-tbody">
+                    <tr><td colspan="4" class="text-muted" style="padding-left:15px">Expand to load…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Logs modal -->
+<div class="modal fade" id="docker-logs-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title"><i class="fa fa-file-text-o"></i> Logs: <span id="docker-logs-name"></span></h4>
+            </div>
+            <div class="modal-body">
+                <pre id="docker-logs-output" style="max-height:480px; overflow:auto; font-size:12px">Loading…</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container">
+        <p class="text-muted">
+            GumCP <a href="https://github.com/gumslone/GumCP" target="_blank" rel="noopener">GitHub</a>.
+            <a href="https://www.paypal.com/donate/?hosted_button_id=VCWHQPACTXV5N"
+               target="_blank" rel="noopener">
+                <img src="./static/images/Donate-PayPal-green.svg" alt="Donate">
+            </a>
+        </p>
+    </div>
+</footer>
+
+<script>
+function esc(s) { return $('<div>').text(s == null ? '' : s).html(); }
+
+function dockerStateLabel(state) {
+    var s = (state || '').toLowerCase();
+    if (s === 'running') return 'label-success';
+    if (s === 'paused')  return 'label-warning';
+    if (s === 'exited' || s === 'dead') return 'label-default';
+    return 'label-info';
+}
+
+function dockerLoad() {
+    $.ajax({
+        type: 'POST', url: 'ajax.php', dataType: 'json',
+        data: { action: 'docker_ps', csrf_token: CSRF_TOKEN },
+        success: function(d) {
+            if (d && d.type === 'error') {
+                $('#docker-unavailable-text').text(d.message || 'Docker error');
+                $('#docker-unavailable').show(); $('#docker-panel').hide();
+                return;
+            }
+            if (d && d.available === false) {
+                $('#docker-unavailable-text').text(d.reason || 'Docker is not available.');
+                $('#docker-unavailable').show(); $('#docker-panel').hide();
+                return;
+            }
+            $('#docker-unavailable').hide(); $('#docker-panel').show();
+            var list = (d && d.containers) || [];
+            if (!list.length) {
+                $('#docker-tbody').html('<tr><td colspan="6" class="text-muted" style="padding-left:15px">No containers.</td></tr>');
+                return;
+            }
+            var html = '';
+            list.forEach(function(c) {
+                var running = (c.state || '').toLowerCase() === 'running';
+                var paused  = (c.state || '').toLowerCase() === 'paused';
+                var btns = '';
+                if (running || paused) {
+                    btns += dockerBtn(c.id, c.name, 'stop', 'btn-warning', 'fa-stop', 'Stop');
+                    btns += dockerBtn(c.id, c.name, 'restart', 'btn-info', 'fa-refresh', 'Restart');
+                    btns += paused
+                        ? dockerBtn(c.id, c.name, 'unpause', 'btn-default', 'fa-play-circle', 'Unpause')
+                        : dockerBtn(c.id, c.name, 'pause', 'btn-default', 'fa-pause', 'Pause');
+                } else {
+                    btns += dockerBtn(c.id, c.name, 'start', 'btn-success', 'fa-play', 'Start');
+                }
+                btns += '<button class="btn btn-xs btn-default" onclick="dockerLogs(\'' + esc(c.id) + '\',\'' + esc(c.name) + '\')" title="Logs"><i class="fa fa-file-text-o"></i></button> ';
+                btns += dockerBtn(c.id, c.name, 'remove', 'btn-danger', 'fa-trash', 'Remove');
+                html += '<tr>'
+                    + '<td style="padding-left:15px"><strong>' + esc(c.name) + '</strong></td>'
+                    + '<td class="text-muted">' + esc(c.image) + '</td>'
+                    + '<td><span class="label ' + dockerStateLabel(c.state) + '">' + esc(c.state) + '</span></td>'
+                    + '<td class="text-muted" style="font-size:12px">' + esc(c.status) + '</td>'
+                    + '<td class="text-muted" style="font-size:12px">' + esc(c.ports) + '</td>'
+                    + '<td style="text-align:right; padding-right:15px; white-space:nowrap">' + btns + '</td>'
+                    + '</tr>';
+            });
+            $('#docker-tbody').html(html);
+        },
+        error: function() {
+            $('#docker-unavailable-text').text('Request failed — check SSH settings.');
+            $('#docker-unavailable').show();
+        }
+    });
+}
+
+function dockerBtn(id, name, act, cls, icon, label) {
+    return '<button class="btn btn-xs ' + cls + '" title="' + label + '" '
+         + 'onclick="dockerAction(\'' + esc(id) + '\',\'' + esc(name) + '\',\'' + act + '\')">'
+         + '<i class="fa ' + icon + '"></i></button> ';
+}
+
+function dockerAction(id, name, act) {
+    if (act === 'remove' && !confirm('Remove container "' + name + '"? This cannot be undone.')) return;
+    if (act === 'stop'   && !confirm('Stop container "' + name + '"?')) return;
+    $.ajax({
+        type: 'POST', url: 'ajax.php', dataType: 'json',
+        data: { action: 'docker_action', id: id, act: act, csrf_token: CSRF_TOKEN },
+        success: function(d) {
+            if (d && d.type === 'error') alert(d.message || 'Action failed');
+            dockerLoad();
+        },
+        error: function() { alert('Request failed — check SSH settings.'); }
+    });
+}
+
+function dockerLogs(id, name) {
+    $('#docker-logs-name').text(name);
+    $('#docker-logs-output').text('Loading…');
+    $('#docker-logs-modal').modal('show');
+    $.ajax({
+        type: 'POST', url: 'ajax.php', dataType: 'json',
+        data: { action: 'docker_logs', id: id, lines: 300, csrf_token: CSRF_TOKEN },
+        success: function(d) {
+            $('#docker-logs-output').text((d && (d.output || d.message)) || '(no output)');
+        },
+        error: function() { $('#docker-logs-output').text('Request failed — check SSH settings.'); }
+    });
+}
+
+function dockerLoadImages() {
+    $.ajax({
+        type: 'POST', url: 'ajax.php', dataType: 'json',
+        data: { action: 'docker_images', csrf_token: CSRF_TOKEN },
+        success: function(d) {
+            var imgs = (d && d.images) || [];
+            if (!imgs.length) {
+                $('#docker-images-tbody').html('<tr><td colspan="4" class="text-muted" style="padding-left:15px">No images.</td></tr>');
+                return;
+            }
+            var html = '';
+            imgs.forEach(function(im) {
+                html += '<tr><td style="padding-left:15px">' + esc(im.repo) + '</td>'
+                     + '<td>' + esc(im.tag) + '</td><td class="text-muted">' + esc(im.id) + '</td>'
+                     + '<td>' + esc(im.size) + '</td></tr>';
+            });
+            $('#docker-images-tbody').html(html);
+        }
+    });
+}
+
+$(function() {
+    dockerLoad();
+    $('#docker-images').one('shown.bs.collapse', dockerLoadImages);
+});
+</script>
+
+</body>
+</html>

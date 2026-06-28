@@ -28,6 +28,7 @@ if (!isset($gumcp_modules['button_api'])) {
 // in the navbar after a git pull without manual edits.
 $_gumcp_new_modules = [
     'rpi'      => ['module_title' => 'Raspberry Pi', 'module_index_file_relative_path' => './rpi.php',      'module_active' => 1],
+    'docker'   => ['module_title' => 'Docker',       'module_index_file_relative_path' => './docker.php',   'module_active' => 0],
     'packages' => ['module_title' => 'Packages',     'module_index_file_relative_path' => './packages.php', 'module_active' => 1, 'module_group' => 'System'],
     'logs'     => ['module_title' => 'Logs',         'module_index_file_relative_path' => './logs.php',     'module_active' => 1, 'module_group' => 'System'],
     'cron'     => ['module_title' => 'Cron',         'module_index_file_relative_path' => './cron.php',     'module_active' => 1, 'module_group' => 'System'],
