@@ -179,12 +179,90 @@ function describeCron(expr) {
     return null; // valid-ish but not recognised
 }
 
+/* ── validation (mirrors cron_validate_schedule in ajax.php) ── */
+function cronTokenValue(t, min, max, names) {
+    t = t.toLowerCase();
+    var v;
+    if (names && names.hasOwnProperty(t)) v = names[t];
+    else if (/^\d+$/.test(t)) v = parseInt(t, 10);
+    else return null;
+    return (v < min || v > max) ? null : v;
+}
+
+function cronFieldValid(field, min, max, names) {
+    if (field === '') return false;
+    var items = field.split(',');
+    for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        if (item === '') return false;
+        var range = item;
+        if (item.indexOf('/') !== -1) {
+            var bits = item.split('/');
+            range = bits[0];
+            if (!/^\d+$/.test(bits[1]) || parseInt(bits[1], 10) < 1) return false;
+        }
+        if (range === '*') continue;
+        if (range.indexOf('-') !== -1) {
+            var ab = range.split('-');
+            var a = cronTokenValue(ab[0], min, max, names);
+            var b = cronTokenValue(ab[1], min, max, names);
+            if (a === null || b === null || a > b) return false;
+        } else {
+            if (cronTokenValue(range, min, max, names) === null) return false;
+        }
+    }
+    return true;
+}
+
+function cronValidate(expr) {
+    expr = (expr || '').trim();
+    if (expr === '') return false;
+    if (expr.charAt(0) === '@') {
+        return ['@reboot','@yearly','@annually','@monthly','@weekly','@daily','@midnight','@hourly']
+            .indexOf(expr.toLowerCase()) !== -1;
+    }
+    var p = expr.split(/\s+/);
+    if (p.length !== 5) return false;
+    var months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    var dows   = {sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6};
+    return cronFieldValid(p[0], 0, 59, null)
+        && cronFieldValid(p[1], 0, 23, null)
+        && cronFieldValid(p[2], 1, 31, null)
+        && cronFieldValid(p[3], 1, 12, months)
+        && cronFieldValid(p[4], 0, 7,  dows);
+}
+
 function cronDescribe() {
-    var d = describeCron($('#cron-schedule').val());
+    var expr = $('#cron-schedule').val();
     var $el = $('#cron-desc');
-    if (d === '')      { $el.text(''); }
-    else if (d === null) { $el.removeClass('text-info text-success').addClass('text-muted').text('Custom schedule'); }
-    else               { $el.removeClass('text-muted').addClass('text-info').html('<i class="fa fa-clock-o"></i> Runs ' + esc(d) + '.'); }
+    var $field = $('#cron-schedule').closest('.form-group');
+    var $btn = $('#cron-add-btn');
+
+    if (expr.trim() === '') {
+        $el.text('');
+        $field.removeClass('has-error has-success');
+        $btn.prop('disabled', false);
+        return;
+    }
+
+    if (!cronValidate(expr)) {
+        $el.removeClass('text-info text-muted').addClass('text-danger')
+           .html('<i class="fa fa-times-circle"></i> Invalid schedule expression.');
+        $field.addClass('has-error').removeClass('has-success');
+        $btn.prop('disabled', true);
+        return;
+    }
+
+    $field.addClass('has-success').removeClass('has-error');
+    $btn.prop('disabled', false);
+
+    var d = describeCron(expr);
+    if (d === null) {
+        $el.removeClass('text-info text-danger').addClass('text-muted').text('Valid custom schedule.');
+    } else {
+        $el.removeClass('text-muted text-danger').addClass('text-info')
+           .html('<i class="fa fa-clock-o"></i> Runs ' + esc(d) + '.');
+    }
 }
 
 function cronLoad() {

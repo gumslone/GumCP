@@ -495,11 +495,12 @@ switch ($action) {
     case 'cron_add':
         $schedule = trim((string)($_POST['schedule'] ?? ''));
         $command  = trim((string)($_POST['command'] ?? ''));
-        // 5 schedule fields (or an @keyword), and a non-empty command.
-        $sched_ok = preg_match('/^@(reboot|yearly|annually|monthly|weekly|daily|midnight|hourly)$/', $schedule)
-                 || preg_match('/^(\S+\s+){4}\S+$/', $schedule);
-        if (!$sched_ok || $command === '') {
-            $out = err('Invalid schedule or empty command');
+        if (!cron_validate_schedule($schedule)) {
+            $out = err('Invalid cron schedule expression');
+            break;
+        }
+        if ($command === '') {
+            $out = err('Command cannot be empty');
             break;
         }
         $line = $schedule . ' ' . $command;
@@ -618,6 +619,71 @@ switch ($action) {
 }
 
 echo json_encode($out);
+
+// ── Cron schedule validation ──────────────────────────────────────────────────
+// Accepts an @keyword or five fields (min hour dom mon dow), each validated
+// against its allowed range and supporting *, lists, ranges and /steps.
+function cron_validate_schedule(string $s): bool {
+    $s = trim($s);
+    if ($s === '') return false;
+
+    if ($s[0] === '@') {
+        $keywords = ['@reboot', '@yearly', '@annually', '@monthly',
+                     '@weekly', '@daily', '@midnight', '@hourly'];
+        return in_array(strtolower($s), $keywords, true);
+    }
+
+    $parts = preg_split('/\s+/', $s);
+    if (count($parts) !== 5) return false;
+
+    $ranges = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 7]];
+    $names  = [
+        3 => ['jan'=>1,'feb'=>2,'mar'=>3,'apr'=>4,'may'=>5,'jun'=>6,
+              'jul'=>7,'aug'=>8,'sep'=>9,'oct'=>10,'nov'=>11,'dec'=>12],
+        4 => ['sun'=>0,'mon'=>1,'tue'=>2,'wed'=>3,'thu'=>4,'fri'=>5,'sat'=>6],
+    ];
+    foreach ($parts as $i => $field) {
+        if (!cron_field_valid($field, $ranges[$i][0], $ranges[$i][1], isset($names[$i]) ? $names[$i] : [])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function cron_field_valid(string $field, int $min, int $max, array $names): bool {
+    if ($field === '') return false;
+    foreach (explode(',', $field) as $item) {
+        if ($item === '') return false;
+        $range = $item;
+        if (strpos($item, '/') !== false) {
+            $bits = explode('/', $item, 2);
+            $range = $bits[0];
+            if (!preg_match('/^\d+$/', $bits[1]) || (int)$bits[1] < 1) return false;
+        }
+        if ($range === '*') continue;
+        if (strpos($range, '-') !== false) {
+            $ab = explode('-', $range, 2);
+            $a = cron_token_value($ab[0], $min, $max, $names);
+            $b = cron_token_value($ab[1], $min, $max, $names);
+            if ($a === null || $b === null || $a > $b) return false;
+        } else {
+            if (cron_token_value($range, $min, $max, $names) === null) return false;
+        }
+    }
+    return true;
+}
+
+function cron_token_value(string $t, int $min, int $max, array $names) {
+    $t = strtolower($t);
+    if (isset($names[$t])) {
+        $v = $names[$t];
+    } elseif (preg_match('/^\d+$/', $t)) {
+        $v = (int)$t;
+    } else {
+        return null;
+    }
+    return ($v < $min || $v > $max) ? null : $v;
+}
 
 // ── Boot config path resolver ─────────────────────────────────────────────────
 // Bookworm moved the boot partition to /boot/firmware; older OSes use /boot.
