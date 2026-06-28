@@ -54,6 +54,10 @@ if (!isset($_SESSION['csrf_token'])) {
         </h1>
     </div>
 
+    <div class="alert alert-info" id="pkg-index-note" style="display:none">
+        <i class="fa fa-info-circle"></i> <span id="pkg-index-text"></span>
+    </div>
+
     <p>
         <button class="btn btn-default" id="pkg-check-btn" onclick="pkgCheck()">
             <i class="fa fa-refresh"></i> Check for updates
@@ -105,6 +109,7 @@ function pkgLoadList() {
             var pkgs = (d && d.packages) || [];
             var esc = function(s) { return $('<div>').text(s == null ? '' : s).html(); };
             $('#pkg-count-label').text(pkgs.length + ' update' + (pkgs.length !== 1 ? 's' : '') + ' available');
+            pkgShowIndexAge((d && d.index_mtime) || 0, pkgs.length);
             if (!pkgs.length) {
                 $('#pkg-tbody').html('<tr><td colspan="3" class="text-success" style="padding-left:15px">'
                     + '<i class="fa fa-check"></i> Everything is up to date.</td></tr>');
@@ -128,6 +133,35 @@ function pkgLoadList() {
 function pkgShowOutput(text) {
     $('#pkg-output').text(text || '');
     $('#pkg-output-wrap').show();
+}
+
+function pkgAgo(secs) {
+    if (secs < 90) return 'just now';
+    var m = Math.round(secs / 60);
+    if (m < 90) return m + ' minute' + (m !== 1 ? 's' : '') + ' ago';
+    var h = Math.round(m / 60);
+    if (h < 36) return h + ' hour' + (h !== 1 ? 's' : '') + ' ago';
+    var dys = Math.round(h / 24);
+    return dys + ' day' + (dys !== 1 ? 's' : '') + ' ago';
+}
+
+function pkgShowIndexAge(mtime, count) {
+    var $note = $('#pkg-index-note'), $txt = $('#pkg-index-text');
+    if (!mtime) {
+        $note.removeClass('alert-info alert-warning').addClass('alert-warning').show();
+        $txt.html('The apt index age is unknown. Click <strong>Check for updates</strong> to refresh it.');
+        return;
+    }
+    var age = Math.max(0, Math.floor(Date.now() / 1000) - mtime);
+    var stale = age > 86400; // older than a day
+    $note.removeClass('alert-info alert-warning').addClass(stale ? 'alert-warning' : 'alert-info').show();
+    var msg = 'Package index last refreshed <strong>' + pkgAgo(age) + '</strong>.';
+    if (count === 0) {
+        msg += stale
+            ? ' That\'s a while ago — click <strong>Check for updates</strong> to be sure the list is current.'
+            : ' Your system is up to date.';
+    }
+    $txt.html(msg);
 }
 
 function pkgCheck() {

@@ -415,7 +415,18 @@ switch ($action) {
                 $pkgs[] = ['name' => $m[1], 'new' => $m[2], 'current' => trim($m[3])];
             }
         }
-        $out = ok('ok', ['packages' => $pkgs, 'count' => count($pkgs)]);
+        // When the apt package index was last refreshed (most recent of the
+        // success stamp or the lists directory). Lets the UI flag a stale cache.
+        $stamp = 0;
+        foreach (['/var/lib/apt/periodic/update-success-stamp', '/var/lib/apt/lists'] as $p) {
+            $t = @filemtime($p);
+            if ($t !== false && $t > $stamp) $stamp = $t;
+        }
+        $out = ok('ok', [
+            'packages'    => $pkgs,
+            'count'       => count($pkgs),
+            'index_mtime' => $stamp, // unix time, 0 if unknown
+        ]);
         break;
 
     // ── Packages: refresh apt index (sudo via SSH) ────────────────────────────
