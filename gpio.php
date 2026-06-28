@@ -57,56 +57,12 @@ if ($gpio_source === 'wiringpi') {
 }
 
 // ── Identify controllable GPIO pins ──────────────────────────────────────────
-// Left-side BCM  = $row[0]        (first cell)
-// Right-side BCM = $row[last]     (last cell)
-// A row represents a real GPIO pin when:
-//   - it has a cell containing 'gpio' (the Name column) AND
-//   - it has a cell containing '|'   (the Physical pin cell, e.g. "3||4")
-// We collect BCM numbers for both sides so the render loop can highlight them.
+// In `gpio readall` the leftmost cell of a row is the left side's BCM number and
+// the rightmost cell is the right side's BCM number. Power and ground pins
+// (Name = 3.3v / 5v / 0v) have an EMPTY BCM cell — only pins with a numeric BCM
+// can be switched. This avoids rendering dead toggles on power/ground pins.
 
-$real_gpio_bcm = []; // set of BCM numbers that are controllable GPIO pins
-$left_bcm      = []; // $left_bcm[$k]  = BCM for left  side of row $k
-$right_bcm_map = []; // $right_bcm_map[$k] = BCM for right side of row $k
-
-if (!empty($gpio_rows)) {
-    // Left side: iterate top-to-bottom
-    foreach ($gpio_rows as $k => $row) {
-        $left_bcm[$k] = $row[0] ?? '';
-        $has_gpio = $has_physical = false;
-        foreach ($row as $cell) {
-            if (stripos($cell, 'gpio') !== false) { $has_gpio = true; }
-            if (strpos($cell, '|') !== false)      { $has_physical = true; }
-        }
-        if ($has_gpio && $has_physical) {
-            $real_gpio_bcm[] = $row[0];
-        }
-    }
-
-    // Right side: same logic scanning from the last column inward
-    foreach ($gpio_rows as $k => $row) {
-        $last = count($row) - 1;
-        $right_bcm_map[$k] = $row[$last] ?? '';
-        $has_gpio = $has_physical = false;
-        for ($i = $last; $i >= 0; $i--) {
-            if (stripos($row[$i], 'gpio') !== false) { $has_gpio = true; }
-            if (strpos($row[$i], '|') !== false)     { $has_physical = true; }
-        }
-        if ($has_gpio && $has_physical) {
-            $real_gpio_bcm[] = $row[$last];
-        }
-    }
-
-    $real_gpio_bcm = array_unique($real_gpio_bcm);
-}
-
-// ── Pre-compute per-row render metadata ───────────────────────────────────────
-// Determines left/right GPIO status and the Physical column index BEFORE
-// entering the render loop so that right-side styling can be applied when
-// each cell is rendered (not after, which was the previous bug).
-
-$gpio_bcm_set   = array_flip($real_gpio_bcm); // O(1) lookup
-$physical_col   = -1;                          // column index of the Physical cell
-
+$physical_col = -1; // column index of the Physical cell
 if (!empty($gpio_rows[0])) {
     foreach ($gpio_rows[0] as $i => $header) {
         if (stripos(trim($header), 'physical') !== false) {
@@ -116,16 +72,27 @@ if (!empty($gpio_rows[0])) {
     }
 }
 
-// Per-row flags: computed once, used during rendering
+// Per-row flags: a side is controllable only when its BCM cell is numeric.
 $row_meta = [];
 foreach ($gpio_rows as $k => $row) {
-    $last = count($row) - 1;
+    $last  = count($row) - 1;
+    $bcm_l = $row[0]     ?? '';
+    $bcm_r = $row[$last] ?? '';
     $row_meta[$k] = [
-        'is_left'   => isset($gpio_bcm_set[$row[0] ?? '']),
-        'is_right'  => isset($gpio_bcm_set[$row[$last] ?? '']),
-        'bcm_left'  => $row[0]    ?? '',
-        'bcm_right' => $row[$last] ?? '',
+        'is_left'   => ctype_digit($bcm_l),
+        'is_right'  => ctype_digit($bcm_r),
+        'bcm_left'  => $bcm_l,
+        'bcm_right' => $bcm_r,
     ];
+}
+
+// Display label for a pin Name cell: 0v → GND, tidy power-rail casing.
+function gpio_name_label(string $name): string {
+    $n = strtolower(trim($name));
+    if ($n === '0v')   return 'GND';
+    if ($n === '3.3v') return '3.3V';
+    if ($n === '5v')   return '5V';
+    return $name;
 }
 ?>
 <!DOCTYPE html>
@@ -291,6 +258,18 @@ foreach ($gpio_rows as $k => $row) {
                                             <?php elseif ($col_header === 'bcm'): ?>
                                                 <strong><?php echo $cell_esc; ?></strong>
 
+                                            <?php elseif ($col_header === 'name'): ?>
+                                                <?php
+                                                $name_label = gpio_name_label($cell);
+                                                $is_power = in_array($name_label, ['GND', '3.3V', '5V'], true);
+                                                ?>
+                                                <?php if ($is_power): ?>
+                                                    <span class="label label-<?php echo $name_label === 'GND' ? 'default' : 'danger'; ?>"><?php
+                                                        echo htmlspecialchars($name_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                                                <?php else: ?>
+                                                    <?php echo htmlspecialchars($name_label, ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php endif; ?>
+
                                             <?php else: ?>
                                                 <?php echo $cell_esc; ?>
                                             <?php endif; ?>
@@ -322,6 +301,12 @@ foreach ($gpio_rows as $k => $row) {
                             <li><strong>PUD</strong> — Pull-up / Pull-down resistor</li>
                             <li style="margin-top:8px; background:#e8fbe8; padding:4px 6px; border-radius:3px;">
                                 <strong>Green background</strong> — Controllable GPIO pin
+                            </li>
+                            <li style="margin-top:4px;">
+                                <span class="label label-danger">3.3V</span> /
+                                <span class="label label-danger">5V</span> —
+                                power pins, <span class="label label-default">GND</span> — ground.
+                                These are fixed and cannot be switched.
                             </li>
                         </ul>
                     </div>
