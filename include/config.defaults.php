@@ -24,6 +24,22 @@ if (!isset($gumcp_modules['button_api'])) {
     $gumcp_modules['button_api'] = ['module_title' => 'Button API', 'module_active' => 1, 'module_no_nav' => 1];
 }
 
+// Backfill modules added after a user's config.php was created, so they appear
+// in the navbar after a git pull without manual edits.
+$_gumcp_new_modules = [
+    'rpi'      => ['module_title' => 'Raspberry Pi', 'module_index_file_relative_path' => './rpi.php',      'module_active' => 1],
+    'packages' => ['module_title' => 'Packages',     'module_index_file_relative_path' => './packages.php', 'module_active' => 1],
+    'logs'     => ['module_title' => 'Logs',         'module_index_file_relative_path' => './logs.php',     'module_active' => 1],
+    'cron'     => ['module_title' => 'Cron',         'module_index_file_relative_path' => './cron.php',     'module_active' => 1],
+    'users'    => ['module_title' => 'Users',        'module_index_file_relative_path' => './users.php',    'module_active' => 1],
+];
+foreach ($_gumcp_new_modules as $_k => $_m) {
+    if (!isset($gumcp_modules[$_k])) {
+        $gumcp_modules[$_k] = $_m;
+    }
+}
+unset($_gumcp_new_modules, $_k, $_m);
+
 // Services shown as status badges on the dashboard (systemctl is-active).
 if (!isset($gumcp_dashboard_services) || !is_array($gumcp_dashboard_services)) {
     $gumcp_dashboard_services = ['ssh', 'apache2', 'cron'];

@@ -68,6 +68,31 @@ $gumcp_modules = [
         'module_index_file_relative_path' => './buttons.php',
         'module_active'                   => 1, // one-click command buttons
     ],
+    'rpi' => [
+        'module_title'                    => 'Raspberry Pi',
+        'module_index_file_relative_path' => './rpi.php',
+        'module_active'                   => 1, // vcgencmd, interfaces, boot config, temp/CPU history
+    ],
+    'packages' => [
+        'module_title'                    => 'Packages',
+        'module_index_file_relative_path' => './packages.php',
+        'module_active'                   => 1, // apt update / upgrade
+    ],
+    'logs' => [
+        'module_title'                    => 'Logs',
+        'module_index_file_relative_path' => './logs.php',
+        'module_active'                   => 1, // journalctl and /var/log viewer
+    ],
+    'cron' => [
+        'module_title'                    => 'Cron',
+        'module_index_file_relative_path' => './cron.php',
+        'module_active'                   => 1, // scheduled tasks
+    ],
+    'users' => [
+        'module_title'                    => 'Users',
+        'module_index_file_relative_path' => './users.php',
+        'module_active'                   => 1, // users & groups (read-only)
+    ],
     // Button API — no navbar link; set module_active => 0 to disable api.php
     'button_api' => [
         'module_title'  => 'Button API',

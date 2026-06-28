@@ -20,6 +20,11 @@ More screenshots in the [screenshots folder](screenshots/).
 - **Services** — list all system services with their status; start or stop any service with one click (loads asynchronously so the page appears instantly)
 - **Processes** — browse running processes sorted by memory usage; kill by PID or name
 - **GPIO control** — view and toggle pin mode (IN/OUT), voltage (HIGH/LOW) and pull-up/down for all header pins; auto-detects WiringPi (Pi 1–4) or raspi-gpio (Pi 5)
+- **Raspberry Pi tools** — `vcgencmd` firmware, clock speeds, voltages, memory split and codec licences; enable/disable I2C, SPI, 1-Wire, SSH, VNC and camera via `raspi-config`; edit `config.txt` / `cmdline.txt` with automatic backup; live temperature & CPU-frequency history chart
+- **Package Updates** — list upgradable apt packages with a count, refresh the index (`apt update`) and upgrade everything (`apt upgrade`) from the browser
+- **System Logs** — browse the systemd journal, `dmesg` and `/var/log` files with adjustable line count and text filtering
+- **Cron Jobs** — view, add and remove scheduled tasks in the user crontab; read-only view of `/etc/crontab`
+- **Users & Groups** — read-only listing of system users and groups from `/etc/passwd` and `/etc/group`
 - **Command Buttons** — create custom one-click buttons for any shell command; choose between a confirmation modal or direct execution with inline output; drag to reorder
 - **Button API** — every button gets a unique secret URL; call it from curl, Home Assistant, or any automation tool without logging in
 - **Actions** — execute arbitrary shell commands over SSH; run commands in the background with output saved to a log file; reboot; pull the latest GumCP version from GitHub with one click

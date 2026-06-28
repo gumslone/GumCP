@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### Added — Webmin-style modules
+- **Package Updates** (`packages.php`): lists upgradable apt packages with a count, refreshes the index (`apt-get update`) and upgrades all (`apt-get upgrade`) over SSH.
+- **System Logs** (`logs.php`): views the systemd journal, `dmesg` and `/var/log` files over SSH with adjustable line count and text filter (path-validated).
+- **Cron Jobs** (`cron.php`): view, add and remove user crontab entries over SSH; read-only `/etc/crontab`.
+- **Users & Groups** (`users.php`): read-only listing of `/etc/passwd` and `/etc/group` (pure PHP, no SSH).
+
+### Added — Raspberry Pi tools (`rpi.php`)
+- `vcgencmd` metrics: firmware, ARM/core/V3D clocks, core/SDRAM voltages, memory split, codec licences.
+- Interface toggles for I2C, SPI, 1-Wire, SSH, VNC and camera via `raspi-config nonint`, with current state.
+- `config.txt` / `cmdline.txt` editor with an automatic `.gumcp.bak` backup before each save (Bookworm `/boot/firmware` path aware).
+- Live temperature & CPU-frequency history chart sampled into a local ring buffer.
+
+### Changed
+- New modules are backfilled in `include/config.defaults.php`, so they appear in the navbar after upgrading without editing `config.php`.
+- `gumcp_vcgencmd_path()` helper added to `include/dashboard.php` and reused by the throttling and Raspberry Pi features.
+
+---
+
 ## [2.3.2] — 2026-06-27
 
 ### Changed

@@ -99,13 +99,22 @@ if (!function_exists('gumcp_swap_info')) {
      * Raspberry Pi throttling / under-voltage status via `vcgencmd get_throttled`.
      * Returns [available, healthy, messages]. messages is a list of human strings.
      */
-    function gumcp_throttled_info(): array {
-        // Locate vcgencmd: it is often not on the web user's PATH.
-        $bin = '';
+    /**
+     * Locate the vcgencmd binary (often not on the web user's PATH). '' if absent.
+     */
+    function gumcp_vcgencmd_path(): string {
+        static $cached = null;
+        if ($cached !== null) return $cached;
+        $cached = '';
         foreach (['/usr/bin/vcgencmd', '/opt/vc/bin/vcgencmd', 'vcgencmd'] as $cand) {
             $found = @shell_exec('command -v ' . escapeshellarg($cand) . ' 2>/dev/null');
-            if (is_string($found) && trim($found) !== '') { $bin = trim($found); break; }
+            if (is_string($found) && trim($found) !== '') { $cached = trim($found); break; }
         }
+        return $cached;
+    }
+
+    function gumcp_throttled_info(): array {
+        $bin = gumcp_vcgencmd_path();
         if ($bin === '') {
             return ['available' => false, 'healthy' => true, 'messages' => [],
                     'reason' => 'vcgencmd not found (non-Pi hardware, or usbutils/raspi tools not installed)'];

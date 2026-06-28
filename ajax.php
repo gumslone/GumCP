@@ -404,9 +404,234 @@ switch ($action) {
             $out = ok('Menu order saved');
         }
         break;
+
+    // ── Packages: list upgradable (read-only, no sudo) ────────────────────────
+    case 'pkg_list':
+        $raw = (string)(@shell_exec('apt list --upgradable 2>/dev/null') ?: '');
+        $pkgs = [];
+        foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
+            // name/suite newver arch [upgradable from: oldver]
+            if (preg_match('#^(\S+?)/\S+\s+(\S+)\s+\S+\s+\[upgradable from:\s+([^\]]+)\]#', trim($line), $m)) {
+                $pkgs[] = ['name' => $m[1], 'new' => $m[2], 'current' => trim($m[3])];
+            }
+        }
+        $out = ok('ok', ['packages' => $pkgs, 'count' => count($pkgs)]);
+        break;
+
+    // ── Packages: refresh apt index (sudo via SSH) ────────────────────────────
+    case 'pkg_check':
+        $r = ssh_run('sudo apt-get update 2>&1');
+        $out = $r['success'] ? ok('Package index refreshed', ['output' => $r['output']]) : err($r['error']);
+        break;
+
+    // ── Packages: upgrade all (sudo via SSH) ──────────────────────────────────
+    case 'pkg_upgrade':
+        $r = ssh_run('sudo DEBIAN_FRONTEND=noninteractive apt-get -y upgrade 2>&1');
+        $out = $r['success'] ? ok('Upgrade finished', ['output' => $r['output']]) : err($r['error']);
+        break;
+
+    // ── Logs: view journalctl or a /var/log file (via SSH) ────────────────────
+    case 'log_view':
+        $source = (string)($_POST['source'] ?? 'journal');
+        $lines  = (int)($_POST['lines'] ?? 200);
+        if ($lines < 10)   $lines = 10;
+        if ($lines > 5000) $lines = 5000;
+        $filter = trim((string)($_POST['filter'] ?? ''));
+
+        if ($source === 'journal') {
+            $cmd = 'sudo journalctl -n ' . $lines . ' --no-pager 2>&1';
+        } elseif ($source === 'dmesg') {
+            $cmd = 'sudo dmesg 2>&1 | tail -n ' . $lines;
+        } else {
+            // Must be a plain file under /var/log
+            if (strpos($source, '..') !== false || strpos($source, '/var/log/') !== 0
+                || !preg_match('#^/var/log/[a-zA-Z0-9._/-]+$#', $source)) {
+                $out = err('Invalid log source');
+                break;
+            }
+            $cmd = 'sudo tail -n ' . $lines . ' ' . escapeshellarg($source) . ' 2>&1';
+        }
+        if ($filter !== '') {
+            $cmd .= ' | grep -F -- ' . escapeshellarg($filter);
+        }
+        $r = ssh_run($cmd);
+        $out = $r['success'] ? ok('ok', ['output' => $r['output']]) : err($r['error']);
+        break;
+
+    // ── Cron: list user crontab + /etc/crontab (via SSH) ──────────────────────
+    case 'cron_list':
+        $r1 = ssh_run('crontab -l 2>/dev/null');
+        $r2 = ssh_run('cat /etc/crontab 2>/dev/null');
+        $out = ok('ok', [
+            'user'   => $r1['success'] ? $r1['output'] : '',
+            'system' => $r2['success'] ? $r2['output'] : '',
+        ]);
+        break;
+
+    // ── Cron: add a line to the user crontab (via SSH) ────────────────────────
+    case 'cron_add':
+        $schedule = trim((string)($_POST['schedule'] ?? ''));
+        $command  = trim((string)($_POST['command'] ?? ''));
+        // 5 schedule fields (or an @keyword), and a non-empty command.
+        $sched_ok = preg_match('/^@(reboot|yearly|annually|monthly|weekly|daily|midnight|hourly)$/', $schedule)
+                 || preg_match('/^(\S+\s+){4}\S+$/', $schedule);
+        if (!$sched_ok || $command === '') {
+            $out = err('Invalid schedule or empty command');
+            break;
+        }
+        $line = $schedule . ' ' . $command;
+        // Append safely: keep existing crontab, add the new line.
+        $b64 = base64_encode($line);
+        $cmd = '( crontab -l 2>/dev/null; echo ' . escapeshellarg($b64) . ' | base64 -d ) | crontab -';
+        $r = ssh_run($cmd . ' 2>&1');
+        $out = $r['success'] ? ok('Cron job added') : err($r['error']);
+        break;
+
+    // ── Cron: delete the Nth line of the user crontab (via SSH) ───────────────
+    case 'cron_delete':
+        $index = (int)($_POST['index'] ?? -1);
+        if ($index < 0) { $out = err('Invalid index'); break; }
+        $cur = ssh_run('crontab -l 2>/dev/null');
+        if (!$cur['success']) { $out = err($cur['error']); break; }
+        $lines = preg_split('/\r\n|\r|\n/', $cur['output']);
+        if (!isset($lines[$index])) { $out = err('Line not found'); break; }
+        unset($lines[$index]);
+        $new = implode("\n", $lines);
+        $b64 = base64_encode($new === '' ? '' : $new . "\n");
+        $cmd = 'echo ' . escapeshellarg($b64) . ' | base64 -d | crontab -';
+        $r = ssh_run($cmd . ' 2>&1');
+        $out = $r['success'] ? ok('Cron job removed') : err($r['error']);
+        break;
+
+    // ── Raspberry Pi: vcgencmd metrics ────────────────────────────────────────
+    case 'rpi_metrics':
+        $bin = gumcp_vcgencmd_path();
+        if ($bin === '') { $out = err('vcgencmd not available'); break; }
+        $vc = function(string $args) use ($bin) {
+            return trim((string)(@shell_exec(escapeshellarg($bin) . ' ' . $args . ' 2>/dev/null') ?: ''));
+        };
+        $clock = function(string $c) use ($vc) {
+            $r = $vc('measure_clock ' . $c);
+            return preg_match('/=(\d+)/', $r, $m) ? round((int)$m[1] / 1000000, 0) . ' MHz' : '—';
+        };
+        $volt = function(string $c) use ($vc) {
+            $r = $vc('measure_volts ' . $c);
+            return preg_match('/=([\d.]+)V/', $r, $m) ? $m[1] . ' V' : '—';
+        };
+        $mem = function(string $c) use ($vc) {
+            $r = $vc('get_mem ' . $c);
+            return preg_match('/=(\S+)/', $r, $m) ? $m[1] : '—';
+        };
+        $codecs = [];
+        foreach (['H264', 'H265', 'MPG2', 'WVC1'] as $codec) {
+            $r = $vc('codec_enabled ' . $codec);
+            $codecs[$codec] = (stripos($r, 'enabled') !== false) ? 'enabled' : 'disabled';
+        }
+        $out = ok('ok', [
+            'firmware'  => $vc('version'),
+            'arm_clock' => $clock('arm'),
+            'core_clock'=> $clock('core'),
+            'v3d_clock' => $clock('v3d'),
+            'core_volt' => $volt('core'),
+            'sdram_volt'=> $volt('sdram_c'),
+            'mem_arm'   => $mem('arm'),
+            'mem_gpu'   => $mem('gpu'),
+            'codecs'    => $codecs,
+        ]);
+        break;
+
+    // ── Raspberry Pi: current interface states via raspi-config ───────────────
+    case 'rpi_iface_status':
+        $ifaces = ['i2c', 'spi', 'onewire', 'ssh', 'vnc', 'camera'];
+        $states = [];
+        foreach ($ifaces as $i) {
+            $r = ssh_run('sudo raspi-config nonint get_' . $i . ' 2>/dev/null');
+            // get_X returns 0 = enabled, 1 = disabled
+            $v = $r['success'] ? trim($r['output']) : '';
+            $states[$i] = $v === '0' ? 'enabled' : ($v === '1' ? 'disabled' : 'unknown');
+        }
+        $out = ok('ok', ['states' => $states]);
+        break;
+
+    // ── Raspberry Pi: toggle an interface via raspi-config (sudo via SSH) ──────
+    case 'rpi_interface':
+        $iface = (string)($_POST['iface'] ?? '');
+        $enable = ((int)($_POST['enable'] ?? 0)) === 1;
+        $allowed = ['i2c', 'spi', 'onewire', 'ssh', 'vnc', 'camera'];
+        if (!in_array($iface, $allowed, true)) { $out = err('Unknown interface'); break; }
+        // raspi-config nonint do_X: 0 = enable, 1 = disable
+        $arg = $enable ? '0' : '1';
+        $r = ssh_run('sudo raspi-config nonint do_' . $iface . ' ' . $arg . ' 2>&1');
+        $out = $r['success'] ? ok(($enable ? 'Enabled ' : 'Disabled ') . strtoupper($iface)) : err($r['error']);
+        break;
+
+    // ── Raspberry Pi: read boot config files (via SSH) ────────────────────────
+    case 'boot_config_read':
+        $which = (string)($_POST['file'] ?? 'config');
+        $path  = boot_config_path($which);
+        if ($path === '') { $out = err('Unknown file'); break; }
+        $r = ssh_run('sudo cat ' . escapeshellarg($path) . ' 2>&1');
+        $out = $r['success'] ? ok('ok', ['content' => $r['output'], 'path' => $path]) : err($r['error']);
+        break;
+
+    // ── Raspberry Pi: save a boot config file with backup (via SSH) ───────────
+    case 'boot_config_save':
+        $which   = (string)($_POST['file'] ?? 'config');
+        $content = (string)($_POST['content'] ?? '');
+        $path    = boot_config_path($which);
+        if ($path === '') { $out = err('Unknown file'); break; }
+        $b64 = base64_encode($content);
+        $bak = $path . '.gumcp.bak';
+        $cmd = 'sudo cp ' . escapeshellarg($path) . ' ' . escapeshellarg($bak)
+             . ' && echo ' . escapeshellarg($b64) . ' | base64 -d | sudo tee ' . escapeshellarg($path) . ' >/dev/null';
+        $r = ssh_run($cmd . ' 2>&1');
+        $out = $r['success'] ? ok('Saved (backup: ' . $bak . ')') : err($r['error']);
+        break;
+
+    // ── Raspberry Pi: temp/clock history ring buffer ──────────────────────────
+    case 'metrics_history':
+        $out = ok('ok', ['history' => metrics_history_sample()]);
+        break;
 }
 
 echo json_encode($out);
+
+// ── Boot config path resolver ─────────────────────────────────────────────────
+// Bookworm moved the boot partition to /boot/firmware; older OSes use /boot.
+function boot_config_path(string $which): string {
+    $name = $which === 'cmdline' ? 'cmdline.txt' : ($which === 'config' ? 'config.txt' : '');
+    if ($name === '') return '';
+    foreach (['/boot/firmware/', '/boot/'] as $dir) {
+        if (@file_exists($dir . $name)) return $dir . $name;
+    }
+    // Default to the modern location even if not readable by the web user.
+    return '/boot/firmware/' . $name;
+}
+
+// ── Temp/clock history ring buffer (sampled on each call) ─────────────────────
+function metrics_history_sample(): array {
+    $file = __DIR__ . '/command_logs/metrics_history.json';
+
+    $temp_raw = @file_get_contents('/sys/class/thermal/thermal_zone0/temp');
+    $temp = $temp_raw !== false ? round((float)$temp_raw / 1000, 1) : 0.0;
+
+    $freq_raw = @file_get_contents('/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq');
+    $freq = $freq_raw !== false ? (int)round((int)$freq_raw / 1000) : 0; // MHz
+
+    $history = [];
+    $existing = @file_get_contents($file);
+    if ($existing !== false) {
+        $decoded = json_decode($existing, true);
+        if (is_array($decoded)) $history = $decoded;
+    }
+
+    $history[] = ['t' => time(), 'temp' => $temp, 'freq' => $freq];
+    if (count($history) > 120) {
+        $history = array_slice($history, -120);
+    }
+    @file_put_contents($file, json_encode($history), LOCK_EX);
+    return $history;
+}
 
 // ── server_info data collection ───────────────────────────────────────────────
 // Extracted into a function to keep the switch readable.
