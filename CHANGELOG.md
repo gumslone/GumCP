@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.4.0] — 2026-06-28
 
 ### Added — Webmin-style modules
 - **Package Updates** (`packages.php`): lists upgradable apt packages with a count, refreshes the index (`apt-get update`) and upgrades all (`apt-get upgrade`) over SSH.
@@ -18,7 +18,13 @@
 - New modules are backfilled in `include/config.defaults.php`, so they appear in the navbar after upgrading without editing `config.php`.
 - `gumcp_vcgencmd_path()` helper added to `include/dashboard.php` and reused by the throttling and Raspberry Pi features.
 - **Navbar grouping**: modules with a `module_group` render under a single dropdown. Packages, Logs, Cron and Users now live under a **System** dropdown to keep the navbar tidy.
-- **Cron page**: friendlier scheduling — a "When" preset dropdown (every minute/5 min/hour/day/week/month, at boot) fills the expression, plus a live plain-English description of the chosen schedule.
+- **Cron page**: friendlier scheduling — a "When" preset dropdown (every minute/5 min/hour/day/week/month, at boot) fills the expression, plus a live plain-English description of the chosen schedule. Cron schedule expressions are now validated per-field (ranges, lists, steps, names) on both client and server.
+- **Packages page**: shows when the apt index was last refreshed and flags a stale cache, and surfaces apt repository errors (EOL/unreachable repos) instead of falsely reporting success.
+- **Actions — Update GumCP**: a refresh button fetches all release tags from GitHub so the version dropdown isn't limited to tags the Pi already had.
+- **Boot config editor**: prominent warning, a detailed save-confirm dialog naming the file, and an inline success/error notice.
+
+### Fixed
+- **GPIO**: power (3.3V/5V) and ground (0V) pins no longer show non-functional toggles; a pin is controllable only when its BCM number is numeric. `0v` is labelled **GND**; power/ground pins render as enlarged badges; table cells are vertically centered.
 
 ---
 
