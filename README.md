@@ -367,4 +367,25 @@ Raspberry Pi web control panel · Raspberry Pi dashboard · Raspberry Pi system 
 
 ---
 
+## Disclaimer
+
+GumCP is provided **"as is", without warranty of any kind**, express or implied. It
+executes shell commands, edits system and boot configuration files, manages packages
+and services, and controls GPIO pins — all of which can, if misused or misconfigured,
+**render your system unbootable, cause data loss, or damage your Raspberry Pi and any
+connected hardware**.
+
+You use GumCP entirely at your own risk. The authors and contributors accept **no
+liability** for any damage, data loss, downtime, or other harm arising from its use.
+Always keep backups, change the default credentials, restrict network access, and only
+run commands you understand. See the [LICENSE](LICENSE) for the full terms.
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE).
+
+---
+
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=VCWHQPACTXV5N)
