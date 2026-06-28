@@ -17,6 +17,8 @@
 ### Changed
 - New modules are backfilled in `include/config.defaults.php`, so they appear in the navbar after upgrading without editing `config.php`.
 - `gumcp_vcgencmd_path()` helper added to `include/dashboard.php` and reused by the throttling and Raspberry Pi features.
+- **Navbar grouping**: modules with a `module_group` render under a single dropdown. Packages, Logs, Cron and Users now live under a **System** dropdown to keep the navbar tidy.
+- **Cron page**: friendlier scheduling — a "When" preset dropdown (every minute/5 min/hour/day/week/month, at boot) fills the expression, plus a live plain-English description of the chosen schedule.
 
 ---
 

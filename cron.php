@@ -58,25 +58,41 @@ if (!isset($_SESSION['csrf_token'])) {
     <div class="panel panel-success">
         <div class="panel-heading"><i class="fa fa-plus"></i> Add Cron Job</div>
         <div class="panel-body">
-            <form class="form-inline" onsubmit="return false">
-                <div class="form-group">
-                    <label for="cron-schedule">Schedule</label>
+            <div class="row">
+                <div class="col-sm-4 form-group">
+                    <label for="cron-preset">When</label>
+                    <select class="form-control" id="cron-preset" onchange="cronPreset()">
+                        <option value="">Custom…</option>
+                        <option value="* * * * *">Every minute</option>
+                        <option value="*/5 * * * *">Every 5 minutes</option>
+                        <option value="*/15 * * * *">Every 15 minutes</option>
+                        <option value="*/30 * * * *">Every 30 minutes</option>
+                        <option value="0 * * * *">Every hour</option>
+                        <option value="@daily">Every day (midnight)</option>
+                        <option value="0 4 * * *">Every day at 04:00</option>
+                        <option value="0 0 * * 0">Every week (Sunday)</option>
+                        <option value="0 0 1 * *">Every month (1st)</option>
+                        <option value="@reboot">At boot</option>
+                    </select>
+                </div>
+                <div class="col-sm-3 form-group">
+                    <label for="cron-schedule">Schedule expression</label>
                     <input type="text" class="form-control" id="cron-schedule"
-                           placeholder="e.g. 0 4 * * *  or  @reboot" size="20">
+                           placeholder="0 4 * * *" oninput="cronDescribe()">
                 </div>
-                <div class="form-group">
-                    <label for="cron-command">Command</label>
+                <div class="col-sm-5 form-group">
+                    <label for="cron-command">Command to run</label>
                     <input type="text" class="form-control" id="cron-command"
-                           placeholder="e.g. /usr/bin/backup.sh" size="40">
+                           placeholder="/usr/bin/backup.sh">
                 </div>
-                <button class="btn btn-success" id="cron-add-btn" onclick="cronAdd()">
-                    <i class="fa fa-plus"></i> Add
-                </button>
-            </form>
+            </div>
+            <p id="cron-desc" class="text-info" style="margin:0 0 8px"></p>
+            <button class="btn btn-success" id="cron-add-btn" onclick="cronAdd()">
+                <i class="fa fa-plus"></i> Add Cron Job
+            </button>
             <small class="help-block">
-                Format: <code>minute hour day month weekday command</code>, or an
-                <code>@reboot</code>/<code>@daily</code> keyword. See
-                <a href="https://crontab.guru/" target="_blank" rel="noopener">crontab.guru</a>.
+                Pick a preset or type a <code>minute hour day month weekday</code> expression.
+                Need something specific? <a href="https://crontab.guru/" target="_blank" rel="noopener">crontab.guru</a> helps.
             </small>
         </div>
     </div>
@@ -115,6 +131,61 @@ if (!isset($_SESSION['csrf_token'])) {
 
 <script>
 function esc(s) { return $('<div>').text(s == null ? '' : s).html(); }
+
+/* ── schedule helpers ── */
+function cronPreset() {
+    var v = $('#cron-preset').val();
+    if (v !== '') { $('#cron-schedule').val(v); }
+    cronDescribe();
+}
+
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+function describeCron(expr) {
+    expr = (expr || '').trim();
+    if (expr === '') return '';
+    var keywords = {
+        '@reboot':  'at every system boot',
+        '@hourly':  'every hour, on the hour',
+        '@daily':   'every day at midnight',
+        '@midnight':'every day at midnight',
+        '@weekly':  'every week (Sunday at midnight)',
+        '@monthly': 'every month (1st at midnight)',
+        '@yearly':  'every year (Jan 1 at midnight)',
+        '@annually':'every year (Jan 1 at midnight)'
+    };
+    if (keywords[expr]) return keywords[expr];
+
+    var p = expr.split(/\s+/);
+    if (p.length < 5) return null; // incomplete
+    var min = p[0], hr = p[1], dom = p[2], mon = p[3], dow = p[4];
+    var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+    function everyN(field) { var m = /^\*\/(\d+)$/.exec(field); return m ? parseInt(m[1], 10) : null; }
+    var allRest = (dom === '*' && mon === '*' && dow === '*');
+
+    if (min === '*' && hr === '*' && allRest) return 'every minute';
+    var n = everyN(min);
+    if (n && hr === '*' && allRest) return 'every ' + n + ' minutes';
+    if (/^\d+$/.test(min) && hr === '*' && allRest) return 'at minute ' + min + ' of every hour';
+    if (min === '0' && hr === '*' && allRest) return 'every hour, on the hour';
+
+    if (/^\d+$/.test(min) && /^\d+$/.test(hr)) {
+        var time = 'at ' + pad2(+hr) + ':' + pad2(+min);
+        if (allRest) return time + ' every day';
+        if (dom === '*' && mon === '*' && /^[0-6]$/.test(dow)) return time + ' every ' + days[+dow];
+        if (/^\d+$/.test(dom) && mon === '*' && dow === '*') return time + ' on day ' + dom + ' of every month';
+    }
+    return null; // valid-ish but not recognised
+}
+
+function cronDescribe() {
+    var d = describeCron($('#cron-schedule').val());
+    var $el = $('#cron-desc');
+    if (d === '')      { $el.text(''); }
+    else if (d === null) { $el.removeClass('text-info text-success').addClass('text-muted').text('Custom schedule'); }
+    else               { $el.removeClass('text-muted').addClass('text-info').html('<i class="fa fa-clock-o"></i> Runs ' + esc(d) + '.'); }
+}
 
 function cronLoad() {
     $.ajax({

@@ -28,14 +28,17 @@ if (!isset($gumcp_modules['button_api'])) {
 // in the navbar after a git pull without manual edits.
 $_gumcp_new_modules = [
     'rpi'      => ['module_title' => 'Raspberry Pi', 'module_index_file_relative_path' => './rpi.php',      'module_active' => 1],
-    'packages' => ['module_title' => 'Packages',     'module_index_file_relative_path' => './packages.php', 'module_active' => 1],
-    'logs'     => ['module_title' => 'Logs',         'module_index_file_relative_path' => './logs.php',     'module_active' => 1],
-    'cron'     => ['module_title' => 'Cron',         'module_index_file_relative_path' => './cron.php',     'module_active' => 1],
-    'users'    => ['module_title' => 'Users',        'module_index_file_relative_path' => './users.php',    'module_active' => 1],
+    'packages' => ['module_title' => 'Packages',     'module_index_file_relative_path' => './packages.php', 'module_active' => 1, 'module_group' => 'System'],
+    'logs'     => ['module_title' => 'Logs',         'module_index_file_relative_path' => './logs.php',     'module_active' => 1, 'module_group' => 'System'],
+    'cron'     => ['module_title' => 'Cron',         'module_index_file_relative_path' => './cron.php',     'module_active' => 1, 'module_group' => 'System'],
+    'users'    => ['module_title' => 'Users',        'module_index_file_relative_path' => './users.php',    'module_active' => 1, 'module_group' => 'System'],
 ];
 foreach ($_gumcp_new_modules as $_k => $_m) {
     if (!isset($gumcp_modules[$_k])) {
         $gumcp_modules[$_k] = $_m;
+    } elseif (!empty($_m['module_group']) && empty($gumcp_modules[$_k]['module_group'])) {
+        // Upgrade existing entries (from an earlier pull) into the System group.
+        $gumcp_modules[$_k]['module_group'] = $_m['module_group'];
     }
 }
 unset($_gumcp_new_modules, $_k, $_m);

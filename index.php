@@ -609,14 +609,15 @@ $modal_modules = [];
 if (!empty($saved_menu_order)) {
     foreach ($saved_menu_order as $k) {
         if (isset($gumcp_modules[$k]) && ($gumcp_modules[$k]['module_active'] ?? 0) == 1
-            && empty($gumcp_modules[$k]['module_no_nav'])) {
+            && empty($gumcp_modules[$k]['module_no_nav'])
+            && empty($gumcp_modules[$k]['module_group'])) {
             $modal_modules[$k] = $gumcp_modules[$k];
         }
     }
 }
 foreach ($gumcp_modules as $k => $m) {
     if (($m['module_active'] ?? 0) == 1 && !isset($modal_modules[$k])
-        && empty($m['module_no_nav'])) {
+        && empty($m['module_no_nav']) && empty($m['module_group'])) {
         $modal_modules[$k] = $m;
     }
 }

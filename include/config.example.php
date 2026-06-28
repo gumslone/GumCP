@@ -73,25 +73,30 @@ $gumcp_modules = [
         'module_index_file_relative_path' => './rpi.php',
         'module_active'                   => 1, // vcgencmd, interfaces, boot config, temp/CPU history
     ],
+    // System group — these render under a single "System" navbar dropdown.
     'packages' => [
         'module_title'                    => 'Packages',
         'module_index_file_relative_path' => './packages.php',
         'module_active'                   => 1, // apt update / upgrade
+        'module_group'                    => 'System',
     ],
     'logs' => [
         'module_title'                    => 'Logs',
         'module_index_file_relative_path' => './logs.php',
         'module_active'                   => 1, // journalctl and /var/log viewer
+        'module_group'                    => 'System',
     ],
     'cron' => [
         'module_title'                    => 'Cron',
         'module_index_file_relative_path' => './cron.php',
         'module_active'                   => 1, // scheduled tasks
+        'module_group'                    => 'System',
     ],
     'users' => [
         'module_title'                    => 'Users',
         'module_index_file_relative_path' => './users.php',
         'module_active'                   => 1, // users & groups (read-only)
+        'module_group'                    => 'System',
     ],
     // Button API — no navbar link; set module_active => 0 to disable api.php
     'button_api' => [
