@@ -107,6 +107,9 @@ function gpio_name_label(string $name): string {
     <title>GumCP GPIO</title>
     <link href="./static/css.php" rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        .gpio-table > tbody > tr > td { vertical-align: middle; }
+    </style>
     <script src="./static/js.php" type="text/javascript"></script>
     <script>
     var CSRF_TOKEN  = <?php echo json_encode($_SESSION['csrf_token']); ?>;
@@ -206,7 +209,7 @@ function gpio_name_label(string $name): string {
 
             <?php elseif ($gpio_source === 'wiringpi' && !empty($gpio_rows)): ?>
                 <div class="table-responsive">
-                    <table class="table table-bordered table-condensed" style="font-size:13px;">
+                    <table class="table table-bordered table-condensed gpio-table" style="font-size:13px;">
                         <tbody>
                             <?php foreach ($gpio_rows as $k => $row):
                                 $meta     = $row_meta[$k];
