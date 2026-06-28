@@ -70,6 +70,10 @@ if (!isset($_SESSION['csrf_token'])) {
         </span>
     </p>
 
+    <div class="alert alert-danger" id="pkg-error" style="display:none">
+        <i class="fa fa-exclamation-triangle"></i> <span id="pkg-error-text"></span>
+    </div>
+
     <div id="pkg-output-wrap" style="display:none; margin-bottom:15px">
         <pre id="pkg-output" style="max-height:300px; overflow:auto"></pre>
     </div>
@@ -135,6 +139,15 @@ function pkgShowOutput(text) {
     $('#pkg-output-wrap').show();
 }
 
+function pkgShowError(msg) {
+    if (msg) {
+        $('#pkg-error-text').text(msg);
+        $('#pkg-error').show();
+    } else {
+        $('#pkg-error').hide();
+    }
+}
+
 function pkgAgo(secs) {
     if (secs < 90) return 'just now';
     var m = Math.round(secs / 60);
@@ -166,15 +179,19 @@ function pkgShowIndexAge(mtime, count) {
 
 function pkgCheck() {
     var $b = $('#pkg-check-btn');
+    pkgShowError('');
     $b.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Checking…');
     $.ajax({
         type: 'POST', url: 'ajax.php', dataType: 'json',
         data: { action: 'pkg_check', csrf_token: CSRF_TOKEN },
         success: function(d) {
+            pkgShowError(d && d.type === 'error' ? (d.message || 'apt update failed') : '');
             pkgShowOutput((d && (d.output || d.message)) || '');
             pkgLoadList();
         },
-        error: function() { pkgShowOutput('Request failed — check SSH settings.'); },
+        error: function() {
+            pkgShowError('Request failed — check SSH settings.');
+        },
         complete: function() { $b.prop('disabled', false).html('<i class="fa fa-refresh"></i> Check for updates'); }
     });
 }

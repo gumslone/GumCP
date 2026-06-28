@@ -432,7 +432,19 @@ switch ($action) {
     // ── Packages: refresh apt index (sudo via SSH) ────────────────────────────
     case 'pkg_check':
         $r = ssh_run('sudo apt-get update 2>&1');
-        $out = $r['success'] ? ok('Package index refreshed', ['output' => $r['output']]) : err($r['error']);
+        if (!$r['success']) {
+            $out = err($r['error']);
+            break;
+        }
+        // ssh_run only reports the SSH call status; inspect apt's own output for
+        // repository errors (e.g. EOL release, 404, unreachable mirror).
+        $apt_out = (string)$r['output'];
+        if (preg_match('/^(E:|Err:|W:|N: Updating from such)/m', $apt_out)) {
+            $out = err('apt reported repository problems — your sources may be unreachable or end-of-life.');
+            $out['output'] = $apt_out;
+        } else {
+            $out = ok('Package index refreshed', ['output' => $apt_out]);
+        }
         break;
 
     // ── Packages: upgrade all (sudo via SSH) ──────────────────────────────────
