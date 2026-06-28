@@ -264,7 +264,8 @@ function gpio_name_label(string $name): string {
                                                 $is_power = in_array($name_label, ['GND', '3.3V', '5V'], true);
                                                 ?>
                                                 <?php if ($is_power): ?>
-                                                    <span class="label label-<?php echo $name_label === 'GND' ? 'default' : 'danger'; ?>"><?php
+                                                    <span class="label label-<?php echo $name_label === 'GND' ? 'default' : 'danger'; ?>"
+                                                          style="font-size:14px; padding:.3em .6em"><?php
                                                         echo htmlspecialchars($name_label, ENT_QUOTES, 'UTF-8'); ?></span>
                                                 <?php else: ?>
                                                     <?php echo htmlspecialchars($name_label, ENT_QUOTES, 'UTF-8'); ?>
