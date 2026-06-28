@@ -140,6 +140,9 @@ $interfaces = [
             </form>
             <textarea id="boot-content" class="form-control" rows="12"
                       style="font-family:monospace; font-size:12px" spellcheck="false"></textarea>
+
+            <div id="boot-notice" class="alert" style="display:none; margin-top:10px"></div>
+
             <small class="help-block">
                 <i class="fa fa-shield"></i> A backup (<code>.gumcp.bak</code>) is written before each save.
                 Most changes take effect after a reboot.
@@ -242,16 +245,49 @@ function bootLoad() {
     });
 }
 
+function bootNotice(type, html) {
+    $('#boot-notice')
+        .removeClass('alert-success alert-danger alert-info')
+        .addClass('alert-' + type)
+        .html(html)
+        .show();
+}
+
 function bootSave() {
-    if (!confirm('Save this file? A backup will be written first. Mistakes can stop the Pi booting.')) return;
+    var file = $('#boot-file').val();
+    var fname = file === 'cmdline' ? 'cmdline.txt' : 'config.txt';
+    var path = $('#boot-path').text() || ('/boot/' + fname);
+
+    if (!confirm(
+        '⚠ WARNING — editing boot files can stop the Raspberry Pi from booting.\n\n'
+        + 'You are about to overwrite:\n    ' + path + '\n\n'
+        + 'A backup (' + fname + '.gumcp.bak) will be written first.\n'
+        + 'Most changes take effect after a reboot.\n\n'
+        + 'Save this file now?'
+    )) return;
+
     var $b = $('#boot-save-btn');
     $b.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Saving…');
+    bootNotice('info', '<i class="fa fa-spinner fa-spin"></i> Saving ' + esc(fname) + '…');
+
     $.ajax({
         type: 'POST', url: 'ajax.php', dataType: 'json',
-        data: { action: 'boot_config_save', file: $('#boot-file').val(),
+        data: { action: 'boot_config_save', file: file,
                 content: $('#boot-content').val(), csrf_token: CSRF_TOKEN },
-        success: function(d) { alert((d && d.message) || 'Done'); },
-        error: function() { alert('Request failed — check SSH settings.'); },
+        success: function(d) {
+            if (d && d.type === 'success') {
+                bootNotice('success',
+                    '<i class="fa fa-check-circle"></i> <strong>' + esc(fname) + ' saved.</strong> '
+                    + esc(d.message || '') + ' <strong>Reboot</strong> for changes to take effect.');
+            } else {
+                bootNotice('danger',
+                    '<i class="fa fa-exclamation-triangle"></i> <strong>Save failed:</strong> '
+                    + esc((d && d.message) || 'unknown error'));
+            }
+        },
+        error: function() {
+            bootNotice('danger', '<i class="fa fa-exclamation-triangle"></i> Request failed — check SSH settings.');
+        },
         complete: function() { $b.prop('disabled', false).html('<i class="fa fa-save"></i> Save'); }
     });
 }
