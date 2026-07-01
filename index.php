@@ -223,7 +223,7 @@ function signal_quality($dbm): string {
                 <ul class="nav navbar-nav navbar-right">
                     <?php require_once('./include/menu.php'); ?>
                     <li>
-                        <a href="#" title="Reorder menu"
+                        <a href="#" title="<?php echo htmlspecialchars(t('nav.reorder', 'Reorder menu'), ENT_QUOTES, 'UTF-8'); ?>"
                            onclick="openMenuReorder(); return false;"
                            style="opacity:.6">
                             <i class="fa fa-bars"></i>
@@ -237,7 +237,7 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-12">
             <h1 class="page-header">
-                <i class="fa fa-dashboard"></i> System Dashboard
+                <i class="fa fa-dashboard"></i> <?php echo htmlspecialchars(t('dash.title', 'System Dashboard'), ENT_QUOTES, 'UTF-8'); ?>
                 <small><?php echo htmlspecialchars($sys['hostname'], ENT_QUOTES, 'UTF-8'); ?></small>
             </h1>
         </div>
@@ -249,28 +249,28 @@ function signal_quality($dbm): string {
             <div class="stat-box">
                 <i class="fa fa-tachometer fa-3x text-primary"></i>
                 <h3 id="stat-cpu" class="text-<?php echo $cpu_color; ?>"><?php echo $sys['cpu_usage']; ?>%</h3>
-                <p>CPU Usage</p>
+                <p><?php echo htmlspecialchars(t('dash.cpu', 'CPU Usage'), ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="stat-box">
                 <i class="fa fa-server fa-3x text-info"></i>
                 <h3 id="stat-mem" class="text-<?php echo $mem_color; ?>"><?php echo $mem['percent']; ?>%</h3>
-                <p>Memory Usage</p>
+                <p><?php echo htmlspecialchars(t('dash.memory', 'Memory Usage'), ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="stat-box">
                 <i class="fa fa-hdd-o fa-3x text-warning"></i>
                 <h3 id="stat-disk" class="text-<?php echo $disk_color; ?>"><?php echo $disk['percent']; ?>%</h3>
-                <p>Disk Usage</p>
+                <p><?php echo htmlspecialchars(t('dash.disk', 'Disk Usage'), ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="stat-box">
                 <i class="fa fa-thermometer-half fa-3x text-danger"></i>
                 <h3 id="stat-temp" class="text-<?php echo $temp_color; ?>"><?php echo $sys['cpu_temp']; ?>&deg;C</h3>
-                <p>CPU Temperature</p>
+                <p><?php echo htmlspecialchars(t('dash.temp', 'CPU Temperature'), ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
         </div>
     </div>
@@ -279,10 +279,10 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-6">
             <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-heartbeat"></i> Service Status</div>
+                <div class="panel-heading"><i class="fa fa-heartbeat"></i> <?php echo htmlspecialchars(t('dash.service_status', 'Service Status'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body" id="service-badges">
                     <?php if (empty($services)): ?>
-                        <span class="text-muted">No services configured.
+                        <span class="text-muted"><?php echo htmlspecialchars(t('dash.services_none', 'No services configured.'), ENT_QUOTES, 'UTF-8'); ?>
                             Set <code>$gumcp_dashboard_services</code> in <code>config.php</code>.</span>
                     <?php else: foreach ($services as $svc): ?>
                         <span class="label <?php echo service_label_class($svc['state']); ?>"
@@ -297,16 +297,16 @@ function signal_quality($dbm): string {
         </div>
         <div class="col-md-6">
             <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-bolt"></i> Power &amp; Throttling</div>
+                <div class="panel-heading"><i class="fa fa-bolt"></i> <?php echo htmlspecialchars(t('dash.power', 'Power & Throttling'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body" id="throttle-status">
                     <?php if (!$throttled['available']): ?>
                         <span class="text-muted">
                             <i class="fa fa-question-circle"></i>
-                            <?php echo htmlspecialchars($throttled['reason'] ?? 'Not available', ENT_QUOTES, 'UTF-8'); ?>
+                            <?php echo htmlspecialchars($throttled['reason'] ?? t('dash.power_na', 'Not available'), ENT_QUOTES, 'UTF-8'); ?>
                         </span>
                     <?php elseif ($throttled['healthy']): ?>
                         <span class="text-success">
-                            <i class="fa fa-check-circle"></i> Healthy — no under-voltage or throttling.
+                            <i class="fa fa-check-circle"></i> <?php echo htmlspecialchars(t('dash.healthy', 'Healthy — no under-voltage or throttling.'), ENT_QUOTES, 'UTF-8'); ?>
                         </span>
                     <?php else: ?>
                         <?php foreach ($throttled['messages'] as $msg): ?>
@@ -325,25 +325,25 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-6">
             <div class="panel panel-primary">
-                <div class="panel-heading"><i class="fa fa-info-circle"></i> System Information</div>
+                <div class="panel-heading"><i class="fa fa-info-circle"></i> <?php echo htmlspecialchars(t('dash.sysinfo', 'System Information'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
                     <table class="table info-table">
                         <tbody>
-                            <tr><td>Hostname</td>
+                            <tr><td><?php echo htmlspecialchars(t('dash.hostname', 'Hostname'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td><?php echo htmlspecialchars($sys['hostname'],  ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                            <tr><td>Operating System</td>
+                            <tr><td><?php echo htmlspecialchars(t('dash.os', 'Operating System'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td><?php echo htmlspecialchars($sys['os'],        ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                            <tr><td>Kernel</td>
+                            <tr><td><?php echo htmlspecialchars(t('dash.kernel', 'Kernel'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td><?php echo htmlspecialchars($sys['kernel'],    ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                            <tr><td>CPU</td>
+                            <tr><td><?php echo htmlspecialchars(t('dash.cpu_label', 'CPU'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td><?php echo htmlspecialchars($sys['cpu_info'],  ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                            <tr><td>Uptime</td>
+                            <tr><td><?php echo htmlspecialchars(t('dash.uptime', 'Uptime'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td id="info-uptime"><?php echo htmlspecialchars($sys['uptime'], ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                            <tr><td>Date / Time</td>
+                            <tr><td><?php echo htmlspecialchars(t('dash.datetime', 'Date / Time'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td id="info-date"><?php echo htmlspecialchars($sys['date'],   ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                            <tr><td>Processes</td>
+                            <tr><td><?php echo htmlspecialchars(t('dash.processes', 'Processes'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td id="info-processes"><?php echo (int)$sys['processes']; ?></td></tr>
-                            <tr><td>Load Average</td>
+                            <tr><td><?php echo htmlspecialchars(t('dash.load', 'Load Average'), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td id="info-load"><?php echo implode(', ', $sys['load_average']); ?></td></tr>
                         </tbody>
                     </table>
@@ -353,11 +353,11 @@ function signal_quality($dbm): string {
 
         <div class="col-md-6">
             <div class="panel panel-success">
-                <div class="panel-heading"><i class="fa fa-area-chart"></i> Resource Usage</div>
+                <div class="panel-heading"><i class="fa fa-area-chart"></i> <?php echo htmlspecialchars(t('dash.resource', 'Resource Usage'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
 
                     <div class="form-group">
-                        <label>CPU Usage</label>
+                        <label><?php echo htmlspecialchars(t('dash.cpu', 'CPU Usage'), ENT_QUOTES, 'UTF-8'); ?></label>
                         <div class="progress">
                             <div id="bar-cpu" class="progress-bar progress-bar-<?php echo $cpu_color; ?>"
                                  role="progressbar"
@@ -370,7 +370,7 @@ function signal_quality($dbm): string {
                     </div>
 
                     <div class="form-group">
-                        <label>Memory Usage</label>
+                        <label><?php echo htmlspecialchars(t('dash.memory', 'Memory Usage'), ENT_QUOTES, 'UTF-8'); ?></label>
                         <div class="progress">
                             <div id="bar-mem" class="progress-bar progress-bar-<?php echo $mem_color; ?>"
                                  role="progressbar"
@@ -384,7 +384,7 @@ function signal_quality($dbm): string {
                     </div>
 
                     <div class="form-group">
-                        <label>Swap Usage</label>
+                        <label><?php echo htmlspecialchars(t('dash.swap', 'Swap Usage'), ENT_QUOTES, 'UTF-8'); ?></label>
                         <div class="progress">
                             <div id="bar-swap" class="progress-bar progress-bar-<?php echo $swap_color; ?>"
                                  role="progressbar"
@@ -395,14 +395,14 @@ function signal_quality($dbm): string {
                                     <?php echo $swap['percent']; ?>%
                                     (<?php echo fmt_kb($swap['used']); ?> / <?php echo fmt_kb($swap['total']); ?>)
                                 <?php else: ?>
-                                    No swap
+                                    <?php echo htmlspecialchars(t('dash.no_swap', 'No swap'), ENT_QUOTES, 'UTF-8'); ?>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Disk Usage</label>
+                        <label><?php echo htmlspecialchars(t('dash.disk', 'Disk Usage'), ENT_QUOTES, 'UTF-8'); ?></label>
                         <div class="progress">
                             <div id="bar-disk" class="progress-bar progress-bar-<?php echo $disk_color; ?>"
                                  role="progressbar"
@@ -416,7 +416,7 @@ function signal_quality($dbm): string {
                     </div>
 
                     <div class="form-group">
-                        <label>CPU Temperature</label>
+                        <label><?php echo htmlspecialchars(t('dash.temp', 'CPU Temperature'), ENT_QUOTES, 'UTF-8'); ?></label>
                         <div class="progress">
                             <div id="bar-temp" class="progress-bar progress-bar-<?php echo $temp_color; ?>"
                                  role="progressbar"
@@ -437,23 +437,23 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-info">
-                <div class="panel-heading"><i class="fa fa-server"></i> Memory Details</div>
+                <div class="panel-heading"><i class="fa fa-server"></i> <?php echo htmlspecialchars(t('dash.mem_details', 'Memory Details'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
                     <div class="row">
                         <div class="col-md-3 col-sm-6 text-center">
-                            <h4>Total</h4>
+                            <h4><?php echo htmlspecialchars(t('dash.total', 'Total'), ENT_QUOTES, 'UTF-8'); ?></h4>
                             <p class="text-muted" id="mem-total"><?php echo fmt_kb($mem['total']); ?></p>
                         </div>
                         <div class="col-md-3 col-sm-6 text-center">
-                            <h4>Used</h4>
+                            <h4><?php echo htmlspecialchars(t('dash.used', 'Used'), ENT_QUOTES, 'UTF-8'); ?></h4>
                             <p class="text-<?php echo $mem_color; ?>" id="mem-used"><?php echo fmt_kb($mem['used']); ?></p>
                         </div>
                         <div class="col-md-3 col-sm-6 text-center">
-                            <h4>Buffers</h4>
+                            <h4><?php echo htmlspecialchars(t('dash.buffers', 'Buffers'), ENT_QUOTES, 'UTF-8'); ?></h4>
                             <p class="text-muted" id="mem-buffers"><?php echo fmt_kb($mem['buffers']); ?></p>
                         </div>
                         <div class="col-md-3 col-sm-6 text-center">
-                            <h4>Cached</h4>
+                            <h4><?php echo htmlspecialchars(t('dash.cached', 'Cached'), ENT_QUOTES, 'UTF-8'); ?></h4>
                             <p class="text-muted" id="mem-cached"><?php echo fmt_kb($mem['cached']); ?></p>
                         </div>
                     </div>
@@ -466,22 +466,22 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-info">
-                <div class="panel-heading"><i class="fa fa-sitemap"></i> Network</div>
+                <div class="panel-heading"><i class="fa fa-sitemap"></i> <?php echo htmlspecialchars(t('dash.network', 'Network'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body" style="padding:0">
                     <table class="table table-condensed" style="margin-bottom:0" id="network-table">
                         <thead>
                             <tr>
-                                <th style="padding-left:15px">Interface</th>
-                                <th>IPv4</th>
-                                <th>State</th>
-                                <th>Signal</th>
-                                <th class="text-right">Received</th>
-                                <th class="text-right" style="padding-right:15px">Transmitted</th>
+                                <th style="padding-left:15px"><?php echo htmlspecialchars(t('net.interface', 'Interface'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                <th><?php echo htmlspecialchars(t('net.ipv4', 'IPv4'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                <th><?php echo htmlspecialchars(t('net.state', 'State'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                <th><?php echo htmlspecialchars(t('net.signal', 'Signal'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                <th class="text-right"><?php echo htmlspecialchars(t('net.received', 'Received'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                <th class="text-right" style="padding-right:15px"><?php echo htmlspecialchars(t('net.transmitted', 'Transmitted'), ENT_QUOTES, 'UTF-8'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($network)): ?>
-                                <tr><td colspan="6" class="text-muted" style="padding-left:15px">No network interfaces found.</td></tr>
+                                <tr><td colspan="6" class="text-muted" style="padding-left:15px"><?php echo htmlspecialchars(t('net.none', 'No network interfaces found.'), ENT_QUOTES, 'UTF-8'); ?></td></tr>
                             <?php else: foreach ($network as $n):
                                 $up = $n['state'] === 'up';
                                 $sig = $n['signal'] !== null
@@ -515,7 +515,7 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-warning">
-                <div class="panel-heading"><i class="fa fa-hdd-o"></i> Disk Information</div>
+                <div class="panel-heading"><i class="fa fa-hdd-o"></i> <?php echo htmlspecialchars(t('dash.disk_info', 'Disk Information'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
                     <pre id="info-disks"><?php echo htmlspecialchars($sys['disks'], ENT_QUOTES, 'UTF-8'); ?></pre>
                 </div>
@@ -527,7 +527,7 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-usb"></i> Connected USB Devices</div>
+                <div class="panel-heading"><i class="fa fa-usb"></i> <?php echo htmlspecialchars(t('dash.usb', 'Connected USB Devices'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
                     <?php if (trim($sys['usb']) === ''): ?>
                         <pre id="info-usb" class="text-muted">No USB devices listed (<code>lsusb</code> not installed? <code>sudo apt-get install usbutils</code>)</pre>
@@ -543,7 +543,7 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-hdd-o"></i> Block Devices</div>
+                <div class="panel-heading"><i class="fa fa-hdd-o"></i> <?php echo htmlspecialchars(t('dash.block', 'Block Devices'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
                     <?php if (trim($sys['blk']) === ''): ?>
                         <pre id="info-blk" class="text-muted">No block devices listed (<code>lsblk</code> not available?)</pre>
@@ -559,7 +559,7 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-tasks"></i> Top Processes (by Memory)</div>
+                <div class="panel-heading"><i class="fa fa-tasks"></i> <?php echo htmlspecialchars(t('dash.top', 'Top Processes (by Memory)'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
                     <pre id="info-top"><?php echo htmlspecialchars($sys['top'], ENT_QUOTES, 'UTF-8'); ?></pre>
                 </div>
@@ -571,7 +571,7 @@ function signal_quality($dbm): string {
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-users"></i> Active Users</div>
+                <div class="panel-heading"><i class="fa fa-users"></i> <?php echo htmlspecialchars(t('dash.users', 'Active Users'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
                     <pre id="info-users"><?php echo htmlspecialchars($sys['users'], ENT_QUOTES, 'UTF-8'); ?></pre>
                 </div>
@@ -595,6 +595,11 @@ function signal_quality($dbm): string {
 
 <script>
 var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+var GUMCP_I18N = {
+    healthy:  <?php echo json_encode(t('dash.healthy', 'Healthy — no under-voltage or throttling.')); ?>,
+    power_na: <?php echo json_encode(t('dash.power_na', 'Not available')); ?>,
+    no_swap:  <?php echo json_encode(t('dash.no_swap', 'No swap')); ?>
+};
 </script>
 
 <?php

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- **Multilanguage (i18n)** — English (base), German, Ukrainian, Spanish and French. Default set via `GUMCP_LANG` in `config.php`; a navbar language switcher persists the choice in the session. New `include/i18n.php` engine with `t()` and per-language files in `include/lang/`; missing keys fall back to English. The navbar and Dashboard are translated; other pages fall back to English and can be migrated incrementally.
 - **Docker** (`docker.php`): list containers and start/stop/restart/pause/remove them, view container logs in a modal, and browse images. Disabled by default — enable `$gumcp_modules['docker']['module_active'] = 1`. Commands run via `sudo docker` over SSH; the page reports clearly when Docker is not installed or the daemon is down.
 
 ---

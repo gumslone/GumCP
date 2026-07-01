@@ -32,6 +32,7 @@ More screenshots in the [screenshots folder](screenshots/).
 - **phpinfo** — view PHP configuration directly from the browser
 - **System Check** — built-in diagnostic page (`check.php`) that verifies PHP extensions, directory permissions, SSH connectivity and GPIO tools; Fix buttons repair common issues over SSH without touching the terminal
 - **Menu reorder** — drag and drop navbar items into any order; preference saved automatically
+- **Multilanguage** — English, German, Ukrainian, Spanish and French; set the default in `config.php` and switch from the navbar (remembered per session). Untranslated strings fall back to English; add a language by dropping a file into `include/lang/`
 - **Authentication** — optional login page, HTTP Basic Auth, or both simultaneously with separate credentials
 - **Optional modules** — File Manager, Database Manager, TeHyBug sensor support (temperature, humidity, barometric pressure)
 

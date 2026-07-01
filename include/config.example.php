@@ -23,6 +23,11 @@ define('BASIC_AUTH', false);
 define('BASIC_AUTH_USER', 'api');    // separate username for Basic Auth
 define('BASIC_AUTH_PASS', 'secret'); // separate password for Basic Auth — CHANGE THIS
 
+// ── Language ──────────────────────────────────────────────────────────────────
+// Default UI language: en, de, uk, es or fr. Users can switch from the navbar
+// (their choice is remembered in the session).
+define('GUMCP_LANG', 'en');
+
 // ── Debug ─────────────────────────────────────────────────────────────────────
 // Set true to display PHP errors in the browser. Keep false in production.
 define('GUMCP_DEBUG', false);

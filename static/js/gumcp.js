@@ -89,7 +89,7 @@ function refreshStats() {
                     setBar('bar-swap', d.swap_percentage,
                         d.swap_percentage + '% (' + fmtKB(d.swap_used) + ' / ' + fmtKB(d.swap_total) + ')');
                 } else {
-                    setBar('bar-swap', 0, 'No swap');
+                    setBar('bar-swap', 0, (window.GUMCP_I18N && window.GUMCP_I18N.no_swap) || 'No swap');
                 }
             }
 
@@ -132,12 +132,13 @@ function updateThrottleStatus(t) {
     var $box = $('#throttle-status');
     if (!$box.length) return;
     var html;
+    var i18n = window.GUMCP_I18N || {};
     if (!t.available) {
-        var reason = t.reason ? $('<div>').text(t.reason).html() : 'Not available';
+        var reason = t.reason ? $('<div>').text(t.reason).html() : (i18n.power_na || 'Not available');
         html = '<span class="text-muted"><i class="fa fa-question-circle"></i> ' + reason + '</span>';
     } else if (t.healthy) {
         html = '<span class="text-success"><i class="fa fa-check-circle"></i> '
-             + 'Healthy — no under-voltage or throttling.</span>';
+             + $('<div>').text(i18n.healthy || 'Healthy — no under-voltage or throttling.').html() + '</span>';
     } else {
         html = '';
         (t.messages || []).forEach(function(m) {

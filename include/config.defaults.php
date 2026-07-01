@@ -19,6 +19,8 @@ defined('BASIC_AUTH_PASS') || define('BASIC_AUTH_PASS', 'secret');
 
 defined('GUMCP_DEBUG')          || define('GUMCP_DEBUG',          false);
 
+defined('GUMCP_LANG')           || define('GUMCP_LANG',           'en'); // en|de|uk|es|fr
+
 // Ensure button_api module entry exists for configs created before this feature
 if (!isset($gumcp_modules['button_api'])) {
     $gumcp_modules['button_api'] = ['module_title' => 'Button API', 'module_active' => 1, 'module_no_nav' => 1];

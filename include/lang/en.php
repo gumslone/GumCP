@@ -1,0 +1,73 @@
+<?php
+// English (base language). All keys live here; other languages override.
+return [
+    // ── Navigation ──
+    'nav.dashboard'   => 'Dashboard',
+    'nav.services'    => 'Services',
+    'nav.processes'   => 'Processes',
+    'nav.phpinfo'     => 'PHP Info',
+    'nav.actions'     => 'Actions',
+    'nav.gpio'        => 'GPIO',
+    'nav.buttons'     => 'Buttons',
+    'nav.rpi'         => 'Raspberry Pi',
+    'nav.docker'      => 'Docker',
+    'nav.packages'    => 'Packages',
+    'nav.logs'        => 'Logs',
+    'nav.cron'        => 'Cron',
+    'nav.users'       => 'Users',
+    'nav.tehybug'     => 'TeHyBug',
+    'nav.filemanager' => 'File Manager',
+    'nav.database'    => 'Database Manager',
+    'nav.system'      => 'System',
+    'nav.reorder'     => 'Reorder menu',
+    'nav.logout'      => 'Logout',
+    'nav.language'    => 'Language',
+
+    // ── Dashboard ──
+    'dash.title'        => 'System Dashboard',
+    'dash.cpu'          => 'CPU Usage',
+    'dash.memory'       => 'Memory Usage',
+    'dash.disk'         => 'Disk Usage',
+    'dash.temp'         => 'CPU Temperature',
+
+    'dash.service_status' => 'Service Status',
+    'dash.services_none'  => 'No services configured.',
+    'dash.power'          => 'Power & Throttling',
+    'dash.healthy'        => 'Healthy — no under-voltage or throttling.',
+    'dash.power_na'       => 'Not available',
+
+    'dash.sysinfo'   => 'System Information',
+    'dash.hostname'  => 'Hostname',
+    'dash.os'        => 'Operating System',
+    'dash.kernel'    => 'Kernel',
+    'dash.cpu_label' => 'CPU',
+    'dash.uptime'    => 'Uptime',
+    'dash.datetime'  => 'Date / Time',
+    'dash.processes' => 'Processes',
+    'dash.load'      => 'Load Average',
+
+    'dash.resource'   => 'Resource Usage',
+    'dash.swap'       => 'Swap Usage',
+    'dash.no_swap'    => 'No swap',
+
+    'dash.mem_details' => 'Memory Details',
+    'dash.total'       => 'Total',
+    'dash.used'        => 'Used',
+    'dash.buffers'     => 'Buffers',
+    'dash.cached'      => 'Cached',
+
+    'dash.network'     => 'Network',
+    'net.interface'    => 'Interface',
+    'net.ipv4'         => 'IPv4',
+    'net.state'        => 'State',
+    'net.signal'       => 'Signal',
+    'net.received'     => 'Received',
+    'net.transmitted'  => 'Transmitted',
+    'net.none'         => 'No network interfaces found.',
+
+    'dash.disk_info' => 'Disk Information',
+    'dash.usb'       => 'Connected USB Devices',
+    'dash.block'     => 'Block Devices',
+    'dash.top'       => 'Top Processes (by Memory)',
+    'dash.users'     => 'Active Users',
+];

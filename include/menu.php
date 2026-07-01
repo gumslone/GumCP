@@ -24,7 +24,7 @@ if (is_readable($order_file)) {
 }
 ?>
 <li class="<?php echo $active_page === 'index' ? 'active' : ''; ?>">
-    <a href="./index.php">Dashboard</a>
+    <a href="./index.php"><?php echo htmlspecialchars(t('nav.dashboard', 'Dashboard'), ENT_QUOTES, 'UTF-8'); ?></a>
 </li>
 
 <?php
@@ -49,7 +49,7 @@ foreach ($gumcp_modules as $key => $module):
         continue;
     }
 
-    $title     = htmlspecialchars($module['module_title'] ?? '', ENT_QUOTES, 'UTF-8');
+    $title     = htmlspecialchars(t('nav.' . $key, $module['module_title'] ?? ''), ENT_QUOTES, 'UTF-8');
     $is_active = $active_page === $key ? 'active' : '';
     ?>
     <li class="<?php echo $is_active; ?>">
@@ -67,12 +67,12 @@ foreach ($gumcp_modules as $key => $module):
     <li class="dropdown <?php echo $group_active; ?>">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
            aria-haspopup="true" aria-expanded="false">
-            <?php echo htmlspecialchars($group_name, ENT_QUOTES, 'UTF-8'); ?>
+            <?php echo htmlspecialchars(t('nav.' . strtolower($group_name), $group_name), ENT_QUOTES, 'UTF-8'); ?>
             <span class="caret"></span>
         </a>
         <ul class="dropdown-menu">
             <?php foreach ($members as $mkey => $m):
-                $mtitle  = htmlspecialchars($m['module_title'] ?? '', ENT_QUOTES, 'UTF-8');
+                $mtitle  = htmlspecialchars(t('nav.' . $mkey, $m['module_title'] ?? ''), ENT_QUOTES, 'UTF-8');
                 $mactive = $active_page === $mkey ? 'active' : '';
             ?>
                 <li class="<?php echo $mactive; ?>">
@@ -83,6 +83,32 @@ foreach ($gumcp_modules as $key => $module):
     </li>
 <?php endforeach; ?>
 
+<?php
+// Language switcher — preserves the current page, sets ?lang and persists in session.
+$gumcp_langs = gumcp_supported_langs();
+$gumcp_cur   = gumcp_current_lang();
+// Rebuild the current query string with lang replaced.
+$gumcp_qs = $_GET;
+?>
+<li class="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+       aria-haspopup="true" aria-expanded="false" title="<?php echo htmlspecialchars(t('nav.language', 'Language'), ENT_QUOTES, 'UTF-8'); ?>">
+        <i class="fa fa-globe"></i> <?php echo strtoupper($gumcp_cur); ?> <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+        <?php foreach ($gumcp_langs as $gumcp_code => $gumcp_name):
+            $gumcp_qs['lang'] = $gumcp_code;
+            $gumcp_href = '?' . http_build_query($gumcp_qs);
+        ?>
+            <li class="<?php echo $gumcp_code === $gumcp_cur ? 'active' : ''; ?>">
+                <a href="<?php echo htmlspecialchars($gumcp_href, ENT_QUOTES, 'UTF-8'); ?>">
+                    <?php echo htmlspecialchars($gumcp_name, ENT_QUOTES, 'UTF-8'); ?>
+                </a>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+</li>
+
 <?php if (defined('LOGIN_REQUIRED') && LOGIN_REQUIRED === true): ?>
-    <li><a href="./logout.php">Logout</a></li>
+    <li><a href="./logout.php"><?php echo htmlspecialchars(t('nav.logout', 'Logout'), ENT_QUOTES, 'UTF-8'); ?></a></li>
 <?php endif; ?>
