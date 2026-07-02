@@ -182,7 +182,7 @@ if ($_gumcp_need_auth) {
         if ($basic_user === '' && isset($_SERVER['HTTP_AUTHORIZATION'])) {
             $decoded = base64_decode(ltrim(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
             if ($decoded !== false && strpos($decoded, ':') !== false) {
-                [$basic_user, $basic_pass] = explode(':', $decoded, 2);
+                list($basic_user, $basic_pass) = explode(':', $decoded, 2);
             }
         }
         if ($basic_user !== ''
