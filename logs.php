@@ -35,7 +35,10 @@ $log_sources = [
     <link href="./static/css.php" rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="./static/js.php" type="text/javascript"></script>
-    <script>var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;</script>
+    <script>
+    var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var T_VIEW = <?php echo json_encode(t('log.view', 'View')); ?>;
+    </script>
 </head>
 
 <body>
@@ -62,12 +65,12 @@ $log_sources = [
     </nav>
 
     <div class="page-header">
-        <h1><i class="fa fa-file-text-o"></i> System Logs</h1>
+        <h1><i class="fa fa-file-text-o"></i> <?php echo htmlspecialchars(t('log.title', 'System Logs'), ENT_QUOTES, 'UTF-8'); ?></h1>
     </div>
 
     <form class="form-inline" onsubmit="return false" style="margin-bottom:12px">
         <div class="form-group">
-            <label for="log-source">Source</label>
+            <label for="log-source"><?php echo htmlspecialchars(t('log.source', 'Source'), ENT_QUOTES, 'UTF-8'); ?></label>
             <select class="form-control" id="log-source">
                 <?php foreach ($log_sources as $val => $label): ?>
                     <option value="<?php echo htmlspecialchars($val, ENT_QUOTES, 'UTF-8'); ?>">
@@ -77,22 +80,22 @@ $log_sources = [
             </select>
         </div>
         <div class="form-group">
-            <label for="log-lines">Lines</label>
+            <label for="log-lines"><?php echo htmlspecialchars(t('log.lines', 'Lines'), ENT_QUOTES, 'UTF-8'); ?></label>
             <select class="form-control" id="log-lines">
                 <option>100</option><option selected>200</option><option>500</option>
                 <option>1000</option><option>2000</option>
             </select>
         </div>
         <div class="form-group">
-            <label for="log-filter">Filter</label>
+            <label for="log-filter"><?php echo htmlspecialchars(t('log.filter', 'Filter'), ENT_QUOTES, 'UTF-8'); ?></label>
             <input type="text" class="form-control" id="log-filter" placeholder="text contains…">
         </div>
         <button class="btn btn-primary" id="log-load-btn" onclick="logLoad()">
-            <i class="fa fa-search"></i> View
+            <i class="fa fa-search"></i> <?php echo htmlspecialchars(t('log.view', 'View'), ENT_QUOTES, 'UTF-8'); ?>
         </button>
     </form>
 
-    <pre id="log-output" style="max-height:560px; overflow:auto; font-size:12px">Select a source and click View.</pre>
+    <pre id="log-output" style="max-height:560px; overflow:auto; font-size:12px"><?php echo htmlspecialchars(t('log.select', 'Select a source and click View.'), ENT_QUOTES, 'UTF-8'); ?></pre>
 
 </div>
 
@@ -130,7 +133,7 @@ function logLoad() {
             el.scrollTop = el.scrollHeight;
         },
         error: function() { $('#log-output').text('Request failed — check SSH settings.'); },
-        complete: function() { $b.prop('disabled', false).html('<i class="fa fa-search"></i> View'); }
+        complete: function() { $b.prop('disabled', false).html('<i class="fa fa-search"></i> ' + $('<span>').text(T_VIEW).html()); }
     });
 }
 $(logLoad);

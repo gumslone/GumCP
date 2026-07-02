@@ -104,19 +104,18 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
     </nav>
 
     <div class="page-header">
-        <h1><i class="fa fa-users"></i> Users &amp; Groups
-            <small><?php echo count($login_users); ?> login user<?php echo count($login_users) !== 1 ? 's' : ''; ?>,
-                   <?php echo count($users); ?> total</small>
+        <h1><i class="fa fa-users"></i> <?php echo htmlspecialchars(t('usr.title', 'Users & Groups'), ENT_QUOTES, 'UTF-8'); ?>
+            <small><?php echo count($login_users); ?> / <?php echo count($users); ?></small>
         </h1>
     </div>
 
     <!-- Login (human) users -->
     <div class="panel panel-primary">
-        <div class="panel-heading"><i class="fa fa-user"></i> Login Users</div>
+        <div class="panel-heading"><i class="fa fa-user"></i> <?php echo htmlspecialchars(t('usr.login_users', 'Login Users'), ENT_QUOTES, 'UTF-8'); ?></div>
         <table class="table table-condensed table-striped" style="margin-bottom:0">
             <thead>
-                <tr><th style="padding-left:15px">User</th><th>UID</th><th>GID</th>
-                    <th>Home</th><th>Shell</th><th>Comment</th></tr>
+                <tr><th style="padding-left:15px"><?php echo htmlspecialchars(t('usr.user', 'User'), ENT_QUOTES, 'UTF-8'); ?></th><th>UID</th><th>GID</th>
+                    <th><?php echo htmlspecialchars(t('usr.home', 'Home'), ENT_QUOTES, 'UTF-8'); ?></th><th><?php echo htmlspecialchars(t('usr.shell', 'Shell'), ENT_QUOTES, 'UTF-8'); ?></th><th><?php echo htmlspecialchars(t('usr.comment', 'Comment'), ENT_QUOTES, 'UTF-8'); ?></th></tr>
             </thead>
             <tbody>
                 <?php foreach ($login_users as $u): ?>
@@ -130,7 +129,7 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
                     </tr>
                 <?php endforeach; ?>
                 <?php if (empty($login_users)): ?>
-                    <tr><td colspan="6" class="text-muted" style="padding-left:15px">No login users found.</td></tr>
+                    <tr><td colspan="6" class="text-muted" style="padding-left:15px"><?php echo htmlspecialchars(t('usr.none', 'No login users found.'), ENT_QUOTES, 'UTF-8'); ?></td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
@@ -140,15 +139,15 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
     <div class="panel panel-default">
         <div class="panel-heading">
             <a data-toggle="collapse" href="#all-users" style="text-decoration:none; color:inherit; display:block">
-                <i class="fa fa-list"></i> All System Accounts (<?php echo count($users); ?>)
+                <i class="fa fa-list"></i> <?php echo htmlspecialchars(t('usr.all_accounts', 'All System Accounts'), ENT_QUOTES, 'UTF-8'); ?> (<?php echo count($users); ?>)
                 <i class="fa fa-caret-down pull-right"></i>
             </a>
         </div>
         <div id="all-users" class="collapse">
             <table class="table table-condensed table-striped" style="margin-bottom:0">
                 <thead>
-                    <tr><th style="padding-left:15px">User</th><th>UID</th><th>GID</th>
-                        <th>Home</th><th>Shell</th></tr>
+                    <tr><th style="padding-left:15px"><?php echo htmlspecialchars(t('usr.user', 'User'), ENT_QUOTES, 'UTF-8'); ?></th><th>UID</th><th>GID</th>
+                        <th><?php echo htmlspecialchars(t('usr.home', 'Home'), ENT_QUOTES, 'UTF-8'); ?></th><th><?php echo htmlspecialchars(t('usr.shell', 'Shell'), ENT_QUOTES, 'UTF-8'); ?></th></tr>
                 </thead>
                 <tbody>
                     <?php foreach ($users as $u): ?>
@@ -167,10 +166,10 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 
     <!-- Groups -->
     <div class="panel panel-info">
-        <div class="panel-heading"><i class="fa fa-users"></i> Groups (<?php echo count($groups); ?>)</div>
+        <div class="panel-heading"><i class="fa fa-users"></i> <?php echo htmlspecialchars(t('usr.groups', 'Groups'), ENT_QUOTES, 'UTF-8'); ?> (<?php echo count($groups); ?>)</div>
         <table class="table table-condensed table-striped" style="margin-bottom:0">
             <thead>
-                <tr><th style="padding-left:15px">Group</th><th>GID</th><th>Members</th></tr>
+                <tr><th style="padding-left:15px"><?php echo htmlspecialchars(t('usr.groups', 'Group'), ENT_QUOTES, 'UTF-8'); ?></th><th>GID</th><th><?php echo htmlspecialchars(t('usr.members', 'Members'), ENT_QUOTES, 'UTF-8'); ?></th></tr>
             </thead>
             <tbody>
                 <?php foreach ($groups as $g): ?>

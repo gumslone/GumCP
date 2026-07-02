@@ -70,4 +70,69 @@ return [
     'dash.block'     => 'Block Devices',
     'dash.top'       => 'Top Processes (by Memory)',
     'dash.users'     => 'Active Users',
+
+    // ── Common ──
+    'common.refresh' => 'Refresh',
+    'common.loading' => 'Loading…',
+    'common.actions' => 'Actions',
+    'common.name'    => 'Name',
+    'common.status'  => 'Status',
+    'common.save'    => 'Save',
+    'common.add'     => 'Add',
+    'common.delete'  => 'Delete',
+    'common.command' => 'Command',
+
+    // ── Services ──
+    'svc.title'    => 'System Services',
+    'svc.active'   => 'Active Services',
+    'svc.inactive' => 'Inactive Services',
+    'svc.unknown'  => 'Unknown Status',
+    'svc.start'    => 'Start',
+    'svc.stop'     => 'Stop',
+    'svc.loading'  => 'Loading services…',
+
+    // ── Processes ──
+    'proc.title' => 'System Processes',
+    'proc.kill'  => 'Kill',
+
+    // ── Users & Groups ──
+    'usr.title'        => 'Users & Groups',
+    'usr.login_users'  => 'Login Users',
+    'usr.all_accounts' => 'All System Accounts',
+    'usr.groups'       => 'Groups',
+    'usr.user'         => 'User',
+    'usr.home'         => 'Home',
+    'usr.shell'        => 'Shell',
+    'usr.comment'      => 'Comment',
+    'usr.members'      => 'Members',
+    'usr.none'         => 'No login users found.',
+
+    // ── Packages ──
+    'pkg.title'       => 'Package Updates',
+    'pkg.check'       => 'Check for updates',
+    'pkg.upgrade'     => 'Upgrade all',
+    'pkg.upgradable'  => 'Upgradable Packages',
+    'pkg.package'     => 'Package',
+    'pkg.installed'   => 'Installed',
+    'pkg.available'   => 'Available',
+    'pkg.uptodate'    => 'Everything is up to date.',
+
+    // ── Logs ──
+    'log.title'  => 'System Logs',
+    'log.source' => 'Source',
+    'log.lines'  => 'Lines',
+    'log.filter' => 'Filter',
+    'log.view'   => 'View',
+    'log.select' => 'Select a source and click View.',
+
+    // ── Cron ──
+    'cron.title'          => 'Cron Jobs',
+    'cron.add'            => 'Add Cron Job',
+    'cron.when'           => 'When',
+    'cron.expr'           => 'Schedule expression',
+    'cron.command'        => 'Command to run',
+    'cron.user_crontab'   => 'User Crontab',
+    'cron.none'           => 'No cron jobs for this user.',
+    'cron.custom'         => 'Custom schedule',
+    'cron.invalid'        => 'Invalid schedule expression.',
 ];

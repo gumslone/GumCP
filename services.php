@@ -24,6 +24,8 @@ if (!isset($_SESSION['csrf_token'])) {
     <script src="./static/js.php" type="text/javascript"></script>
     <script>
     var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var T_START = <?php echo json_encode(t('svc.start', 'Start')); ?>;
+    var T_STOP  = <?php echo json_encode(t('svc.stop',  'Stop')); ?>;
 
     function escHtml(s) {
         return $('<span>').text(String(s)).html();
@@ -39,7 +41,7 @@ if (!isset($_SESSION['csrf_token'])) {
             + '<input type="hidden" name="sname" value="' + escHtml(svc) + '">'
             + '<input type="hidden" name="action" value="' + action + '">'
             + '<button type="submit" class="btn btn-xs ' + btnClass + '" '
-            + 'onclick="return confirm(\'' + (action === 'stop_sname' ? 'Stop' : 'Start') + ' ' + escHtml(svc).replace(/'/g, "\\'") + '?\')">'
+            + 'onclick="return confirm(\'' + (action === 'stop_sname' ? T_STOP : T_START) + ' ' + escHtml(svc).replace(/'/g, "\\'") + '?\')">'
             + '<i class="fa ' + btnIcon + '"></i> ' + btnLabel
             + '</button>'
             + '</form>'
@@ -71,7 +73,7 @@ if (!isset($_SESSION['csrf_token'])) {
                     $active.closest('.panel-body').html('<p class="text-muted">No active services.</p>');
                 } else {
                     $.each(data.active, function(i, svc) {
-                        $active.append(buildServiceRow(svc, 'stop_sname', 'btn-danger', 'fa-stop', 'Stop'));
+                        $active.append(buildServiceRow(svc, 'stop_sname', 'btn-danger', 'fa-stop', T_STOP));
                     });
                 }
 
@@ -82,7 +84,7 @@ if (!isset($_SESSION['csrf_token'])) {
                     $inactive.closest('.panel-body').html('<p class="text-muted">No inactive services.</p>');
                 } else {
                     $.each(data.inactive, function(i, svc) {
-                        $inactive.append(buildServiceRow(svc, 'start_sname', 'btn-success', 'fa-play', 'Start'));
+                        $inactive.append(buildServiceRow(svc, 'start_sname', 'btn-success', 'fa-play', T_START));
                     });
                 }
 
@@ -142,7 +144,7 @@ if (!isset($_SESSION['csrf_token'])) {
     <!-- Loading spinner — visible until AJAX returns -->
     <div id="services-loading" class="text-center" style="padding:40px 0">
         <i class="fa fa-spinner fa-spin fa-2x text-muted"></i>
-        <p class="text-muted" style="margin-top:10px">Loading service list&hellip;</p>
+        <p class="text-muted" style="margin-top:10px"><?php echo htmlspecialchars(t('svc.loading', 'Loading services…'), ENT_QUOTES, 'UTF-8'); ?></p>
     </div>
 
     <!-- Error banner -->
@@ -158,7 +160,7 @@ if (!isset($_SESSION['csrf_token'])) {
         <div class="panel panel-success" style="margin-bottom:5px">
             <div class="panel-heading">
                 <h3 class="panel-title">
-                    <i class="fa fa-check-circle"></i> Active Services
+                    <i class="fa fa-check-circle"></i> <?php echo htmlspecialchars(t('svc.active', 'Active Services'), ENT_QUOTES, 'UTF-8'); ?>
                     <span id="badge-active" class="badge pull-right">0</span>
                 </h3>
             </div>
@@ -173,7 +175,7 @@ if (!isset($_SESSION['csrf_token'])) {
         <div class="panel panel-default" style="margin-bottom:5px">
             <div class="panel-heading">
                 <h3 class="panel-title">
-                    <i class="fa fa-minus-circle"></i> Inactive Services
+                    <i class="fa fa-minus-circle"></i> <?php echo htmlspecialchars(t('svc.inactive', 'Inactive Services'), ENT_QUOTES, 'UTF-8'); ?>
                     <span id="badge-inactive" class="badge pull-right">0</span>
                 </h3>
             </div>
@@ -188,7 +190,7 @@ if (!isset($_SESSION['csrf_token'])) {
         <div id="panel-unknown" class="panel panel-warning" style="margin-bottom:5px; display:none">
             <div class="panel-heading">
                 <h3 class="panel-title">
-                    <i class="fa fa-question-circle"></i> Unknown Status
+                    <i class="fa fa-question-circle"></i> <?php echo htmlspecialchars(t('svc.unknown', 'Unknown Status'), ENT_QUOTES, 'UTF-8'); ?>
                     <span id="badge-unknown" class="badge pull-right">0</span>
                 </h3>
             </div>

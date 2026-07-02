@@ -62,7 +62,7 @@ foreach (preg_split('/\r\n|\r|\n/', (string)$raw) as $line) {
     <div class="panel panel-default" style="margin-bottom:5px">
         <div class="panel-heading">
             <h3 class="panel-title">
-                System Processes
+                <?php echo htmlspecialchars(t('proc.title', 'System Processes'), ENT_QUOTES, 'UTF-8'); ?>
                 <a href="?" class="btn btn-success pull-right" style="margin:-6px -11px; color:#fff;">
                     <i class="fa fa-refresh"></i>
                 </a>

@@ -22,7 +22,10 @@ if (!isset($_SESSION['csrf_token'])) {
     <link href="./static/css.php" rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="./static/js.php" type="text/javascript"></script>
-    <script>var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;</script>
+    <script>
+    var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var T_UPTODATE = <?php echo json_encode(t('pkg.uptodate', 'Everything is up to date.')); ?>;
+    </script>
 </head>
 
 <body>
@@ -49,8 +52,8 @@ if (!isset($_SESSION['csrf_token'])) {
     </nav>
 
     <div class="page-header">
-        <h1><i class="fa fa-cubes"></i> Package Updates
-            <small id="pkg-count-label">checking…</small>
+        <h1><i class="fa fa-cubes"></i> <?php echo htmlspecialchars(t('pkg.title', 'Package Updates'), ENT_QUOTES, 'UTF-8'); ?>
+            <small id="pkg-count-label">…</small>
         </h1>
     </div>
 
@@ -60,10 +63,10 @@ if (!isset($_SESSION['csrf_token'])) {
 
     <p>
         <button class="btn btn-default" id="pkg-check-btn" onclick="pkgCheck()">
-            <i class="fa fa-refresh"></i> Check for updates
+            <i class="fa fa-refresh"></i> <?php echo htmlspecialchars(t('pkg.check', 'Check for updates'), ENT_QUOTES, 'UTF-8'); ?>
         </button>
         <button class="btn btn-warning" id="pkg-upgrade-btn" onclick="pkgUpgrade()">
-            <i class="fa fa-arrow-circle-up"></i> Upgrade all
+            <i class="fa fa-arrow-circle-up"></i> <?php echo htmlspecialchars(t('pkg.upgrade', 'Upgrade all'), ENT_QUOTES, 'UTF-8'); ?>
         </button>
         <span class="text-muted" style="margin-left:8px; font-size:12px">
             <code>apt-get update</code> / <code>apt-get upgrade</code> run over SSH.
@@ -79,10 +82,10 @@ if (!isset($_SESSION['csrf_token'])) {
     </div>
 
     <div class="panel panel-default">
-        <div class="panel-heading"><i class="fa fa-list"></i> Upgradable Packages</div>
+        <div class="panel-heading"><i class="fa fa-list"></i> <?php echo htmlspecialchars(t('pkg.upgradable', 'Upgradable Packages'), ENT_QUOTES, 'UTF-8'); ?></div>
         <table class="table table-condensed table-striped" style="margin-bottom:0">
             <thead>
-                <tr><th style="padding-left:15px">Package</th><th>Installed</th><th>Available</th></tr>
+                <tr><th style="padding-left:15px"><?php echo htmlspecialchars(t('pkg.package', 'Package'), ENT_QUOTES, 'UTF-8'); ?></th><th><?php echo htmlspecialchars(t('pkg.installed', 'Installed'), ENT_QUOTES, 'UTF-8'); ?></th><th><?php echo htmlspecialchars(t('pkg.available', 'Available'), ENT_QUOTES, 'UTF-8'); ?></th></tr>
             </thead>
             <tbody id="pkg-tbody">
                 <tr><td colspan="3" class="text-muted" style="padding-left:15px">Loading…</td></tr>
@@ -116,7 +119,7 @@ function pkgLoadList() {
             pkgShowIndexAge((d && d.index_mtime) || 0, pkgs.length);
             if (!pkgs.length) {
                 $('#pkg-tbody').html('<tr><td colspan="3" class="text-success" style="padding-left:15px">'
-                    + '<i class="fa fa-check"></i> Everything is up to date.</td></tr>');
+                    + '<i class="fa fa-check"></i> ' + $('<span>').text(T_UPTODATE).html() + '</td></tr>');
                 return;
             }
             var html = '';
