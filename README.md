@@ -1,4 +1,10 @@
-<a href="https://www.buymeacoffee.com/gumslone" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+<p align="center">
+  <img src="docs/logo.svg" alt="GumCP — Raspberry Pi Web Control Panel" width="720">
+</p>
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/gumslone" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+</p>
 
 # GumCP — Web Control Panel & Dashboard for Raspberry Pi
 
