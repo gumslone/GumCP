@@ -19,7 +19,7 @@ function gumcp_supported_langs(): array {
 // Process a ?lang=xx switch. Must run BEFORE any output (called from init.php)
 // so it can set the persistence cookie. Persists to both session and a cookie so
 // the choice survives navigation regardless of session configuration.
-function gumcp_init_lang(): void {
+function gumcp_init_lang() {
     if (!isset($_GET['lang'])) return;
     $supported = gumcp_supported_langs();
     $code = (string)$_GET['lang'];
