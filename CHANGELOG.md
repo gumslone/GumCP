@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- **Refactor: shared page chrome** — the duplicated `<head>`/navbar and footer boilerplate (~45 lines × 14 pages) now lives in `include/header.php` and `include/footer.php`. Pages set `$page_title` and include the partials; per-page styles/scripts are unchanged. `update.php` and `login.php` deliberately stay standalone for recovery isolation.
+- **Refactor: shared system readers** — `read_cpu_usage()`, `read_uptime()`, `read_meminfo()`, `read_cpu_temp()` and `gumcp_fmt_bytes()` moved to `include/dashboard.php` and are used by both `index.php` and `ajax.php` (previously two diverging copies). The dashboard's initial render now uses the same snapshot-based CPU reader as the 30 s refresh, so the first paint shows a real value instead of a 100 ms sample.
+- Net −689 lines with no functional change.
+
+---
+
 ## [2.5.1] — 2026-07-02
 
 ### Fixed

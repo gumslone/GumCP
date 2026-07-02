@@ -188,4 +188,95 @@ if (!function_exists('gumcp_swap_info')) {
         $i = $bytes > 0 ? min((int)log($bytes, 1024), count($units) - 1) : 0;
         return sprintf('%.2f %s', $bytes / (1024 ** $i), $units[$i]);
     }
+
+    /**
+     * CPU temperature in °C from the thermal zone (0.0 when unreadable).
+     */
+    function read_cpu_temp(): float {
+        $raw = @file_get_contents('/sys/class/thermal/thermal_zone0/temp');
+        return $raw !== false ? round((float)$raw / 1000, 1) : 0.0;
+    }
+
+    /**
+     * CPU usage percentage measured against the previous /proc/stat snapshot.
+     *
+     * The snapshot persists in the temp dir between calls so the delta covers
+     * the full polling interval instead of a tiny in-process window — this is
+     * what prevents the "always 0 %" problem on lightly-loaded Pis. On the very
+     * first call (no baseline) it falls back to a 300 ms in-process sample.
+     */
+    function read_cpu_usage(): int {
+        $cache = sys_get_temp_dir() . '/gumcp_cpu_stat';
+
+        $parse = function($raw) {
+            return explode(' ', preg_replace('/\s+/', ' ', trim(explode("\n", $raw)[0])));
+        };
+
+        $current = @file_get_contents('/proc/stat');
+        if ($current === false) return 0;
+
+        $b    = $parse($current);
+        $prev = @file_get_contents($cache);
+
+        // Save current snapshot for the next call before any early return.
+        @file_put_contents($cache, $current, LOCK_EX);
+
+        if ($prev === false || $prev === '') {
+            usleep(300000);
+            $s2 = @file_get_contents('/proc/stat');
+            if ($s2 === false) return 0;
+            $b = $parse($s2);
+            @file_put_contents($cache, $s2, LOCK_EX);
+            $a = $parse($current);
+        } else {
+            $a = $parse($prev);
+        }
+
+        $idle  = (int)$b[4] - (int)$a[4];
+        $total = 0;
+        for ($i = 1; $i <= 8; $i++) {
+            $total += ((int)($b[$i] ?? 0)) - ((int)($a[$i] ?? 0));
+        }
+        return $total > 0 ? (int)round(100 - ($idle * 100 / $total)) : 0;
+    }
+
+    /**
+     * Human uptime from /proc/uptime, e.g. "3 days, 4 hours, 12 minutes".
+     */
+    function read_uptime(): string {
+        $raw = @file_get_contents('/proc/uptime');
+        if ($raw === false) return 'Unknown';
+
+        $sec = (int)explode(' ', $raw)[0];
+        $d   = (int)floor($sec / 86400);
+        $h   = (int)floor(($sec % 86400) / 3600);
+        $m   = (int)floor(($sec % 3600) / 60);
+        return sprintf('%d day%s, %d hour%s, %d minute%s',
+            $d, $d !== 1 ? 's' : '',
+            $h, $h !== 1 ? 's' : '',
+            $m, $m !== 1 ? 's' : '');
+    }
+
+    /**
+     * Memory figures from /proc/meminfo. All values in kB.
+     */
+    function read_meminfo(): array {
+        $defaults = ['total' => 0, 'free' => 0, 'available' => 0, 'buffers' => 0, 'cached' => 0, 'shared' => 0];
+        $raw = @file_get_contents('/proc/meminfo');
+        if ($raw === false) return $defaults;
+
+        $get = function($key) use ($raw) {
+            return preg_match('/^' . $key . ':\s+(\d+)/m', $raw, $m) ? (int)$m[1] : 0;
+        };
+        $total = $get('MemTotal');
+        $free  = $get('MemFree');
+        return [
+            'total'     => $total,
+            'free'      => $free,
+            'available' => $get('MemAvailable') ?: $free,
+            'buffers'   => $get('Buffers'),
+            'cached'    => $get('Cached'),
+            'shared'    => $get('Shmem'),
+        ];
+    }
 }

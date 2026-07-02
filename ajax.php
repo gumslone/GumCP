@@ -790,8 +790,7 @@ function boot_config_path(string $which): string {
 function metrics_history_sample(): array {
     $file = __DIR__ . '/command_logs/metrics_history.json';
 
-    $temp_raw = @file_get_contents('/sys/class/thermal/thermal_zone0/temp');
-    $temp = $temp_raw !== false ? round((float)$temp_raw / 1000, 1) : 0.0;
+    $temp = read_cpu_temp();
 
     $freq_raw = @file_get_contents('/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq');
     $freq = $freq_raw !== false ? (int)round((int)$freq_raw / 1000) : 0; // MHz
@@ -816,20 +815,17 @@ function metrics_history_sample(): array {
 function collect_server_info(): array {
     $info = [];
 
-    // Temperature
-    $raw = @file_get_contents('/sys/class/thermal/thermal_zone0/temp');
-    $info['temp'] = $raw !== false ? round((float)$raw / 1000, 1) : 0.0;
-
-    // CPU usage — two /proc/stat reads 100 ms apart (no vmstat/awk needed)
+    // Temperature and CPU usage (shared readers in include/dashboard.php)
+    $info['temp']     = read_cpu_temp();
     $info['cpuusage'] = read_cpu_usage();
 
     // Disk (root filesystem)
     $free_b  = (float)(@disk_free_space('/')  ?: 0);
     $total_b = (float)(@disk_total_space('/') ?: 0);
     $used_b  = $total_b - $free_b;
-    $info['disk_free']       = format_bytes($free_b);
-    $info['disk_total']      = format_bytes($total_b);
-    $info['disk_used']       = format_bytes($used_b);
+    $info['disk_free']       = gumcp_fmt_bytes($free_b);
+    $info['disk_total']      = gumcp_fmt_bytes($total_b);
+    $info['disk_used']       = gumcp_fmt_bytes($used_b);
     $info['disk_percentage'] = $total_b > 0 ? (int)round($used_b / $total_b * 100) : 0;
 
     // Uptime (from /proc/uptime — avoids -p flag missing on older BusyBox)
@@ -889,82 +885,5 @@ function collect_server_info(): array {
     return $info;
 }
 
-function read_cpu_usage(): int {
-    // Persist the previous /proc/stat snapshot between AJAX polls so the delta
-    // is measured over the full ~30 s polling interval instead of a tiny window.
-    // This prevents the "always 0%" problem on lightly-loaded Pis where no
-    // non-idle jiffies tick during a short in-process usleep sample.
-    $cache = sys_get_temp_dir() . '/gumcp_cpu_stat';
-
-    $parse = static function(string $raw): array {
-        return explode(' ', preg_replace('/\s+/', ' ', trim(explode("\n", $raw)[0])));
-    };
-
-    $current = @file_get_contents('/proc/stat');
-    if ($current === false) return 0;
-
-    $b    = $parse($current);
-    $prev = @file_get_contents($cache);
-
-    // Save current snapshot for the next call before any early return.
-    @file_put_contents($cache, $current, LOCK_EX);
-
-    if ($prev === false || $prev === '') {
-        // No baseline yet — fall back to a 300 ms in-process sample.
-        usleep(300000);
-        $s2 = @file_get_contents('/proc/stat');
-        if ($s2 === false) return 0;
-        $b = $parse($s2);
-        @file_put_contents($cache, $s2, LOCK_EX);
-        $a = $parse($current);
-    } else {
-        $a = $parse($prev);
-    }
-
-    $idle  = (int)$b[4] - (int)$a[4];
-    $total = 0;
-    for ($i = 1; $i <= 8; $i++) {
-        $total += ((int)($b[$i] ?? 0)) - ((int)($a[$i] ?? 0));
-    }
-    return $total > 0 ? (int)round(100 - ($idle * 100 / $total)) : 0;
-}
-
-function read_uptime(): string {
-    $raw = @file_get_contents('/proc/uptime');
-    if ($raw === false) return 'Unknown';
-
-    $sec  = (int)explode(' ', $raw)[0];
-    $d    = (int)floor($sec / 86400);
-    $h    = (int)floor(($sec % 86400) / 3600);
-    $m    = (int)floor(($sec % 3600) / 60);
-    return sprintf('up %d day%s, %d hour%s, %d minute%s',
-        $d, $d !== 1 ? 's' : '',
-        $h, $h !== 1 ? 's' : '',
-        $m, $m !== 1 ? 's' : '');
-}
-
-function read_meminfo(): array {
-    $defaults = ['total' => 0, 'free' => 0, 'available' => 0, 'buffers' => 0, 'cached' => 0, 'shared' => 0];
-    $raw = @file_get_contents('/proc/meminfo');
-    if ($raw === false) return $defaults;
-
-    $get = static function(string $key) use ($raw): int {
-        return preg_match('/^' . $key . ':\s+(\d+)/m', $raw, $m) ? (int)$m[1] : 0;
-    };
-    $total = $get('MemTotal');
-    $free  = $get('MemFree');
-    return [
-        'total'     => $total,
-        'free'      => $free,
-        'available' => $get('MemAvailable') ?: $free,
-        'buffers'   => $get('Buffers'),
-        'cached'    => $get('Cached'),
-        'shared'    => $get('Shmem'),
-    ];
-}
-
-function format_bytes(float $bytes): string {
-    $units = ['B', 'KB', 'MB', 'GB', 'TB', 'EB'];
-    $i = $bytes > 0 ? min((int)log($bytes, 1024), count($units) - 1) : 0;
-    return sprintf('%1.2f %s', $bytes / pow(1024, $i), $units[$i]);
-}
+// read_cpu_usage(), read_uptime(), read_meminfo(), read_cpu_temp() and
+// gumcp_fmt_bytes() live in include/dashboard.php, shared with index.php.

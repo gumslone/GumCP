@@ -33,17 +33,13 @@ function get_system_info(): array {
     ];
 }
 
+// Uptime, CPU usage, temperature and meminfo readers are shared with ajax.php —
+// see include/dashboard.php (read_uptime, read_cpu_usage, read_cpu_temp,
+// read_meminfo). Using the same snapshot-based CPU reader here also means the
+// initial page render shows a real value instead of a 100 ms guess.
+
 function get_uptime(): string {
-    $raw = @file_get_contents('/proc/uptime');
-    if ($raw === false) return 'Unknown';
-    $sec = (int)explode(' ', $raw)[0];
-    $d   = (int)floor($sec / 86400);
-    $h   = (int)floor(($sec % 86400) / 3600);
-    $m   = (int)floor(($sec % 3600) / 60);
-    return sprintf('%d day%s, %d hour%s, %d minute%s',
-        $d, $d !== 1 ? 's' : '',
-        $h, $h !== 1 ? 's' : '',
-        $m, $m !== 1 ? 's' : '');
+    return read_uptime();
 }
 
 function get_load_average(): array {
@@ -52,24 +48,11 @@ function get_load_average(): array {
 }
 
 function get_cpu_usage(): int {
-    $s1 = @file_get_contents('/proc/stat');
-    if ($s1 === false) return 0;
-    usleep(100000);
-    $s2 = @file_get_contents('/proc/stat');
-    if ($s2 === false) return 0;
-    $parse = static function(string $r): array {
-        return explode(' ', preg_replace('/\s+/', ' ', trim(explode("\n", $r)[0])));
-    };
-    $a = $parse($s1); $b = $parse($s2);
-    $idle  = (int)$b[4] - (int)$a[4];
-    $total = 0;
-    for ($i = 1; $i <= 8; $i++) $total += ((int)($b[$i] ?? 0)) - ((int)($a[$i] ?? 0));
-    return $total > 0 ? (int)round(100 - ($idle * 100 / $total)) : 0;
+    return read_cpu_usage();
 }
 
 function get_cpu_temp(): float {
-    $raw = @file_get_contents('/sys/class/thermal/thermal_zone0/temp');
-    return $raw !== false ? round((float)$raw / 1000, 1) : 0.0;
+    return read_cpu_temp();
 }
 
 function get_cpu_info(): string {
@@ -86,23 +69,15 @@ function get_process_count(): int {
 }
 
 function get_memory_info(): array {
-    $def = ['total' => 0, 'used' => 0, 'free' => 0, 'percent' => 0, 'buffers' => 0, 'cached' => 0];
-    $raw = @file_get_contents('/proc/meminfo');
-    if ($raw === false) return $def;
-    $get = static function(string $k) use ($raw): int {
-        return preg_match('/^' . $k . ':\s+(\d+)/m', $raw, $m) ? (int)$m[1] : 0;
-    };
-    $total     = $get('MemTotal');
-    $free      = $get('MemFree');
-    $available = $get('MemAvailable') ?: $free;
-    $used      = $total - $available;
+    $m    = read_meminfo();
+    $used = $m['total'] - $m['available'];
     return [
-        'total'   => $total,
+        'total'   => $m['total'],
         'used'    => $used,
-        'free'    => $available,
-        'percent' => $total > 0 ? (int)round($used / $total * 100) : 0,
-        'buffers' => $get('Buffers'),
-        'cached'  => $get('Cached'),
+        'free'    => $m['available'],
+        'percent' => $m['total'] > 0 ? (int)round($used / $m['total'] * 100) : 0,
+        'buffers' => $m['buffers'],
+        'cached'  => $m['cached'],
     ];
 }
 
@@ -121,13 +96,7 @@ function get_disk_info(): array {
 }
 
 function fmt_kb(int $kb): string {
-    return fmt_bytes((float)($kb * 1024));
-}
-
-function fmt_bytes(float $bytes): string {
-    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    $i = $bytes > 0 ? min((int)log($bytes, 1024), count($units) - 1) : 0;
-    return sprintf('%.2f %s', $bytes / (1024 ** $i), $units[$i]);
+    return gumcp_fmt_bytes((float)($kb * 1024));
 }
 
 function bar_color(int $pct): string {
@@ -173,21 +142,13 @@ function signal_quality($dbm): string {
     return 'weak';
 }
 
+
+$page_title = 'System Dashboard';
+$show_menu_reorder = true;
+require_once('./include/header.php');
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="GumCP System Dashboard">
-    <link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png">
-    <link rel="icon"          href="./static/images/raspberry.png" type="image/png">
-    <title>GumCP &mdash; System Dashboard</title>
-    <link href="./static/css.php" rel="stylesheet" type="text/css">
-    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="./static/js.php" type="text/javascript"></script>
-    <style>
+
+<style>
         body { background-color: #f5f5f5; }
         .stat-box { text-align:center; padding:20px; background:#fff; border-radius:4px;
                     box-shadow:0 2px 4px rgba(0,0,0,.1); margin-bottom:20px; }
@@ -201,39 +162,6 @@ function signal_quality($dbm): string {
         .info-table td { padding:8px; border-top:1px solid #ddd; }
         .info-table td:first-child { font-weight:bold; width:30%; }
     </style>
-</head>
-<body>
-<div class="container">
-
-    <nav class="navbar navbar-default">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
-                        data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="./index.php">
-                    <img src="./static/images/raspberry.png" alt="Logo"> GumCP
-                </a>
-            </div>
-            <div id="navbar" class="navbar-collapse collapse">
-                <ul class="nav navbar-nav navbar-right">
-                    <?php require_once('./include/menu.php'); ?>
-                    <li>
-                        <a href="#" title="<?php echo htmlspecialchars(t('nav.reorder', 'Reorder menu'), ENT_QUOTES, 'UTF-8'); ?>"
-                           onclick="openMenuReorder(); return false;"
-                           style="opacity:.6">
-                            <i class="fa fa-bars"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
     <div class="row">
         <div class="col-md-12">
             <h1 class="page-header">
@@ -581,18 +509,6 @@ function signal_quality($dbm): string {
 
 </div><!-- /.container -->
 
-<footer class="footer">
-    <div class="container">
-        <p class="text-muted">
-            GumCP <a href="https://github.com/gumslone/GumCP" target="_blank" rel="noopener">GitHub</a>.
-            <a href="https://www.paypal.com/donate/?hosted_button_id=VCWHQPACTXV5N"
-               target="_blank" rel="noopener">
-                <img src="./static/images/Donate-PayPal-green.svg" alt="Donate">
-            </a>
-        </p>
-    </div>
-</footer>
-
 <script>
 var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
 var GUMCP_I18N = {
@@ -664,5 +580,4 @@ foreach ($gumcp_modules as $k => $m) {
     </div>
 </div>
 
-</body>
-</html>
+<?php require_once('./include/footer.php'); ?>
