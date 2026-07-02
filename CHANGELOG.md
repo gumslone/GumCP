@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.1] — 2026-07-02
+
+### Fixed
+- **PHP 7.0 compatibility** — removed `: void` return type from `gumcp_init_lang()` (i18n) and replaced `[]` array destructuring with `list()` in the Basic Auth block of `config.example.php`. Both are PHP 7.1+ syntax and caused HTTP 500s on PHP 7.0.
+- **Language persistence** — the navbar language choice now persists across pages. It's processed early in `include/init.php` (before output) and stored in a 1-year cookie plus the session, instead of being set mid-page.
+
+### Added
+- **`update.php`** — a standalone recovery updater that depends only on `config.php` (never the full bootstrap) and runs `git` locally without SSH, so GumCP can be updated/recovered from the browser even when a bad deploy breaks every other page.
+- **PHP 7.0 CI** — `.github/workflows/php-compat.yml` lints all first-party PHP against a real PHP 7.0 runtime and rejects 7.1+ syntax; `scripts/check-php70.sh` runs the same check locally.
+
+---
+
 ## [2.5.0] — 2026-06-28
 
 ### Added
