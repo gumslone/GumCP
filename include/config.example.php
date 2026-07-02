@@ -28,6 +28,13 @@ define('BASIC_AUTH_PASS', 'secret'); // separate password for Basic Auth — CHA
 // (their choice is remembered in the session).
 define('GUMCP_LANG', 'en');
 
+// ── Update recovery key ───────────────────────────────────────────────────────
+// Optional. When set to a long random string, update.php can be reached with
+// ?key=<value> even if the login page or Basic Auth is broken — an emergency way
+// to recover a wedged install from the browser. Leave empty to disable.
+// Example: define('GUMCP_UPDATE_KEY', 'a1b2c3d4e5f6...');
+define('GUMCP_UPDATE_KEY', '');
+
 // ── Debug ─────────────────────────────────────────────────────────────────────
 // Set true to display PHP errors in the browser. Keep false in production.
 define('GUMCP_DEBUG', false);

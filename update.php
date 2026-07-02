@@ -8,11 +8,61 @@ declare(strict_types=1);
 // it also works when SSH is disabled. Protected by the config.php auth gate
 // when LOGIN_REQUIRED or BASIC_AUTH is enabled.
 
+// Suppress config.php's built-in auth gate — this page enforces its own access
+// check below so it can also honour the emergency GUMCP_UPDATE_KEY bypass.
+if (!defined('GUMCP_API_REQUEST')) {
+    define('GUMCP_API_REQUEST', true);
+}
 include_once(__DIR__ . '/include/config.php');
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// ── Access control ────────────────────────────────────────────────────────────
+// Allowed if: a valid emergency key is supplied, OR the normal login/Basic Auth
+// succeeds, OR no authentication is configured (open install).
+$update_key = defined('GUMCP_UPDATE_KEY') ? (string)GUMCP_UPDATE_KEY : '';
+$req_key    = (string)($_REQUEST['key'] ?? ''); // GET query or POST body
+$has_key    = $update_key !== '' && hash_equals($update_key, $req_key);
+
+$login_on = defined('LOGIN_REQUIRED') && LOGIN_REQUIRED === true;
+$basic_on = defined('BASIC_AUTH') && BASIC_AUTH === true;
+
+$allowed = $has_key || (!$login_on && !$basic_on);
+
+if (!$allowed && $login_on
+    && isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
+    && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
+    && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS)) {
+    $allowed = true;
+}
+
+if (!$allowed && $basic_on) {
+    $bu = (string)($_SERVER['PHP_AUTH_USER'] ?? '');
+    $bp = (string)($_SERVER['PHP_AUTH_PW'] ?? '');
+    if ($bu === '' && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $decoded = base64_decode(ltrim(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
+        if ($decoded !== false && strpos($decoded, ':') !== false) {
+            list($bu, $bp) = explode(':', $decoded, 2);
+        }
+    }
+    if ($bu !== '' && hash_equals(BASIC_AUTH_USER, $bu) && hash_equals(BASIC_AUTH_PASS, $bp)) {
+        $allowed = true;
+    }
+}
+
+if (!$allowed) {
+    if ($basic_on) {
+        header('WWW-Authenticate: Basic realm="GumCP Updater"');
+        http_response_code(401);
+        echo '401 Unauthorized';
+        exit();
+    }
+    header('Location: ./login.php');
+    exit();
+}
+
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
@@ -118,6 +168,9 @@ $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
         <form method="post" onsubmit="return confirm('Update GumCP now? This runs git in ' + <?php echo json_encode($dir); ?> + '.');">
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+            <?php if ($has_key): ?>
+                <input type="hidden" name="key" value="<?php echo htmlspecialchars($req_key, ENT_QUOTES, 'UTF-8'); ?>">
+            <?php endif; ?>
             <label for="git_target"><strong>Version</strong></label><br>
             <select name="git_target" id="git_target">
                 <option value="master">Latest (master branch)</option>

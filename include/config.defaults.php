@@ -21,6 +21,11 @@ defined('GUMCP_DEBUG')          || define('GUMCP_DEBUG',          false);
 
 defined('GUMCP_LANG')           || define('GUMCP_LANG',           'en'); // en|de|uk|es|fr
 
+// Optional emergency key for update.php (empty = disabled). When set, update.php
+// can be reached with ?key=<this value> even if the login page/basic auth is
+// unavailable — a recovery escape hatch. Keep it long and secret.
+defined('GUMCP_UPDATE_KEY')     || define('GUMCP_UPDATE_KEY',     '');
+
 // Ensure button_api module entry exists for configs created before this feature
 if (!isset($gumcp_modules['button_api'])) {
     $gumcp_modules['button_api'] = ['module_title' => 'Button API', 'module_active' => 1, 'module_no_nav' => 1];
