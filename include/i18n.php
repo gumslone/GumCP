@@ -16,23 +16,33 @@ function gumcp_supported_langs(): array {
     ];
 }
 
+// Process a ?lang=xx switch. Must run BEFORE any output (called from init.php)
+// so it can set the persistence cookie. Persists to both session and a cookie so
+// the choice survives navigation regardless of session configuration.
+function gumcp_init_lang(): void {
+    if (!isset($_GET['lang'])) return;
+    $supported = gumcp_supported_langs();
+    $code = (string)$_GET['lang'];
+    if (!isset($supported[$code])) return;
+
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        $_SESSION['gumcp_lang'] = $code;
+    }
+    // 1-year cookie, site-wide.
+    @setcookie('gumcp_lang', $code, time() + 31536000, '/');
+    $_COOKIE['gumcp_lang'] = $code; // reflect for the current request
+}
+
 function gumcp_current_lang(): string {
     static $lang = null;
     if ($lang !== null) return $lang;
 
     $supported = gumcp_supported_langs();
 
-    // Switch via ?lang=xx — wins for this request, and is persisted in the session.
-    if (isset($_GET['lang']) && isset($supported[$_GET['lang']])) {
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            $_SESSION['gumcp_lang'] = $_GET['lang'];
-        }
-        $lang = $_GET['lang'];
-        return $lang;
-    }
-
     if (isset($_SESSION['gumcp_lang']) && isset($supported[$_SESSION['gumcp_lang']])) {
         $lang = $_SESSION['gumcp_lang'];
+    } elseif (isset($_COOKIE['gumcp_lang']) && isset($supported[$_COOKIE['gumcp_lang']])) {
+        $lang = $_COOKIE['gumcp_lang'];
     } else {
         $def  = defined('GUMCP_LANG') ? (string)GUMCP_LANG : 'en';
         $lang = isset($supported[$def]) ? $def : 'en';

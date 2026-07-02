@@ -8,3 +8,6 @@ declare(strict_types=1);
 require_once(__DIR__ . '/config.php');
 require_once(__DIR__ . '/config.defaults.php');
 require_once(__DIR__ . '/i18n.php');
+
+// Handle a ?lang=xx switch before any page output (sets session + cookie).
+gumcp_init_lang();
