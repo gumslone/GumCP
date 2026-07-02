@@ -1,0 +1,49 @@
+name: PHP 7.0 compatibility
+
+# GumCP targets PHP 7.0 (older Raspberry Pi OS). This workflow lints every
+# first-party PHP file with an actual PHP 7.0 runtime, so 7.1+ syntax
+# (nullable types, `: void`, etc.) fails CI before it can reach a Pi.
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  php70-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 7.0
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.0'
+          coverage: none
+
+      - name: Lint first-party PHP with PHP 7.0
+        run: |
+          # Exclude third-party bundled modules (adminer, tinyfilemanager, tehybug
+          # vendor code) — only our own code must be 7.0-clean.
+          fail=0
+          while IFS= read -r -d '' f; do
+            if ! php -l "$f" > /dev/null 2>err.txt; then
+              echo "::error file=$f::$(cat err.txt)"
+              cat err.txt
+              fail=1
+            fi
+          done < <(find . -name '*.php' -not -path './modules/*' -print0)
+          if [ "$fail" -ne 0 ]; then
+            echo "PHP 7.0 lint failed — see errors above."
+            exit 1
+          fi
+          echo "All first-party PHP files are PHP 7.0 compatible."
+
+      - name: Guard against known PHP 7.1+ syntax (belt and suspenders)
+        run: |
+          if grep -rnE ':[[:space:]]*void|\([[:space:]]*\?[a-zA-Z]|,[[:space:]]*\?[a-zA-Z]|:[[:space:]]*\?[a-zA-Z]' \
+               --include='*.php' . | grep -v '/modules/'; then
+            echo "::error::Found PHP 7.1+ syntax (nullable type or : void). Not allowed — target is PHP 7.0."
+            exit 1
+          fi
+          echo "No PHP 7.1+ syntax patterns found."
