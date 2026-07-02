@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.5.0] — 2026-06-28
 
 ### Added
 - **Multilanguage (i18n)** — English (base), German, Ukrainian, Spanish and French. Default set via `GUMCP_LANG` in `config.php`; a navbar language switcher persists the choice in the session. New `include/i18n.php` engine with `t()` and per-language files in `include/lang/`; missing keys fall back to English. Translated: navbar, Dashboard, Services, Processes, Packages, Logs, Cron, Users, Actions, GPIO, Buttons, Docker and Raspberry Pi (titles, panel headings and primary controls). Deep modal/help text and the cron schedule descriptions remain English and fall back gracefully.
