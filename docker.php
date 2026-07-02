@@ -49,9 +49,9 @@ if (!isset($_SESSION['csrf_token'])) {
     </nav>
 
     <div class="page-header">
-        <h1><i class="fa fa-cube"></i> Docker
+        <h1><i class="fa fa-cube"></i> <?php echo htmlspecialchars(t('nav.docker', 'Docker'), ENT_QUOTES, 'UTF-8'); ?>
             <a href="#" onclick="dockerLoad(); return false;" class="btn btn-default btn-sm pull-right">
-                <i class="fa fa-refresh"></i> Refresh
+                <i class="fa fa-refresh"></i> <?php echo htmlspecialchars(t('common.refresh', 'Refresh'), ENT_QUOTES, 'UTF-8'); ?>
             </a>
         </h1>
     </div>
@@ -62,7 +62,7 @@ if (!isset($_SESSION['csrf_token'])) {
 
     <!-- Containers -->
     <div class="panel panel-default" id="docker-panel">
-        <div class="panel-heading"><i class="fa fa-cubes"></i> Containers</div>
+        <div class="panel-heading"><i class="fa fa-cubes"></i> <?php echo htmlspecialchars(t('dock.containers', 'Containers'), ENT_QUOTES, 'UTF-8'); ?></div>
         <div class="table-responsive">
             <table class="table table-condensed table-striped" style="margin-bottom:0">
                 <thead>
@@ -80,7 +80,7 @@ if (!isset($_SESSION['csrf_token'])) {
     <div class="panel panel-default">
         <div class="panel-heading">
             <a data-toggle="collapse" href="#docker-images" style="text-decoration:none; color:inherit; display:block">
-                <i class="fa fa-archive"></i> Images <i class="fa fa-caret-down pull-right"></i>
+                <i class="fa fa-archive"></i> <?php echo htmlspecialchars(t('dock.images', 'Images'), ENT_QUOTES, 'UTF-8'); ?> <i class="fa fa-caret-down pull-right"></i>
             </a>
         </div>
         <div id="docker-images" class="collapse">
@@ -103,7 +103,7 @@ if (!isset($_SESSION['csrf_token'])) {
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-                <h4 class="modal-title"><i class="fa fa-file-text-o"></i> Logs: <span id="docker-logs-name"></span></h4>
+                <h4 class="modal-title"><i class="fa fa-file-text-o"></i> <?php echo htmlspecialchars(t('dock.logs', 'Logs'), ENT_QUOTES, 'UTF-8'); ?>: <span id="docker-logs-name"></span></h4>
             </div>
             <div class="modal-body">
                 <pre id="docker-logs-output" style="max-height:480px; overflow:auto; font-size:12px">Loading…</pre>

@@ -85,16 +85,16 @@ $allowed_sizes  = ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'];
     </nav>
 
     <div class="page-header">
-        <h1>Command Buttons <small>Execute predefined commands</small></h1>
+        <h1><?php echo htmlspecialchars(t('btn.title', 'Command Buttons'), ENT_QUOTES, 'UTF-8'); ?></h1>
     </div>
 
     <button type="button" class="btn btn-success" onclick="addButton()">
-        <i class="fa fa-plus"></i> Add Command Button
+        <i class="fa fa-plus"></i> <?php echo htmlspecialchars(t('btn.add', 'Add Command Button'), ENT_QUOTES, 'UTF-8'); ?>
     </button>
 
     <div class="panel panel-default" style="margin-top: 15px">
         <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-terminal"></i> Command Buttons</h3>
+            <h3 class="panel-title"><i class="fa fa-terminal"></i> <?php echo htmlspecialchars(t('btn.title', 'Command Buttons'), ENT_QUOTES, 'UTF-8'); ?></h3>
         </div>
         <div class="panel-body">
 

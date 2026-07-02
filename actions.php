@@ -362,7 +362,7 @@ if ($raw_tags !== null) {
 
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-cogs"></i> Actions</h3>
+            <h3 class="panel-title"><i class="fa fa-cogs"></i> <?php echo htmlspecialchars(t('act.title', 'Actions'), ENT_QUOTES, 'UTF-8'); ?></h3>
         </div>
         <div class="panel-body">
 
@@ -371,14 +371,14 @@ if ($raw_tags !== null) {
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                 <input type="hidden" name="action"     value="kill_pid">
                 <div class="form-group row">
-                    <label class="col-sm-3 control-label" for="pid">Kill process by PID</label>
+                    <label class="col-sm-3 control-label" for="pid"><?php echo htmlspecialchars(t('act.kill_pid', 'Kill process by PID'), ENT_QUOTES, 'UTF-8'); ?></label>
                     <div class="col-sm-4">
                         <input type="number" class="form-control" id="pid" name="pid"
                                placeholder="Process ID" min="1" required>
                     </div>
                     <div class="col-sm-2">
                         <button type="submit" class="btn btn-danger">
-                            <i class="fa fa-times"></i> Kill
+                            <i class="fa fa-times"></i> <?php echo htmlspecialchars(t('act.kill', 'Kill'), ENT_QUOTES, 'UTF-8'); ?>
                         </button>
                     </div>
                 </div>
@@ -391,14 +391,14 @@ if ($raw_tags !== null) {
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                 <input type="hidden" name="action"     value="kill_pname">
                 <div class="form-group row">
-                    <label class="col-sm-3 control-label" for="pname">Kill processes by name</label>
+                    <label class="col-sm-3 control-label" for="pname"><?php echo htmlspecialchars(t('act.kill_pname', 'Kill processes by name'), ENT_QUOTES, 'UTF-8'); ?></label>
                     <div class="col-sm-4">
                         <input type="text" class="form-control" id="pname" name="pname"
                                placeholder="Process name" pattern="[a-zA-Z0-9_\-\.]+" required>
                     </div>
                     <div class="col-sm-2">
                         <button type="submit" class="btn btn-danger">
-                            <i class="fa fa-times"></i> Kill
+                            <i class="fa fa-times"></i> <?php echo htmlspecialchars(t('act.kill', 'Kill'), ENT_QUOTES, 'UTF-8'); ?>
                         </button>
                     </div>
                 </div>
@@ -411,14 +411,14 @@ if ($raw_tags !== null) {
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                 <input type="hidden" name="action"     value="start_sname">
                 <div class="form-group row">
-                    <label class="col-sm-3 control-label" for="sname-start">Start service</label>
+                    <label class="col-sm-3 control-label" for="sname-start"><?php echo htmlspecialchars(t('act.start_service', 'Start service'), ENT_QUOTES, 'UTF-8'); ?></label>
                     <div class="col-sm-4">
                         <input type="text" class="form-control" id="sname-start" name="sname"
                                placeholder="Service name" pattern="[a-zA-Z0-9_\-\.]+" required>
                     </div>
                     <div class="col-sm-2">
                         <button type="submit" class="btn btn-success">
-                            <i class="fa fa-play"></i> Start
+                            <i class="fa fa-play"></i> <?php echo htmlspecialchars(t('act.start', 'Start'), ENT_QUOTES, 'UTF-8'); ?>
                         </button>
                     </div>
                 </div>
@@ -431,14 +431,14 @@ if ($raw_tags !== null) {
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                 <input type="hidden" name="action"     value="stop_sname">
                 <div class="form-group row">
-                    <label class="col-sm-3 control-label" for="sname-stop">Stop service</label>
+                    <label class="col-sm-3 control-label" for="sname-stop"><?php echo htmlspecialchars(t('act.stop_service', 'Stop service'), ENT_QUOTES, 'UTF-8'); ?></label>
                     <div class="col-sm-4">
                         <input type="text" class="form-control" id="sname-stop" name="sname"
                                placeholder="Service name" pattern="[a-zA-Z0-9_\-\.]+" required>
                     </div>
                     <div class="col-sm-2">
                         <button type="submit" class="btn btn-warning">
-                            <i class="fa fa-stop"></i> Stop
+                            <i class="fa fa-stop"></i> <?php echo htmlspecialchars(t('act.stop', 'Stop'), ENT_QUOTES, 'UTF-8'); ?>
                         </button>
                     </div>
                 </div>
@@ -452,7 +452,7 @@ if ($raw_tags !== null) {
                 <input type="hidden" name="action"     value="cmd">
                 <div class="form-group row">
                     <label class="col-sm-3 control-label" for="cmd">
-                        Execute command
+                        <?php echo htmlspecialchars(t('act.exec_label', 'Execute command'), ENT_QUOTES, 'UTF-8'); ?>
                         <small class="text-danger"><br>Advanced users only</small>
                     </label>
                     <div class="col-sm-5">
@@ -461,13 +461,13 @@ if ($raw_tags !== null) {
                         <div class="checkbox" style="margin-top:6px;">
                             <label>
                                 <input type="checkbox" id="background-command" name="background_command" value="1">
-                                Run in background (output saved to log file)
+                                <?php echo htmlspecialchars(t('act.background', 'Run in background (output saved to log file)'), ENT_QUOTES, 'UTF-8'); ?>
                             </label>
                         </div>
                     </div>
                     <div class="col-sm-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fa fa-terminal"></i> Execute
+                            <i class="fa fa-terminal"></i> <?php echo htmlspecialchars(t('act.exec', 'Execute'), ENT_QUOTES, 'UTF-8'); ?>
                         </button>
                     </div>
                 </div>
@@ -479,7 +479,7 @@ if ($raw_tags !== null) {
     <!-- Reboot & Update -->
     <div class="panel panel-warning" style="margin-top:10px">
         <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-wrench"></i> System</h3>
+            <h3 class="panel-title"><i class="fa fa-wrench"></i> <?php echo htmlspecialchars(t('act.system', 'System'), ENT_QUOTES, 'UTF-8'); ?></h3>
         </div>
         <div class="panel-body">
 
@@ -488,10 +488,10 @@ if ($raw_tags !== null) {
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                 <input type="hidden" name="action"     value="reboot">
                 <div class="form-group row" style="margin-bottom:0">
-                    <label class="col-sm-3 control-label">Reboot Raspberry Pi</label>
+                    <label class="col-sm-3 control-label"><?php echo htmlspecialchars(t('act.reboot_label', 'Reboot Raspberry Pi'), ENT_QUOTES, 'UTF-8'); ?></label>
                     <div class="col-sm-9">
                         <button type="submit" class="btn btn-danger">
-                            <i class="fa fa-refresh"></i> Reboot
+                            <i class="fa fa-refresh"></i> <?php echo htmlspecialchars(t('act.reboot', 'Reboot'), ENT_QUOTES, 'UTF-8'); ?>
                         </button>
                     </div>
                 </div>
@@ -505,7 +505,7 @@ if ($raw_tags !== null) {
                 <input type="hidden" name="action"     value="git_pull">
                 <div class="form-group row" style="margin-bottom:0">
                     <label class="col-sm-3 control-label">
-                        Update GumCP
+                        <?php echo htmlspecialchars(t('act.update_label', 'Update GumCP'), ENT_QUOTES, 'UTF-8'); ?>
                         <small class="text-muted"><br>from GitHub</small>
                     </label>
                     <div class="col-sm-9">
@@ -524,7 +524,7 @@ if ($raw_tags !== null) {
                                     <i class="fa fa-refresh"></i>
                                 </button>
                                 <button type="submit" class="btn btn-warning">
-                                    <i class="fa fa-cloud-download"></i> Update
+                                    <i class="fa fa-cloud-download"></i> <?php echo htmlspecialchars(t('act.update', 'Update'), ENT_QUOTES, 'UTF-8'); ?>
                                 </button>
                             </span>
                         </div>
@@ -545,11 +545,11 @@ if ($raw_tags !== null) {
         <div class="panel-body" style="display:flex; align-items:center; justify-content:space-between">
             <span>
                 <i class="fa fa-stethoscope fa-lg"></i>
-                <strong style="margin-left:6px">System Check</strong>
+                <strong style="margin-left:6px"><?php echo htmlspecialchars(t('act.syscheck', 'System Check'), ENT_QUOTES, 'UTF-8'); ?></strong>
                 <span class="text-muted" style="margin-left:8px">— verify PHP extensions, directory permissions, SSH and GPIO tools</span>
             </span>
             <a href="./check.php" class="btn btn-info btn-sm">
-                <i class="fa fa-stethoscope"></i> Run System Check
+                <i class="fa fa-stethoscope"></i> <?php echo htmlspecialchars(t('act.syscheck_run', 'Run System Check'), ENT_QUOTES, 'UTF-8'); ?>
             </a>
         </div>
     </div>
@@ -572,7 +572,7 @@ if ($raw_tags !== null) {
     <!-- Useful commands reference -->
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-book"></i> Useful commands</h3>
+            <h3 class="panel-title"><i class="fa fa-book"></i> <?php echo htmlspecialchars(t('act.useful', 'Useful commands'), ENT_QUOTES, 'UTF-8'); ?></h3>
         </div>
         <div class="panel-body">
             <dl class="dl-horizontal">
@@ -597,7 +597,7 @@ if ($raw_tags !== null) {
     <?php if (!empty($log_files)): ?>
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-file-text-o"></i> Background command logs</h3>
+                <h3 class="panel-title"><i class="fa fa-file-text-o"></i> <?php echo htmlspecialchars(t('act.bg_logs', 'Background command logs'), ENT_QUOTES, 'UTF-8'); ?></h3>
             </div>
             <div class="panel-body">
                 <table class="table table-condensed table-hover">

@@ -58,7 +58,7 @@ $interfaces = [
     </nav>
 
     <div class="page-header">
-        <h1><i class="fa fa-microchip"></i> Raspberry Pi</h1>
+        <h1><i class="fa fa-microchip"></i> <?php echo htmlspecialchars(t('nav.rpi', 'Raspberry Pi'), ENT_QUOTES, 'UTF-8'); ?></h1>
     </div>
 
     <div class="row">
@@ -66,7 +66,7 @@ $interfaces = [
         <div class="col-md-6">
             <div class="panel panel-primary">
                 <div class="panel-heading">
-                    <i class="fa fa-tachometer"></i> Firmware &amp; Clocks
+                    <i class="fa fa-tachometer"></i> <?php echo htmlspecialchars(t('rpi.firmware', 'Firmware & Clocks'), ENT_QUOTES, 'UTF-8'); ?>
                     <a href="#" onclick="rpiMetrics(); return false;" class="pull-right" style="color:#fff"><i class="fa fa-refresh"></i></a>
                 </div>
                 <table class="table table-condensed" style="margin-bottom:0" id="rpi-metrics">
@@ -78,7 +78,7 @@ $interfaces = [
         <!-- Temp / CPU history -->
         <div class="col-md-6">
             <div class="panel panel-info">
-                <div class="panel-heading"><i class="fa fa-line-chart"></i> Temperature &amp; CPU Frequency</div>
+                <div class="panel-heading"><i class="fa fa-line-chart"></i> <?php echo htmlspecialchars(t('rpi.tempchart', 'Temperature & CPU Frequency'), ENT_QUOTES, 'UTF-8'); ?></div>
                 <div class="panel-body">
                     <canvas id="rpi-chart" height="180" style="width:100%"></canvas>
                     <p class="text-muted" style="font-size:12px; margin:6px 0 0">
@@ -93,7 +93,7 @@ $interfaces = [
 
     <!-- Interface toggles -->
     <div class="panel panel-default">
-        <div class="panel-heading"><i class="fa fa-plug"></i> Interfaces <small>(raspi-config)</small></div>
+        <div class="panel-heading"><i class="fa fa-plug"></i> <?php echo htmlspecialchars(t('rpi.interfaces', 'Interfaces'), ENT_QUOTES, 'UTF-8'); ?> <small>(raspi-config)</small></div>
         <table class="table table-condensed" style="margin-bottom:0">
             <tbody>
                 <?php foreach ($interfaces as $key => $label): ?>
@@ -115,7 +115,7 @@ $interfaces = [
 
     <!-- Boot config editor -->
     <div class="panel panel-danger">
-        <div class="panel-heading"><i class="fa fa-file-code-o"></i> Boot Configuration</div>
+        <div class="panel-heading"><i class="fa fa-file-code-o"></i> <?php echo htmlspecialchars(t('rpi.bootconfig', 'Boot Configuration'), ENT_QUOTES, 'UTF-8'); ?></div>
         <div class="panel-body">
             <div class="alert alert-danger" style="margin-bottom:12px">
                 <i class="fa fa-exclamation-triangle fa-lg"></i>

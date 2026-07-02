@@ -135,4 +135,45 @@ return [
     'cron.none'           => 'No cron jobs for this user.',
     'cron.custom'         => 'Custom schedule',
     'cron.invalid'        => 'Invalid schedule expression.',
+
+    // ── Actions ──
+    'act.title'         => 'Actions',
+    'act.kill_pid'      => 'Kill process by PID',
+    'act.kill_pname'    => 'Kill processes by name',
+    'act.start_service' => 'Start service',
+    'act.stop_service'  => 'Stop service',
+    'act.kill'          => 'Kill',
+    'act.start'         => 'Start',
+    'act.stop'          => 'Stop',
+    'act.system'        => 'System',
+    'act.reboot'        => 'Reboot',
+    'act.reboot_label'  => 'Reboot Raspberry Pi',
+    'act.update_label'  => 'Update GumCP',
+    'act.update'        => 'Update',
+    'act.exec_label'    => 'Execute command',
+    'act.exec'          => 'Execute',
+    'act.background'    => 'Run in background (output saved to log file)',
+    'act.syscheck'      => 'System Check',
+    'act.syscheck_run'  => 'Run System Check',
+    'act.useful'        => 'Useful commands',
+    'act.bg_logs'       => 'Background command logs',
+
+    // ── GPIO ──
+    'gpio.title'  => 'GPIO Control',
+    'gpio.legend' => 'Legend',
+
+    // ── Buttons ──
+    'btn.title' => 'Command Buttons',
+    'btn.add'   => 'Add Command Button',
+
+    // ── Docker ──
+    'dock.containers' => 'Containers',
+    'dock.images'     => 'Images',
+    'dock.logs'       => 'Logs',
+
+    // ── Raspberry Pi ──
+    'rpi.firmware'    => 'Firmware & Clocks',
+    'rpi.tempchart'   => 'Temperature & CPU Frequency',
+    'rpi.interfaces'  => 'Interfaces',
+    'rpi.bootconfig'  => 'Boot Configuration',
 ];

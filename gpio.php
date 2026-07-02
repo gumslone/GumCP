@@ -190,7 +190,7 @@ function gpio_name_label(string $name): string {
 
     <div class="panel panel-default" style="margin-bottom: 5px">
         <div class="panel-heading">
-            <h3 class="panel-title">GPIO Control</h3>
+            <h3 class="panel-title"><?php echo htmlspecialchars(t('gpio.title', 'GPIO Control'), ENT_QUOTES, 'UTF-8'); ?></h3>
         </div>
         <div class="panel-body">
 
@@ -292,7 +292,7 @@ function gpio_name_label(string $name): string {
 
                 <div class="panel panel-info" style="margin-top: 15px;">
                     <div class="panel-heading">
-                        <h4 class="panel-title">Legend</h4>
+                        <h4 class="panel-title"><?php echo htmlspecialchars(t('gpio.legend', 'Legend'), ENT_QUOTES, 'UTF-8'); ?></h4>
                     </div>
                     <div class="panel-body">
                         <ul class="list-unstyled" style="margin-bottom:0;">
