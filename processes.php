@@ -5,10 +5,6 @@ $active_page = 'processes';
 
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 // Sort by CPU descending; 'ps aux' columns: USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
 $raw  = @shell_exec('ps aux | sort -rk 3,3');
 $rows = [];

@@ -5,10 +5,6 @@ $active_page = 'packages';
 
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 $page_title = 'Package Updates';
 require_once('./include/header.php');
 ?>

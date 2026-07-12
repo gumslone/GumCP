@@ -5,10 +5,6 @@ $active_page = 'buttons';
 
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 $message      = '';
 $message_type = 'info';
 

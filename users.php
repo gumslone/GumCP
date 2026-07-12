@@ -5,10 +5,6 @@ $active_page = 'users';
 
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 // ── Parse /etc/passwd and /etc/group (both world-readable) ────────────────────
 function parse_passwd(): array {
     $users = [];

@@ -4,10 +4,6 @@ declare(strict_types=1);
 $active_page = '';
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function chk(bool $ok, string $label, string $detail = '', string $fix_key = ''): array {

@@ -5,10 +5,6 @@ $active_page = 'gpio';
 
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 // ── GPIO data source detection ────────────────────────────────────────────────
 // WiringPi works on Pi 1–4. Pi 5 uses the RP1 GPIO chip which WiringPi does
 // not support; fall back to raspi-gpio (built into Pi OS since Buster).

@@ -5,9 +5,6 @@ $active_page = 'index';
 require_once('./include/init.php');
 require_once('./include/dashboard.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
 
 // ── Data collection ───────────────────────────────────────────────────────────
 

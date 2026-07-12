@@ -5,10 +5,6 @@ $active_page = 'logs';
 
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 // Common log sources. Files are validated again server-side in ajax.php.
 $log_sources = [
     'journal'                  => 'systemd journal (journalctl)',

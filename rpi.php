@@ -5,10 +5,6 @@ $active_page = 'rpi';
 
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 $interfaces = [
     'i2c'     => 'I2C',
     'spi'     => 'SPI',

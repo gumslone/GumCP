@@ -5,10 +5,6 @@ $active_page = 'actions';
 
 require_once('./include/init.php');
 
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 $ssh_available = function_exists('ssh2_connect');
 
 // ── Input validation helpers ──────────────────────────────────────────────────
