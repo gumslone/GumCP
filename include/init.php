@@ -14,7 +14,11 @@ require_once(__DIR__ . '/i18n.php');
 gumcp_init_lang();
 
 // Ensure a CSRF token exists for the session — used by every POST form and AJAX
-// call. config.php has already started the session by this point.
+// call. config.php normally starts the session; start it here as a fallback so
+// the bootstrap doesn't silently depend on that convention in custom configs.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if (session_status() === PHP_SESSION_ACTIVE && !isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
