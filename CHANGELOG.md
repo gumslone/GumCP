@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.5.3] — 2026-07-30
 
 ### Security hardening (follow-up to 2.5.2)
 - **Button API off by default for new installs** — `api.php` is the one endpoint that executes commands without a login, so `config.example.php` now ships it disabled. Existing installs are deliberately left untouched (`config.defaults.php` still backfills it enabled) so upgrades don't silently break live automations; pin `button_api` in your `config.php` to choose explicitly.
