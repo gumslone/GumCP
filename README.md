@@ -342,8 +342,17 @@ sudo apt-get install -y php-sqlite3
 
 ## Security Notes
 
-- **Change default credentials** in `include/config.php` before putting GumCP on any network
-- Enable `LOGIN_REQUIRED` and/or `BASIC_AUTH` in `config.php` for protected access
+> ### ⚠️ GumCP requires authentication
+> GumCP executes shell commands as the SSH user (which the install guide gives
+> passwordless `sudo`). **Anyone who can reach an unauthenticated panel can take over
+> the host.** Since 2.5.2 GumCP therefore **fails closed**: if neither
+> `LOGIN_REQUIRED` nor `BASIC_AUTH` is enabled, it refuses to serve and shows setup
+> instructions instead. Never expose GumCP directly to the internet.
+
+- **Change default credentials** in `include/config.php` before putting GumCP on any network — the shipped defaults are public
+- `LOGIN_REQUIRED` is **enabled by default**. Disabling it does not open the panel; GumCP refuses to serve until some authentication is configured
+- Running an open panel requires deliberately setting `GUMCP_ALLOW_UNAUTHENTICATED` to `true`, which disables all authentication. Only consider this on a fully isolated network; a red warning banner is shown on every page while it is active
+- The **System Check** page reports whether authentication is configured and whether default passwords are still in use
 - Button API is enabled by default — set `$gumcp_modules['button_api']['module_active'] = 0` in `config.php` to disable it
 - Button API hashes are secret URLs — treat them like passwords; use **Regenerate hash** if a hash is compromised
 - `command_logs/` and `buttons/` are blocked from direct web access via `.htaccess`

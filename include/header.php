@@ -64,3 +64,25 @@ $show_menu_reorder = !empty($show_menu_reorder);
             </div>
         </div>
     </nav>
+
+    <?php
+    // ── Security posture warnings ─────────────────────────────────────────────
+    // Shown on every page while the install is in a dangerous state, because
+    // GumCP can execute commands as a privileged user.
+    if (function_exists('gumcp_open_mode') && gumcp_open_mode()): ?>
+        <div class="alert alert-danger" role="alert">
+            <i class="fa fa-exclamation-triangle fa-lg"></i>
+            <strong>Authentication is disabled.</strong>
+            Anyone who can reach this panel can run commands as
+            <code><?php echo htmlspecialchars(defined('SSH_USER') ? SSH_USER : 'the SSH user', ENT_QUOTES, 'UTF-8'); ?></code>
+            on this host. Set <code>LOGIN_REQUIRED</code> to <code>true</code> and remove
+            <code>GUMCP_ALLOW_UNAUTHENTICATED</code> in <code>include/config.php</code>.
+        </div>
+    <?php elseif (function_exists('gumcp_default_credentials') && gumcp_default_credentials()): ?>
+        <div class="alert alert-warning" role="alert">
+            <i class="fa fa-exclamation-triangle fa-lg"></i>
+            <strong>Default password in use.</strong>
+            Change <code>LOGIN_PASS</code> / <code>BASIC_AUTH_PASS</code> in
+            <code>include/config.php</code> — the shipped defaults are public.
+        </div>
+    <?php endif; ?>

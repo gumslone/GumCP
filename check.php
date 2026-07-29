@@ -58,6 +58,30 @@ $sections['PHP'] = [
     ),
 ];
 
+$sections['Security'] = [
+    chk(
+        gumcp_auth_configured(),
+        'Authentication configured',
+        gumcp_auth_configured()
+            ? 'login page and/or HTTP Basic Auth is enabled'
+            : 'NO authentication — anyone reaching this panel can run commands as ' . SSH_USER
+    ),
+    chk(
+        !gumcp_open_mode(),
+        'Unauthenticated access not allowed',
+        gumcp_open_mode()
+            ? 'GUMCP_ALLOW_UNAUTHENTICATED is true — the panel is open to everyone'
+            : 'open access is disabled'
+    ),
+    chk(
+        !gumcp_default_credentials(),
+        'Credentials changed from defaults',
+        gumcp_default_credentials()
+            ? 'still using a shipped default password — change it in include/config.php'
+            : 'not using the shipped defaults'
+    ),
+];
+
 $sections['Directories'] = [
     chk(
         is_dir($buttons_dir),

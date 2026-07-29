@@ -9,9 +9,15 @@ define('SSH_USER', 'pi');        // SSH username
 define('SSH_PASS', 'raspberry'); // SSH password — CHANGE THIS
 
 // ── Login page ────────────────────────────────────────────────────────────────
+// GumCP runs shell commands as a privileged user, so it requires authentication.
 // When LOGIN_REQUIRED is true, every page redirects to login.php until the user
-// authenticates. Set false for open access on a trusted local network.
-define('LOGIN_REQUIRED', false);
+// authenticates. CHANGE THE PASSWORD BELOW before first use.
+//
+// Turning this off does NOT open the panel: GumCP refuses to serve when no
+// authentication is configured. To deliberately run an open panel (for example
+// on an isolated network), you must also set GUMCP_ALLOW_UNAUTHENTICATED below —
+// be aware that anyone who can reach an open panel gets root on this host.
+define('LOGIN_REQUIRED', true);
 define('LOGIN_USER', 'pi');
 define('LOGIN_PASS', 'raspberry'); // CHANGE THIS
 
@@ -34,6 +40,12 @@ define('GUMCP_LANG', 'en');
 // to recover a wedged install from the browser. Leave empty to disable.
 // Example: define('GUMCP_UPDATE_KEY', 'a1b2c3d4e5f6...');
 define('GUMCP_UPDATE_KEY', '');
+
+// ── Unauthenticated access (DANGEROUS) ────────────────────────────────────────
+// Leave false. Setting this to true disables ALL authentication and lets anyone
+// who can reach this panel execute commands as the SSH user — i.e. take over the
+// host. Only consider it on a fully isolated network you control.
+define('GUMCP_ALLOW_UNAUTHENTICATED', false);
 
 // ── Debug ─────────────────────────────────────────────────────────────────────
 // Set true to display PHP errors in the browser. Keep false in production.

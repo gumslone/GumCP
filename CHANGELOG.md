@@ -1,5 +1,40 @@
 # Changelog
 
+## [2.5.2] — 2026-07-30
+
+### Security — unauthenticated remote command execution (critical)
+
+GumCP shipped with authentication **disabled by default** (`LOGIN_REQUIRED` and
+`BASIC_AUTH` both `false`), so a default install exposed the whole panel —
+including `execute_command.php` and the button execute action — to anyone who
+could reach it. Those endpoints were guarded only by a CSRF token, which is not
+an access control: `init.php` mints a token for every session, authenticated or
+not, and it is embedded in the page HTML. Commands run over SSH as `SSH_USER`,
+which the install guide gives passwordless `sudo` — so this was unauthenticated
+root command execution. (CWE-306 / CWE-1188, CVSS 3.1 9.8.)
+
+Reported by **Dhaiwat Mehta**.
+
+- **Fail closed** — new `include/auth.php` holds the access gate and is consulted
+  by `include/init.php` on every page and endpoint. When no authentication is
+  configured, GumCP now refuses to serve and shows setup instructions instead of
+  serving the panel.
+- **Gate moved into shipped code** — it previously lived in the user-owned
+  `include/config.php`, which is git-ignored and never updated on upgrade, so no
+  fix shipped there could reach existing installs. It is now in `include/auth.php`.
+- `LOGIN_REQUIRED` **defaults to `true`** (`config.defaults.php` and
+  `config.example.php`).
+- Running an open panel now requires explicitly setting the new
+  `GUMCP_ALLOW_UNAUTHENTICATED` to `true`; a red banner is then shown on every page.
+- A warning banner also appears while a shipped default password is still in use.
+- **System Check** gained a Security section: authentication configured,
+  open-access disabled, credentials changed from defaults.
+
+**Action required after upgrading:** installs that had `LOGIN_REQUIRED = false`
+will show a setup page until a login is configured in `include/config.php`.
+
+---
+
 ## Unreleased
 
 ### Changed

@@ -22,3 +22,11 @@ if (session_status() === PHP_SESSION_NONE) {
 if (session_status() === PHP_SESSION_ACTIVE && !isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+
+// ── Access gate ───────────────────────────────────────────────────────────────
+// Must run last: config.php has already processed a submitted login form (the
+// login page posts to index.php), so a just-authenticated session is visible
+// here. Lives in shipped code rather than in the user-owned config.php so the
+// gate can be fixed by an upgrade. Fails closed when no auth is configured.
+require_once(__DIR__ . '/auth.php');
+gumcp_enforce_access();

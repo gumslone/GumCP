@@ -9,7 +9,10 @@ defined('SSH_PORT')        || define('SSH_PORT',        '22');
 defined('SSH_USER')        || define('SSH_USER',        'pi');
 defined('SSH_PASS')        || define('SSH_PASS',        'raspberry');
 
-defined('LOGIN_REQUIRED')  || define('LOGIN_REQUIRED',  false);
+// Secure by default: authentication is required unless the administrator has
+// explicitly configured otherwise. GumCP executes shell commands as a
+// privileged user, so an unauthenticated panel is a full host compromise.
+defined('LOGIN_REQUIRED')  || define('LOGIN_REQUIRED',  true);
 defined('LOGIN_USER')      || define('LOGIN_USER',      'pi');
 defined('LOGIN_PASS')      || define('LOGIN_PASS',      'raspberry');
 
@@ -18,6 +21,10 @@ defined('BASIC_AUTH_USER') || define('BASIC_AUTH_USER', 'api');
 defined('BASIC_AUTH_PASS') || define('BASIC_AUTH_PASS', 'secret');
 
 defined('GUMCP_DEBUG')          || define('GUMCP_DEBUG',          false);
+
+// Deliberate opt-out of all authentication. Only honoured when set to exactly
+// true in config.php; anyone who can reach an open panel gets root on this host.
+defined('GUMCP_ALLOW_UNAUTHENTICATED') || define('GUMCP_ALLOW_UNAUTHENTICATED', false);
 
 defined('GUMCP_LANG')           || define('GUMCP_LANG',           'en'); // en|de|uk|es|fr
 
