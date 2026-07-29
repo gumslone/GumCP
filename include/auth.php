@@ -69,6 +69,55 @@ function gumcp_default_credentials(): bool {
 }
 
 /**
+ * Is $ip covered by $allow (a list of plain IPs and/or IPv4 CIDR ranges)?
+ * An empty list means "no restriction configured" and allows everything.
+ */
+function gumcp_ip_allowed(string $ip, array $allow): bool {
+    $entries = array_filter(array_map('trim', array_map('strval', $allow)), 'strlen');
+    if (empty($entries)) return true;
+
+    foreach ($entries as $entry) {
+        if (strpos($entry, '/') !== false) {
+            if (gumcp_cidr_match($ip, $entry)) return true;
+        } elseif ($ip === $entry) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * IPv4 CIDR membership test, e.g. gumcp_cidr_match('192.168.1.7', '192.168.1.0/24').
+ */
+function gumcp_cidr_match(string $ip, string $cidr): bool {
+    if (strpos($cidr, '/') === false) return false;
+    list($subnet, $bits) = explode('/', $cidr, 2);
+
+    if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) return false;
+    if (!filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) return false;
+    if (!preg_match('/^\d{1,2}$/', $bits)) return false;
+
+    $bits = (int)$bits;
+    if ($bits < 0 || $bits > 32) return false;
+    if ($bits === 0) return true;
+
+    $ip_long     = ip2long($ip)     & 0xFFFFFFFF;
+    $subnet_long = ip2long($subnet) & 0xFFFFFFFF;
+    $mask        = (0xFFFFFFFF << (32 - $bits)) & 0xFFFFFFFF;
+
+    return ($ip_long & $mask) === ($subnet_long & $mask);
+}
+
+/**
+ * The peer address for access decisions. Deliberately uses REMOTE_ADDR only:
+ * X-Forwarded-For is caller-supplied and trivially spoofed, so trusting it here
+ * would let anyone bypass an IP allow-list by setting a header.
+ */
+function gumcp_client_ip(): string {
+    return (string)($_SERVER['REMOTE_ADDR'] ?? '');
+}
+
+/**
  * Does the current request expect JSON rather than an HTML page?
  */
 function gumcp_wants_json(): bool {

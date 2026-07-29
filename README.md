@@ -245,7 +245,21 @@ Response:
 
 The API URL is shown in the button's **Edit** dialog. Use **Regenerate hash** to invalidate an old URL and get a new one instantly.
 
-Every API call is logged to `command_logs/api_calls.log` (JSON lines) with timestamp, IP, user-agent, and command output. Log files are not accessible via the browser.
+Every API call is logged to `command_logs/api_calls.log` (JSON lines) with timestamp, IP, user-agent, and command output — including rejected ones. Log files are not accessible via the browser.
+
+**Keep the key out of logs.** A `?hash=` query string is recorded in web-server access logs, browser history and `Referer` headers. Send it as a header instead:
+
+```bash
+curl -H 'X-GumCP-Key: <32-char-hash>' http://<your-pi-ip>/GumCP/api.php
+```
+
+**Restrict who can call it.** Optionally limit the API to specific addresses in `config.php` — anything else gets a `403` before the hash is even examined:
+
+```php
+$gumcp_api_allow_ips = ['192.168.1.50', '192.168.1.0/24'];  // empty = no IP restriction
+```
+
+Matching uses the real peer address, so a spoofed `X-Forwarded-For` header cannot bypass it. If GumCP sits behind a reverse proxy, the allowed address is the proxy's.
 
 **Example: trigger from Home Assistant**
 

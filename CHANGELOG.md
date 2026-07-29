@@ -5,6 +5,7 @@
 ### Security hardening (follow-up to 2.5.2)
 - **Button API off by default for new installs** — `api.php` is the one endpoint that executes commands without a login, so `config.example.php` now ships it disabled. Existing installs are deliberately left untouched (`config.defaults.php` still backfills it enabled) so upgrades don't silently break live automations; pin `button_api` in your `config.php` to choose explicitly.
 - **Button API accepts an `X-GumCP-Key` header** as well as `?hash=`. Query strings are written to web-server access logs, browser history and `Referer` headers, so the header keeps the key off disk. The query parameter still works.
+- **Button API IP allow-list** — new `$gumcp_api_allow_ips` in `config.php` limits which addresses may call `api.php` (plain IPs and IPv4 CIDR ranges). Non-matching callers get a `403` before the hash is examined, and the attempt is logged. Empty by default, so existing setups are unaffected. Matching uses `REMOTE_ADDR`, never the caller-supplied `X-Forwarded-For`.
 - **README: "Limiting what GumCP can run"** — a worked `sudoers.d` allow-list for deployments that don't need the free-text Actions box or arbitrary buttons, so the SSH user no longer needs blanket `NOPASSWD: ALL`, plus an explicit note on what stops working.
 
 ---

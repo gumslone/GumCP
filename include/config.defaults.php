@@ -65,3 +65,9 @@ unset($_gumcp_new_modules, $_k, $_m);
 if (!isset($gumcp_dashboard_services) || !is_array($gumcp_dashboard_services)) {
     $gumcp_dashboard_services = ['ssh', 'apache2', 'cron'];
 }
+
+// Addresses allowed to call the Button API (api.php). Empty = no IP restriction
+// (the hash alone authenticates). Accepts plain IPs and IPv4 CIDR ranges.
+if (!isset($gumcp_api_allow_ips) || !is_array($gumcp_api_allow_ips)) {
+    $gumcp_api_allow_ips = [];
+}

@@ -41,6 +41,14 @@ define('GUMCP_LANG', 'en');
 // Example: define('GUMCP_UPDATE_KEY', 'a1b2c3d4e5f6...');
 define('GUMCP_UPDATE_KEY', '');
 
+// ── Button API IP allow-list ──────────────────────────────────────────────────
+// Restrict which addresses may call api.php. Leave empty for no IP restriction
+// (the per-button hash is then the only credential). Plain IPs and IPv4 CIDR
+// ranges are supported; matching uses the real peer address, not X-Forwarded-For.
+// Example: only Home Assistant and the local subnet may trigger buttons.
+//   $gumcp_api_allow_ips = ['192.168.1.50', '192.168.1.0/24'];
+$gumcp_api_allow_ips = [];
+
 // ── Unauthenticated access (DANGEROUS) ────────────────────────────────────────
 // Leave false. Setting this to true disables ALL authentication and lets anyone
 // who can reach this panel execute commands as the SSH user — i.e. take over the

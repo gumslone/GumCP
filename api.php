@@ -29,6 +29,22 @@ if (empty($gumcp_modules['button_api']['module_active'])) {
 define('BUTTONS_FILE', __DIR__ . '/buttons/buttons.json');
 define('API_LOG_FILE', __DIR__ . '/command_logs/api_calls.log');
 
+// ── Optional IP allow-list ────────────────────────────────────────────────────
+// When $gumcp_api_allow_ips is non-empty, only those addresses/CIDR ranges may
+// call the API. Checked before the hash so a wrong-network caller cannot probe
+// keys at all. Uses REMOTE_ADDR only — X-Forwarded-For is caller-supplied.
+$api_allow_ips = isset($gumcp_api_allow_ips) && is_array($gumcp_api_allow_ips)
+    ? $gumcp_api_allow_ips
+    : [];
+$client_ip = gumcp_client_ip();
+
+if (!gumcp_ip_allowed($client_ip, $api_allow_ips)) {
+    api_log('', null, 'denied', '', 'IP not allowed: ' . $client_ip);
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Forbidden']);
+    exit();
+}
+
 // ── Validate hash ─────────────────────────────────────────────────────────────
 // Prefer the X-GumCP-Key header: query strings are recorded in web-server access
 // logs, browser history and Referer headers, so ?hash= writes the key to disk in
