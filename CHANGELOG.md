@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Security hardening (follow-up to 2.5.2)
+- **Button API off by default for new installs** — `api.php` is the one endpoint that executes commands without a login, so `config.example.php` now ships it disabled. Existing installs are deliberately left untouched (`config.defaults.php` still backfills it enabled) so upgrades don't silently break live automations; pin `button_api` in your `config.php` to choose explicitly.
+- **Button API accepts an `X-GumCP-Key` header** as well as `?hash=`. Query strings are written to web-server access logs, browser history and `Referer` headers, so the header keeps the key off disk. The query parameter still works.
+- **README: "Limiting what GumCP can run"** — a worked `sudoers.d` allow-list for deployments that don't need the free-text Actions box or arbitrary buttons, so the SSH user no longer needs blanket `NOPASSWD: ALL`, plus an explicit note on what stops working.
+
+---
+
 ## [2.5.2] — 2026-07-30
 
 ### Security — unauthenticated remote command execution (critical)
@@ -32,10 +41,6 @@ Reported by **Dhaiwat Mehta**.
 
 **Action required after upgrading:** installs that had `LOGIN_REQUIRED = false`
 will show a setup page until a login is configured in `include/config.php`.
-
----
-
-## Unreleased
 
 ### Changed
 - **Refactor: shared page chrome** — the duplicated `<head>`/navbar and footer boilerplate (~45 lines × 14 pages) now lives in `include/header.php` and `include/footer.php`. Pages set `$page_title` and include the partials; per-page styles/scripts are unchanged. `update.php` and `login.php` deliberately stay standalone for recovery isolation.

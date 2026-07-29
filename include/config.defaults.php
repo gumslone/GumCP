@@ -33,7 +33,10 @@ defined('GUMCP_LANG')           || define('GUMCP_LANG',           'en'); // en|d
 // unavailable — a recovery escape hatch. Keep it long and secret.
 defined('GUMCP_UPDATE_KEY')     || define('GUMCP_UPDATE_KEY',     '');
 
-// Ensure button_api module entry exists for configs created before this feature
+// Ensure button_api module entry exists for configs created before this feature.
+// Deliberately left ENABLED here, unlike config.example.php where new installs
+// get it off: flipping this to 0 would silently break existing api.php
+// automations on upgrade. Pin it in your config.php to choose explicitly.
 if (!isset($gumcp_modules['button_api'])) {
     $gumcp_modules['button_api'] = ['module_title' => 'Button API', 'module_active' => 1, 'module_no_nav' => 1];
 }

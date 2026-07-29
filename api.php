@@ -2,11 +2,15 @@
 declare(strict_types=1);
 
 // GumCP Button API
-// Execute a button by its hash:  GET /api.php?hash=<32-char-hex>
+// Execute a button by its hash. Preferred (keeps the key out of logs):
+//     curl -H 'X-GumCP-Key: <32-char-hex>' http://host/GumCP/api.php
+// Also supported for existing automations:
+//     GET /api.php?hash=<32-char-hex>
 // Returns JSON: {"success":true,"output":"..."} or {"success":false,"error":"..."}
 //
-// No login required — the hash is the auth token.
-// Accessible even when LOGIN_REQUIRED or BASIC_AUTH is enabled.
+// No login required — the hash IS the credential, so treat these keys like
+// passwords. Accessible even when LOGIN_REQUIRED or BASIC_AUTH is enabled, and
+// disabled entirely unless $gumcp_modules['button_api']['module_active'] is 1.
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -26,7 +30,13 @@ define('BUTTONS_FILE', __DIR__ . '/buttons/buttons.json');
 define('API_LOG_FILE', __DIR__ . '/command_logs/api_calls.log');
 
 // ── Validate hash ─────────────────────────────────────────────────────────────
-$hash = trim((string)($_REQUEST['hash'] ?? ''));
+// Prefer the X-GumCP-Key header: query strings are recorded in web-server access
+// logs, browser history and Referer headers, so ?hash= writes the key to disk in
+// cleartext. The query parameter stays supported for existing automations.
+$hash = trim((string)($_SERVER['HTTP_X_GUMCP_KEY'] ?? ''));
+if ($hash === '') {
+    $hash = trim((string)($_REQUEST['hash'] ?? ''));
+}
 
 if ($hash === '' || !preg_match('/^[a-f0-9]{32}$/', $hash)) {
     http_response_code(400);

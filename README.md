@@ -357,7 +357,38 @@ sudo apt-get install -y php-sqlite3
 - Button API hashes are secret URLs — treat them like passwords; use **Regenerate hash** if a hash is compromised
 - `command_logs/` and `buttons/` are blocked from direct web access via `.htaccess`
 - GumCP executes commands as the SSH user — use a dedicated user with only the permissions it needs
-- The Packages, Logs, Cron and Raspberry Pi pages run privileged commands (`apt`, `journalctl`, `raspi-config`, writing boot files) via `sudo` over SSH, which requires the SSH user to have passwordless `sudo` — the same assumption as the Actions page. Restrict the SSH user accordingly.
+- The Packages, Logs, Cron and Raspberry Pi pages run privileged commands (`apt`, `journalctl`, `raspi-config`, writing boot files) via `sudo` over SSH, which requires the SSH user to have passwordless `sudo` — the same assumption as the Actions page. See [Limiting what GumCP can run](#limiting-what-gumcp-can-run) below.
+- The **Button API** (`api.php`) executes a button's command with **no login** — the per-button hash is the only credential. It is **off by default** for new installs; enable it with `$gumcp_modules['button_api']['module_active'] = 1` only if you need it, and treat the URLs like passwords. Prefer sending the key as a header so it stays out of access logs and browser history:
+
+```bash
+curl -H 'X-GumCP-Key: <32-char-hash>' http://<your-pi-ip>/GumCP/api.php
+```
+
+### Limiting what GumCP can run
+
+By default GumCP's SSH user needs blanket passwordless `sudo`, which means a
+compromise of the panel is a compromise of the host. If you don't need the
+free-text **Execute command** box or arbitrary command buttons, create a
+dedicated user and grant only the commands the built-in pages actually call:
+
+```sh
+# /etc/sudoers.d/gumcp   (edit with: sudo visudo -f /etc/sudoers.d/gumcp)
+Cmnd_Alias GUMCP_PKG  = /usr/bin/apt-get update, /usr/bin/apt-get -y upgrade
+Cmnd_Alias GUMCP_LOG  = /bin/journalctl *, /bin/dmesg, /usr/bin/tail -n * /var/log/*
+Cmnd_Alias GUMCP_SVC  = /usr/sbin/service * start, /usr/sbin/service * stop, \
+                        /bin/systemctl start *, /bin/systemctl restart *, \
+                        /bin/systemctl enable *
+Cmnd_Alias GUMCP_SYS  = /sbin/reboot, /usr/bin/raspi-config nonint *
+Cmnd_Alias GUMCP_PROC = /bin/kill -9 *, /usr/bin/killall *
+
+gumcp ALL=(root) NOPASSWD: GUMCP_PKG, GUMCP_LOG, GUMCP_SVC, GUMCP_SYS, GUMCP_PROC
+```
+
+Then point `SSH_USER` / `SSH_PASS` at that account. **Trade-off:** anything not
+listed — the Actions command box, arbitrary buttons, Docker control, the boot-file
+editor, and the in-app updater — will fail with a sudo error. Add the specific
+commands you need (paths vary by OS; check with `command -v`), and prefer widening
+the list over falling back to `NOPASSWD: ALL`.
 - `robots.txt` is included and blocks all search crawlers from indexing GumCP
 
 ---

@@ -128,9 +128,13 @@ $gumcp_modules = [
         'module_group'                    => 'System',
     ],
     // Button API — no navbar link; set module_active => 0 to disable api.php
+    // Button API — no navbar link. Off by default: it is the one endpoint that
+    // executes commands WITHOUT a login, authenticated only by a per-button
+    // secret hash. Set module_active => 1 to enable it, and treat the resulting
+    // URLs/keys like passwords.
     'button_api' => [
         'module_title'  => 'Button API',
-        'module_active' => 1, // allow buttons to be triggered via api.php?hash=
+        'module_active' => 0, // 1 = allow buttons to be triggered via api.php
         'module_no_nav' => 1,
     ],
     // Order from https://www.tindie.com/stores/gumslone/
