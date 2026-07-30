@@ -31,10 +31,8 @@ function gumcp_modules_protected(): string {
             $problems[] = $key . ': entry point does not require the login guard';
         }
         foreach ((array)@glob($dir . '/vendor/*.php') as $vendor) {
-            if (strpos((string)@file_get_contents($vendor), 'GUMCP_MODULE_KEY') === false) {
-                $problems[] = $key . ': ' . basename($vendor)
-                            . ' can be fetched directly — reinstall it from the Actions page';
-            }
+            $problems[] = $key . ': ' . basename($vendor)
+                        . ' is directly executable — reinstall it from the Actions page';
         }
     }
     return implode('; ', $problems);

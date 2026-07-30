@@ -527,6 +527,16 @@ switch ($action) {
             break;
         }
 
+        // Independently confirm the protection landed — never report success for
+        // a module that could be reached without a login.
+        $unprotected = gumcp_module_protection_problem($name);
+        if ($unprotected !== '') {
+            $out = err('Installed, but NOT protected: ' . $unprotected
+                     . ' — remove it from this page and reinstall.');
+            $out['output'] = $output;
+            break;
+        }
+
         // Installing is the opt-in, so switch the module on rather than making
         // the user go and edit config.php by hand afterwards.
         $enable_err = gumcp_module_set_enabled($name, true);
@@ -892,9 +902,9 @@ function gumcp_optional_modules(array $modules): array {
     foreach (gumcp_optional_module_defs() as $key => $def) {
         $dir     = __DIR__ . '/modules/' . $key;
         $version = '';
-        $files   = @glob($dir . '/vendor/' . $key . '-*.php') ?: [];
+        $files   = @glob($dir . '/vendor/' . $key . '-*.modulesrc') ?: [];
         if (!empty($files)) {
-            $base = basename($files[0], '.php');
+            $base = basename($files[0], '.modulesrc');
             $version = substr($base, strlen($key) + 1);
         }
         $available = gumcp_module_versions($key);
@@ -971,6 +981,33 @@ function gumcp_module_set_enabled(string $key, bool $on): string {
     if (@file_put_contents($file, $src, LOCK_EX) === false) {
         return 'Could not write include/config.php. Add this line yourself: ' . $line;
     }
+    return '';
+}
+
+/**
+ * Check an installed module is reachable only through its guarded entry point.
+ * Returns '' when protected, or a description of what is missing.
+ *
+ * Both layers are checked because either can fail alone: the PHP guard (which
+ * works regardless of Apache configuration) and the .htaccess files (defence in
+ * depth — inert when Apache uses AllowOverride None, as Debian ships it).
+ */
+function gumcp_module_protection_problem(string $key): string {
+    $dir   = __DIR__ . '/modules/' . $key;
+    $entry = $dir . '/' . $key . '.php';
+
+    if (!is_file($entry)) return 'entry point missing';
+    if (strpos((string)@file_get_contents($entry), 'module_guard.php') === false) {
+        return 'entry point does not require the login guard';
+    }
+    // A vendored file ending in .php would be executable by the web server,
+    // which would bypass the entry point's login check entirely.
+    foreach ((array)@glob($dir . '/vendor/*.php') as $vendor) {
+        return basename($vendor) . ' is directly executable — reinstall the module';
+    }
+    if (empty(@glob($dir . '/vendor/*.modulesrc'))) return 'vendored module file missing';
+    if (!is_file($dir . '/.htaccess'))          return 'module .htaccess missing';
+    if (!is_file($dir . '/vendor/.htaccess'))   return 'vendor .htaccess missing';
     return '';
 }
 

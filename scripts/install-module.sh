@@ -55,13 +55,13 @@ case "$MODULE" in
     adminer)
         VERSION="${VERSION:-$ADMINER_DEFAULT}"
         URL="https://github.com/vrana/adminer/releases/download/v${VERSION}/adminer-${VERSION}.php"
-        VENDOR_FILE="adminer-${VERSION}.php"
+        VENDOR_FILE="adminer-${VERSION}.modulesrc"
         ENTRY="adminer.php"
         ;;
     tinyfilemanager)
         VERSION="${VERSION:-$TFM_DEFAULT}"
         URL="https://raw.githubusercontent.com/prasathmani/tinyfilemanager/${VERSION}/tinyfilemanager.php"
-        VENDOR_FILE="tinyfilemanager-${VERSION}.php"
+        VENDOR_FILE="tinyfilemanager-${VERSION}.modulesrc"
         ENTRY="tinyfilemanager.php"
         ;;
     *)
@@ -87,36 +87,45 @@ fi
 # Guard against a redirect/error page being saved as if it were the module.
 head -c 5 "$TMP" | grep -q '<?php' || { rm -f "$TMP"; fail "Downloaded file is not PHP — aborting."; }
 
-# Harden the upstream file against being fetched directly.
+# The upstream file is stored WITHOUT a .php extension, so the web server has no
+# handler for it and cannot execute it however it is requested. PHP's require()
+# ignores the extension, so the guarded entry point loads it normally.
 #
-# The .htaccess below is not enough on its own: Debian/Raspberry Pi OS ship
-# Apache with "AllowOverride None" for /var/www, which makes .htaccess files
-# ignored entirely. So inject a PHP guard as the first statement of the file —
-# it only runs when loaded through the guarded entry point (which defines
-# GUMCP_MODULE_KEY), and refuses when requested directly, whatever Apache thinks.
-#
-# Injected immediately after the opening tag rather than prepended as a separate
-# block, so no stray output is emitted before the module sends its headers.
-GUARD='if (!defined("GUMCP_MODULE_KEY")) { http_response_code(403); exit("Direct access denied — load this module through GumCP."); }'
-if ! sed "1s|^<?php|<?php $GUARD|" "$TMP" > "$TMP.guarded"; then
-    rm -f "$TMP" "$TMP.guarded"
-    fail "Could not add the access guard to the downloaded file."
-fi
-grep -q 'GUMCP_MODULE_KEY' "$TMP.guarded" || {
-    rm -f "$TMP" "$TMP.guarded"
-    fail "Access guard was not applied — refusing to install an unprotected module."
-}
-rm -f "$TMP"
+# The file is deliberately left byte-for-byte as upstream published it: injecting
+# a guard would break modules that open with a namespace declaration (Adminer 5.x
+# does), which PHP requires to be the first statement in the file.
 
-mv "$TMP.guarded" "$DEST/vendor/$VENDOR_FILE" || fail "Could not write $DEST/vendor/$VENDOR_FILE"
+mv "$TMP" "$DEST/vendor/$VENDOR_FILE" || fail "Could not write $DEST/vendor/$VENDOR_FILE"
 chmod 644 "$DEST/vendor/$VENDOR_FILE"
 
 # Block direct web access to the raw upstream file: it must only ever be reached
 # through the guarded entry file below.
+#
+# NOTE: these are defence in depth only. Debian and Raspberry Pi OS ship Apache
+# with "AllowOverride None" for /var/www, which makes .htaccess inert — the
+# non-.php extension above is what actually stops direct execution.
 cat > "$DEST/vendor/.htaccess" <<'HT'
 # The upstream module file is included by the guarded entry point in the parent
 # directory. It must never be served directly — that would bypass the login.
 Require all denied
+HT
+
+# Module directory: no listing, and nothing directly requestable except the
+# guarded entry point (upstream archives often drop READMEs, configs and assets
+# in here, which should not be browsable either).
+cat > "$DEST/.htaccess" <<HT
+# Managed by scripts/install-module.sh
+Options -Indexes
+
+# Deny everything by default…
+<Files "*">
+    Require all denied
+</Files>
+
+# …except the guarded entry point, which enforces the GumCP login.
+<Files "$ENTRY">
+    Require all granted
+</Files>
 HT
 
 # Generated entry point: enforces GumCP's login before the third-party code runs.
@@ -137,6 +146,20 @@ chmod 644 "$DEST/$ENTRY"
 if id -u www-data >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
     chown -R www-data:www-data "$DEST"
 fi
+
+# Verify what we just wrote, rather than assuming it landed.
+MISSING=""
+[ -f "$DEST/$ENTRY" ]                || MISSING="$MISSING entry-file"
+[ -f "$DEST/vendor/$VENDOR_FILE" ]   || MISSING="$MISSING vendor-file"
+[ -f "$DEST/.htaccess" ]             || MISSING="$MISSING module-htaccess"
+[ -f "$DEST/vendor/.htaccess" ]      || MISSING="$MISSING vendor-htaccess"
+case "$VENDOR_FILE" in *.php) MISSING="$MISSING vendor-file-is-executable";; esac
+grep -q 'module_guard.php' "$DEST/$ENTRY" 2>/dev/null              || MISSING="$MISSING entry-guard"
+
+if [ -n "$MISSING" ]; then
+    fail "Install incomplete — missing:$MISSING. The module may not be protected; remove $DEST and try again."
+fi
+info "Verified: guarded entry point, non-executable vendor file, and .htaccess files in place"
 
 info "Installed to $DEST"
 echo ""
