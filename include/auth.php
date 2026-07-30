@@ -14,9 +14,21 @@ declare(strict_types=1);
 // refused. An administrator can opt into an open (unauthenticated) panel only by
 // explicitly setting GUMCP_ALLOW_UNAUTHENTICATED to true in config.php.
 
+/**
+ * Is a usable credential configured? An enabled method with an empty password
+ * does not count — that is the "fresh install, not set up yet" state, which
+ * sends the admin to setup.php rather than handing out a blank login.
+ */
 function gumcp_auth_configured(): bool {
-    return (defined('LOGIN_REQUIRED') && LOGIN_REQUIRED === true)
-        || (defined('BASIC_AUTH')     && BASIC_AUTH     === true);
+    if (defined('LOGIN_REQUIRED') && LOGIN_REQUIRED === true
+        && defined('LOGIN_PASS') && LOGIN_PASS !== '') {
+        return true;
+    }
+    if (defined('BASIC_AUTH') && BASIC_AUTH === true
+        && defined('BASIC_AUTH_PASS') && BASIC_AUTH_PASS !== '') {
+        return true;
+    }
+    return false;
 }
 
 function gumcp_open_mode(): bool {
@@ -190,7 +202,14 @@ function gumcp_deny_access(string $reason) {
   <h1>🔒 GumCP is not configured for secure access</h1>
   <p class="warn"><strong>Access refused.</strong> GumCP can run shell commands as a
      privileged user, so it will not serve the panel until authentication is configured.</p>
+<?php if (is_file(dirname(__DIR__) . '/setup.php')): ?>
+  <p style="font-size:17px"><strong>➡ <a href="./setup.php">Run first-run setup</a></strong>
+     — choose a username and password in the browser. The setup page works only from a
+     local/private address and deletes itself once done.</p>
+  <p class="muted">Prefer to do it by hand? Edit <code>include/config.php</code>:</p>
+<?php else: ?>
   <p>Edit <code>include/config.php</code> and set a login:</p>
+<?php endif; ?>
 <pre>define('LOGIN_REQUIRED', true);
 define('LOGIN_USER', 'your-username');
 define('LOGIN_PASS', 'a-long-unique-password');</pre>

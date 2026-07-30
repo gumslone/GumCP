@@ -40,7 +40,7 @@ More screenshots in the [screenshots folder](screenshots/).
 - **Menu reorder** — drag and drop navbar items into any order; preference saved automatically
 - **Multilanguage** — English, German, Ukrainian, Spanish and French; set the default in `config.php` and switch from the navbar (remembered per session). Untranslated strings fall back to English; add a language by dropping a file into `include/lang/`
 - **Authentication** — optional login page, HTTP Basic Auth, or both simultaneously with separate credentials
-- **Optional modules** — File Manager, Database Manager, TeHyBug sensor support (temperature, humidity, barometric pressure)
+- **Optional modules** — File Manager and Database Manager (installed on demand from upstream, see [Optional third-party modules](#optional-third-party-modules)), TeHyBug sensor support (temperature, humidity, barometric pressure)
 
 ## Compatibility
 
@@ -377,6 +377,32 @@ sudo apt-get install -y php-sqlite3
 ```bash
 curl -H 'X-GumCP-Key: <32-char-hash>' http://<your-pi-ip>/GumCP/api.php
 ```
+
+### Optional third-party modules
+
+Adminer (database manager) and TinyFileManager (web file manager) are **not
+bundled**. A vendored copy ships whatever vulnerabilities it had on the day it was
+copied in and then quietly goes stale — both projects have had security advisories.
+Install the version you choose from upstream instead:
+
+```bash
+cd /var/www/html/GumCP
+./scripts/install-module.sh adminer                # pinned default version
+./scripts/install-module.sh adminer 4.8.1          # or pick one
+./scripts/install-module.sh tinyfilemanager
+```
+
+Then enable it in `include/config.php`:
+
+```php
+$gumcp_modules['adminer']['module_active'] = 1;
+```
+
+Update later by re-running the script with a newer version. The upstream file is
+stored in `modules/<name>/vendor/` and blocked from direct web access; requests go
+through a generated entry file that **requires your GumCP login first**, so the
+module is never reachable by an unauthenticated visitor. Only enable what you use —
+these are powerful tools with their own security history.
 
 ### Limiting what GumCP can run
 

@@ -14,3 +14,8 @@ gumcp_cpu_stat
 
 # User-customized menu order persisted by the reorder UI.
 include/menu_order.json
+
+# Optional third-party modules — installed on demand via scripts/install-module.sh,
+# never vendored into the repo (a bundled copy ships its vulnerabilities and goes stale).
+modules/adminer/
+modules/tinyfilemanager/

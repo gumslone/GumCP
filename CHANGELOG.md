@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased
+
+### Security — unauthenticated access to bundled modules (high)
+`modules/adminer/adminer.php` contained no authentication code at all, so the
+bundled **Adminer database manager was reachable directly at
+`/GumCP/modules/adminer/adminer.php` even with `LOGIN_REQUIRED = true`**. Modules
+are shown in an iframe, so the browser fetches their URL directly and the parent
+page's login protects nothing. TinyFileManager checked only its `module_active`
+flag.
+
+- New `include/module_guard.php` — module entry points now enforce the full GumCP
+  access gate server-side before any third-party code runs.
+- **Adminer and TinyFileManager are no longer bundled.** The vendored copies were
+  old (Adminer 4.6.1, from 2018) and carried known advisories. Install the version
+  you want with `./scripts/install-module.sh <module> [version]`, then enable it in
+  `config.php`; re-run with a newer version to update.
+- Upstream files live in `modules/<name>/vendor/`, blocked from direct web access
+  by `.htaccess`, and are reached only through the generated guarded entry file.
+
+### Added
+- **First-run setup (`setup.php`)** — configure the login from the browser instead
+  of hand-editing `config.php`, then the page deletes itself. It runs only while no
+  usable credential exists (so it can never reset an existing password), and only
+  answers requests from loopback/private addresses.
+- GumCP now ships with **no usable default password**: `config.example.php` sets an
+  empty `LOGIN_PASS`, so a fresh install goes to first-run setup rather than being
+  reachable with credentials that are public knowledge.
+
+### Changed
+- The legacy inline auth gate was removed from `config.example.php` — access
+  control lives in `include/auth.php` for new installs. Existing `config.php`
+  files keep their copy harmlessly.
+
+---
+
 ## [2.5.3] — 2026-07-30
 
 ### Security hardening (follow-up to 2.5.2)

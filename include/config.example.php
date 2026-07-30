@@ -17,9 +17,13 @@ define('SSH_PASS', 'raspberry'); // SSH password — CHANGE THIS
 // authentication is configured. To deliberately run an open panel (for example
 // on an isolated network), you must also set GUMCP_ALLOW_UNAUTHENTICATED below —
 // be aware that anyone who can reach an open panel gets root on this host.
+// LOGIN_PASS is intentionally empty: GumCP ships with NO usable password, so a
+// fresh install cannot be logged into with a value that is public knowledge.
+// Open the panel in a browser and it will send you to first-run setup, or fill
+// these in by hand.
 define('LOGIN_REQUIRED', true);
 define('LOGIN_USER', 'pi');
-define('LOGIN_PASS', 'raspberry'); // CHANGE THIS
+define('LOGIN_PASS', '');
 
 // ── HTTP Basic Auth ───────────────────────────────────────────────────────────
 // When BASIC_AUTH is true the browser shows a native credentials dialog.
@@ -152,7 +156,12 @@ $gumcp_modules = [
         'module_active'                   => 0,
         'module_show_in_iframe'           => 1,
     ],
-    // Third-party modules (separate licenses)
+    // ── Third-party modules (separate licenses) ───────────────────────────────
+    // NOT bundled with GumCP. Install the version you want first:
+    //     ./scripts/install-module.sh adminer
+    //     ./scripts/install-module.sh tinyfilemanager
+    // then set module_active => 1 below. They are reached through a generated
+    // entry file that enforces your GumCP login before the third-party code runs.
     'tinyfilemanager' => [
         'module_title'                    => 'File Manager',
         'module_index_file_relative_path' => './modules/tinyfilemanager/tinyfilemanager.php',
@@ -197,53 +206,7 @@ if (!empty($_POST['login_user']) && !empty($_POST['login_pass'])) {
 }
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
-// Skipped for API requests — api.php authenticates via button hash instead.
+// Access control now lives in include/auth.php (loaded by include/init.php).
+// It is kept in shipped code so security fixes reach existing installs on
+// upgrade — config.php is yours and is never overwritten.
 
-$_gumcp_need_auth = !defined('GUMCP_API_REQUEST')
-                 && ((LOGIN_REQUIRED === true) || (defined('BASIC_AUTH') && BASIC_AUTH === true));
-
-if ($_gumcp_need_auth) {
-    $authed = false;
-
-    // ── Basic Auth check ──────────────────────────────────────────────────────
-    if (defined('BASIC_AUTH') && BASIC_AUTH === true) {
-        // Apache may strip the Authorization header; fall back to parsing it manually.
-        $basic_user = (string)($_SERVER['PHP_AUTH_USER'] ?? '');
-        $basic_pass = (string)($_SERVER['PHP_AUTH_PW']   ?? '');
-        if ($basic_user === '' && isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            $decoded = base64_decode(ltrim(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
-            if ($decoded !== false && strpos($decoded, ':') !== false) {
-                list($basic_user, $basic_pass) = explode(':', $decoded, 2);
-            }
-        }
-        if ($basic_user !== ''
-            && hash_equals(BASIC_AUTH_USER, $basic_user)
-            && hash_equals(BASIC_AUTH_PASS, $basic_pass)
-        ) {
-            $authed = true;
-        }
-    }
-
-    // ── Session (login form) check ────────────────────────────────────────────
-    if (!$authed && LOGIN_REQUIRED === true) {
-        if (isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
-            && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
-            && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS)
-        ) {
-            $authed = true;
-        }
-    }
-
-    // ── Reject ────────────────────────────────────────────────────────────────
-    if (!$authed) {
-        if (defined('BASIC_AUTH') && BASIC_AUTH === true) {
-            header('WWW-Authenticate: Basic realm="GumCP"');
-            http_response_code(401);
-            echo '401 Unauthorized';
-            exit();
-        }
-        header('Location: ./login.php');
-        exit();
-    }
-}
-unset($_gumcp_need_auth);
