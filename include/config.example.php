@@ -35,8 +35,9 @@ define('LOGIN_PASS', 'raspberry'); // CHANGE THIS (and SSH_PASS above)
 //   above — an ordinary config credential, which may be anything you like.
 // true: the submitted username and password are verified against the REAL
 //   system account by authenticating over SSH, exactly as GumCP does to run
-//   commands. LOGIN_PASS is then unused and need not be kept in sync; the
-//   password is checked by the OS and never compared to a stored value.
+//   commands. LOGIN_USER and LOGIN_PASS above are then BOTH unused — the
+//   account is pinned to SSH_USER and the password is checked by the OS, never
+//   compared to a stored value. You can leave LOGIN_PASS empty.
 //   Only SSH_USER may sign in — allowing any system account would let a
 //   low-privileged user in and then have GumCP run commands as SSH_USER.
 //   Requires the php-ssh2 extension.

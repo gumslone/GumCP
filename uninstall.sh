@@ -86,6 +86,25 @@ if ! sudo rm -rf "$GUMCP_DIR"; then
 fi
 print_message "GumCP removed."
 
+# ── remove the Apache hardening config ────────────────────────────────────────
+# installer.sh writes this outside GUMCP_DIR, so deleting the directory alone
+# would leave an enabled config referencing a path that no longer exists.
+if [ -f /etc/apache2/conf-available/gumcp.conf ]; then
+    print_message "Removing the Apache hardening config..."
+    sudo a2disconf gumcp >/dev/null 2>&1
+    sudo rm -f /etc/apache2/conf-available/gumcp.conf
+    if sudo systemctl reload apache2 >/dev/null 2>&1; then
+        print_message "Apache config removed and reloaded"
+    else
+        print_warning "Removed the config, but Apache did not reload — run: sudo systemctl reload apache2"
+    fi
+fi
+
+# Deliberately NOT undone, because other software may rely on them:
+#   • www-data's membership of the 'video' group
+#   • the Apache 'rewrite' and PHP modules
+# Remove those by hand if GumCP was the only thing using them.
+
 # ── done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo "======================================"

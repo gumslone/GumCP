@@ -116,6 +116,18 @@ out=$(php -r "
     && pass "when on: empty LOGIN_PASS is fine, non-SSH_USER refused" \
     || fail "system-user mode (got '$out')"
 
+# LOGIN_USER is ignored too — the account is pinned to SSH_USER.
+out=$(php -r "
+    define('LOGIN_CHECK_SYSTEM_USER',true);
+    define('SSH_USER','pi'); define('SSH_PASS','pw'); define('SSH_PORT','22');
+    define('LOGIN_REQUIRED',true); define('LOGIN_USER','someone-else'); define('LOGIN_PASS','');
+    define('BASIC_AUTH',false);
+    require '$ROOT/include/auth.php';
+    echo gumcp_system_login('someone-else','pw') ? 'login_user-honoured' : 'pinned-to-ssh_user';
+" 2>/dev/null)
+[ "$out" = "pinned-to-ssh_user" ] && pass "when on: LOGIN_USER is ignored, account pinned to SSH_USER" \
+                                 || fail "LOGIN_USER should be ignored (got '$out')"
+
 # ── 5. Pure helpers ───────────────────────────────────────────────────────────
 echo "Validators"
 php -r "

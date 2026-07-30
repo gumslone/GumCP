@@ -215,8 +215,10 @@ GumCP supports three modes, configurable independently:
 **Optionally check the login against the real system account.** With
 `LOGIN_CHECK_SYSTEM_USER` set to `true`, the submitted username and password are
 verified by authenticating over SSH — the same thing GumCP does to run commands —
-instead of being compared to `LOGIN_PASS`. The password is then checked by the
-operating system and never stored for comparison, so it cannot fall out of sync.
+instead of being compared to `LOGIN_PASS`. `LOGIN_USER` and `LOGIN_PASS` are then
+both unused (leave `LOGIN_PASS` empty if you like): the account is pinned to
+`SSH_USER`, and the password is checked by the operating system rather than
+compared to a stored value, so it cannot fall out of sync.
 Only `SSH_USER` may sign in, since letting any system account in would let a
 low-privileged user have GumCP run commands as `SSH_USER`. Off by default, in
 which case the login is an ordinary config credential.
