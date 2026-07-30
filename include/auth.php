@@ -38,15 +38,85 @@ function gumcp_open_mode(): bool {
 }
 
 function gumcp_session_authenticated(): bool {
+    $signed_in = false;
+
     // Signed in against the system account: the password is never stored, so the
     // server-side session flag is the record. A client cannot forge session data.
     if (!empty($_SESSION['GUMCP_SYS_USER']) && gumcp_check_system_user()) {
+        $signed_in = true;
+    } elseif (defined('LOGIN_USER') && defined('LOGIN_PASS')
+              && isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
+              && hash_equals(md5(LOGIN_USER), (string)$_SESSION['LOGIN_USER'])
+              && hash_equals(md5(LOGIN_PASS), (string)$_SESSION['LOGIN_PASS'])) {
+        $signed_in = true;
+    }
+
+    if (!$signed_in) return false;
+
+    return !gumcp_session_expired();
+}
+
+/**
+ * Has this session outlived its idle or absolute limit?
+ *
+ * A GumCP session is shell access, and the cookie lives until the browser is
+ * closed — which on a desktop can be weeks. Both limits are in seconds; either
+ * can be set to 0 in config.php to switch it off. Returns true (and clears the
+ * session) once a limit is passed, so the caller simply treats it as signed out.
+ */
+function gumcp_session_expired(): bool {
+    $idle     = defined('SESSION_IDLE_TIMEOUT')     ? (int)SESSION_IDLE_TIMEOUT     : 0;
+    $absolute = defined('SESSION_ABSOLUTE_TIMEOUT') ? (int)SESSION_ABSOLUTE_TIMEOUT : 0;
+    $now      = time();
+
+    // Sessions that predate this feature (or an upgrade) have no stamps yet —
+    // start the clock now rather than signing everyone out on deploy.
+    if (empty($_SESSION['GUMCP_AUTH_TIME'])) $_SESSION['GUMCP_AUTH_TIME'] = $now;
+    if (empty($_SESSION['GUMCP_LAST_SEEN'])) $_SESSION['GUMCP_LAST_SEEN'] = $now;
+
+    $expired = ($idle     > 0 && $now - (int)$_SESSION['GUMCP_LAST_SEEN']  > $idle)
+            || ($absolute > 0 && $now - (int)$_SESSION['GUMCP_AUTH_TIME']  > $absolute);
+
+    if ($expired) {
+        gumcp_end_session();
+        gumcp_session_was_expired(true);
         return true;
     }
-    if (!defined('LOGIN_USER') || !defined('LOGIN_PASS')) return false;
-    if (!isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])) return false;
-    return hash_equals(md5(LOGIN_USER), (string)$_SESSION['LOGIN_USER'])
-        && hash_equals(md5(LOGIN_PASS), (string)$_SESSION['LOGIN_PASS']);
+
+    // Automatic polling must not keep a session alive forever. The dashboard
+    // refreshes itself every few seconds, so an unattended browser left open on
+    // index.php would otherwise never go idle — exactly the case this guards.
+    if (empty($_POST['gumcp_background'])) {
+        $_SESSION['GUMCP_LAST_SEEN'] = $now;
+    }
+    return false;
+}
+
+/**
+ * Remembers, for this request only, that the session was dropped because it
+ * timed out — so the login page can say so instead of showing a blank form.
+ */
+function gumcp_session_was_expired($set = null): bool {
+    static $expired = false;
+    if ($set === true) $expired = true;
+    return $expired;
+}
+
+/** Drop every trace of a signed-in session, keeping the session itself usable. */
+function gumcp_end_session() {
+    unset(
+        $_SESSION['GUMCP_SYS_USER'],
+        $_SESSION['LOGIN_USER'],
+        $_SESSION['LOGIN_PASS'],
+        $_SESSION['GUMCP_AUTH_TIME'],
+        $_SESSION['GUMCP_LAST_SEEN']
+    );
+}
+
+/** Stamp a freshly authenticated session so the timeouts have a starting point. */
+function gumcp_mark_login_time() {
+    $_SESSION['GUMCP_AUTH_TIME'] = time();
+    $_SESSION['GUMCP_LAST_SEEN'] = time();
 }
 
 /**
@@ -205,6 +275,7 @@ function gumcp_process_login() {
             gumcp_login_clear($ip);
             session_regenerate_id(true);          // prevent session fixation
             $_SESSION['GUMCP_SYS_USER'] = $user;
+            gumcp_mark_login_time();
             header('Location: ./index.php');
             exit();
         }
@@ -216,6 +287,7 @@ function gumcp_process_login() {
             session_regenerate_id(true);
             $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
             $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
+            gumcp_mark_login_time();
             header('Location: ./index.php');
             exit();
         }
@@ -387,7 +459,8 @@ function gumcp_deny_access(string $reason) {
 
     if ($reason === 'unauthenticated') {
         if (!headers_sent()) {
-            header('Location: ./login.php');
+            header('Location: ./login.php'
+                 . (gumcp_session_was_expired() ? '?action=session_expired' : ''));
         }
         exit();
     }

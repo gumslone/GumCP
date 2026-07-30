@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Hardening — sessions now expire
+A signed-in session is shell access, but the cookie lasted until the browser was
+closed — on a desktop that can be weeks. A tab left open on a shared or stolen
+machine kept full control of the Pi.
+
+- Sessions end after `SESSION_IDLE_TIMEOUT` seconds of inactivity (default 1
+  hour) and after `SESSION_ABSOLUTE_TIMEOUT` seconds regardless (default 12
+  hours). Set either to `0` in `include/config.php` to switch it off.
+- The dashboard's auto-refresh does **not** count as activity — otherwise an
+  unattended browser on the dashboard would poll its own session alive forever,
+  which is precisely the case this protects against.
+- Expiry sends you to the login page with "Your session has expired", rather
+  than a bare form.
+- Sessions that predate the upgrade are not signed out on deploy; their clock
+  starts on the first request after it.
+
 ### Hardening — security response headers, and SameSite on PHP 7.0
 A GumCP session can run shell commands, so framing matters as much as data
 theft: an attacker who frames the panel can trick a signed-in admin into

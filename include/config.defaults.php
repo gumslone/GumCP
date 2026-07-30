@@ -27,6 +27,8 @@ defined('LOGIN_CHECK_SYSTEM_USER') || define('LOGIN_CHECK_SYSTEM_USER', false);
 
 // Login throttling: lock a client address out after this many failures within
 // the window, for the lockout period (all in seconds).
+defined('SESSION_IDLE_TIMEOUT')     || define('SESSION_IDLE_TIMEOUT',     3600);
+defined('SESSION_ABSOLUTE_TIMEOUT') || define('SESSION_ABSOLUTE_TIMEOUT', 43200);
 defined('LOGIN_MAX_FAILURES')   || define('LOGIN_MAX_FAILURES',   5);
 defined('LOGIN_FAILURE_WINDOW') || define('LOGIN_FAILURE_WINDOW', 900);
 defined('LOGIN_LOCKOUT_TIME')   || define('LOGIN_LOCKOUT_TIME',   900);

@@ -246,6 +246,60 @@ for f in include/init.php setup.php update.php; do
 done
 pass "session hardening runs before config.php in every entry point"
 
+# ── Session lifetime ──────────────────────────────────────────────────────────
+# The cookie lives until the browser closes, so without these limits a signed-in
+# tab left open on a shared machine keeps shell access indefinitely.
+echo "Session lifetime"
+out=$(php -r "
+    define('LOGIN_REQUIRED', true);
+    define('LOGIN_USER', 'pi'); define('LOGIN_PASS', 'secret');
+    define('SESSION_IDLE_TIMEOUT', 100);
+    define('SESSION_ABSOLUTE_TIMEOUT', 1000);
+    require '$ROOT/include/auth.php';
+    \$r = '';
+
+    // fresh login is valid
+    \$_SESSION = ['LOGIN_USER'=>md5('pi'), 'LOGIN_PASS'=>md5('secret')];
+    gumcp_mark_login_time();
+    \$r .= gumcp_session_authenticated() ? 'a' : '-';
+
+    // idle past the limit: signed out, and the credentials are cleared
+    \$_SESSION['GUMCP_LAST_SEEN'] = time() - 101;
+    \$r .= gumcp_session_authenticated() ? '-' : 'b';
+    \$r .= isset(\$_SESSION['LOGIN_USER']) ? '-' : 'c';
+
+    // absolute limit applies even to a continuously active session
+    \$_SESSION = ['LOGIN_USER'=>md5('pi'), 'LOGIN_PASS'=>md5('secret'),
+                 'GUMCP_AUTH_TIME'=>time()-1001, 'GUMCP_LAST_SEEN'=>time()];
+    \$r .= gumcp_session_authenticated() ? '-' : 'd';
+
+    // background polling must not push the idle deadline out
+    \$_SESSION = ['LOGIN_USER'=>md5('pi'), 'LOGIN_PASS'=>md5('secret'),
+                 'GUMCP_AUTH_TIME'=>time(), 'GUMCP_LAST_SEEN'=>time()-50];
+    \$_POST = ['gumcp_background' => 1];
+    gumcp_session_authenticated();
+    \$r .= (\$_SESSION['GUMCP_LAST_SEEN'] <= time()-50) ? 'e' : '-';
+    \$_POST = [];
+    gumcp_session_authenticated();
+    \$r .= (\$_SESSION['GUMCP_LAST_SEEN'] > time()-50) ? 'f' : '-';
+    echo \$r;
+" 2>/dev/null)
+[ "$out" = "abcdef" ] && pass "idle + absolute timeout, polling does not renew" \
+                      || fail "session lifetime (got '$out', want 'abcdef')"
+
+# A session that predates the feature must not be logged out by the upgrade.
+out=$(php -r "
+    define('LOGIN_REQUIRED', true);
+    define('LOGIN_USER', 'pi'); define('LOGIN_PASS', 'secret');
+    define('SESSION_IDLE_TIMEOUT', 100);
+    define('SESSION_ABSOLUTE_TIMEOUT', 1000);
+    require '$ROOT/include/auth.php';
+    \$_SESSION = ['LOGIN_USER'=>md5('pi'), 'LOGIN_PASS'=>md5('secret')];  // no stamps
+    echo gumcp_session_authenticated() ? 'kept' : 'dropped';
+" 2>/dev/null)
+[ "$out" = "kept" ] && pass "pre-upgrade sessions are not signed out on deploy" \
+                    || fail "upgrade signs existing sessions out (got '$out')"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise

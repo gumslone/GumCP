@@ -39,7 +39,12 @@ function refreshStats() {
     $.ajax({
         type: 'POST',
         url: 'ajax.php',
-        data: { action: 'server_info', csrf_token: (window.CSRF_TOKEN || '') },
+        data: {
+            action: 'server_info',
+            csrf_token: (window.CSRF_TOKEN || ''),
+            // Polling is not user activity: it must not hold the idle timeout open.
+            gumcp_background: 1
+        },
         dataType: 'json',
         success: function(d) {
             if (!d || d.type === 'error') return;

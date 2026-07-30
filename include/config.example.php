@@ -46,6 +46,14 @@ define('LOGIN_PASS', 'raspberry'); // CHANGE THIS (and SSH_PASS above)
 //   Requires the php-ssh2 extension.
 define('LOGIN_CHECK_SYSTEM_USER', false);
 
+// ── Session lifetime ──────────────────────────────────────────────────────────
+// A signed-in session is shell access, and the cookie otherwise lasts until the
+// browser is closed. Sessions end after SESSION_IDLE_TIMEOUT seconds without
+// activity, and after SESSION_ABSOLUTE_TIMEOUT seconds regardless. The dashboard
+// auto-refresh does not count as activity. Set either to 0 to disable it.
+define('SESSION_IDLE_TIMEOUT', 3600);        // 1 hour idle
+define('SESSION_ABSOLUTE_TIMEOUT', 43200);   // 12 hours total
+
 // ── Login throttling ──────────────────────────────────────────────────────────
 // A successful login grants shell access, so password guessing is rate limited.
 // After LOGIN_MAX_FAILURES failures within LOGIN_FAILURE_WINDOW seconds, that
