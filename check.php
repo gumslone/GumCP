@@ -10,6 +10,36 @@ function chk(bool $ok, string $label, string $detail = '', string $fix_key = '')
     return compact('ok', 'label', 'detail', 'fix_key');
 }
 
+/**
+ * Verify every installed optional module is reachable only through its guarded
+ * entry point. Returns '' when all is well, or a description of the problem.
+ *
+ * Checks both layers, because each can fail on its own: the entry file must load
+ * include/module_guard.php, and the vendored upstream file must carry the
+ * injected GUMCP_MODULE_KEY guard (the vendor/.htaccess is not sufficient —
+ * Debian ships Apache with AllowOverride None, which ignores .htaccess).
+ */
+function gumcp_modules_protected(): string {
+    $problems = [];
+    foreach (['adminer', 'tinyfilemanager'] as $key) {
+        $dir   = __DIR__ . '/modules/' . $key;
+        $entry = $dir . '/' . $key . '.php';
+        if (!is_file($entry)) continue;   // not installed
+
+        $src = (string)@file_get_contents($entry);
+        if (strpos($src, 'module_guard.php') === false) {
+            $problems[] = $key . ': entry point does not require the login guard';
+        }
+        foreach ((array)@glob($dir . '/vendor/*.php') as $vendor) {
+            if (strpos((string)@file_get_contents($vendor), 'GUMCP_MODULE_KEY') === false) {
+                $problems[] = $key . ': ' . basename($vendor)
+                            . ' can be fetched directly — reinstall it from the Actions page';
+            }
+        }
+    }
+    return implode('; ', $problems);
+}
+
 function cmd_exists(string $cmd): bool {
     return !empty(shell_exec('command -v ' . escapeshellarg($cmd) . ' 2>/dev/null'));
 }
@@ -72,6 +102,13 @@ $sections['Security'] = [
         gumcp_open_mode()
             ? 'GUMCP_ALLOW_UNAUTHENTICATED is true — the panel is open to everyone'
             : 'open access is disabled'
+    ),
+    chk(
+        gumcp_modules_protected() === '',
+        'Optional modules protected',
+        gumcp_modules_protected() === ''
+            ? 'installed modules require a login before any third-party code runs'
+            : gumcp_modules_protected()
     ),
     chk(
         !gumcp_default_credentials(),

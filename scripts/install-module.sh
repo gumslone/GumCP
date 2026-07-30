@@ -87,7 +87,28 @@ fi
 # Guard against a redirect/error page being saved as if it were the module.
 head -c 5 "$TMP" | grep -q '<?php' || { rm -f "$TMP"; fail "Downloaded file is not PHP — aborting."; }
 
-mv "$TMP" "$DEST/vendor/$VENDOR_FILE" || fail "Could not write $DEST/vendor/$VENDOR_FILE"
+# Harden the upstream file against being fetched directly.
+#
+# The .htaccess below is not enough on its own: Debian/Raspberry Pi OS ship
+# Apache with "AllowOverride None" for /var/www, which makes .htaccess files
+# ignored entirely. So inject a PHP guard as the first statement of the file —
+# it only runs when loaded through the guarded entry point (which defines
+# GUMCP_MODULE_KEY), and refuses when requested directly, whatever Apache thinks.
+#
+# Injected immediately after the opening tag rather than prepended as a separate
+# block, so no stray output is emitted before the module sends its headers.
+GUARD='if (!defined("GUMCP_MODULE_KEY")) { http_response_code(403); exit("Direct access denied — load this module through GumCP."); }'
+if ! sed "1s|^<?php|<?php $GUARD|" "$TMP" > "$TMP.guarded"; then
+    rm -f "$TMP" "$TMP.guarded"
+    fail "Could not add the access guard to the downloaded file."
+fi
+grep -q 'GUMCP_MODULE_KEY' "$TMP.guarded" || {
+    rm -f "$TMP" "$TMP.guarded"
+    fail "Access guard was not applied — refusing to install an unprotected module."
+}
+rm -f "$TMP"
+
+mv "$TMP.guarded" "$DEST/vendor/$VENDOR_FILE" || fail "Could not write $DEST/vendor/$VENDOR_FILE"
 chmod 644 "$DEST/vendor/$VENDOR_FILE"
 
 # Block direct web access to the raw upstream file: it must only ever be reached
