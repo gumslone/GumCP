@@ -107,7 +107,14 @@ chmod 644 "$DEST/vendor/$VENDOR_FILE"
 cat > "$DEST/vendor/.htaccess" <<'HT'
 # The upstream module file is included by the guarded entry point in the parent
 # directory. It must never be served directly — that would bypass the login.
-Require all denied
+Options -Indexes
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
 HT
 
 # Module directory: no listing, and nothing directly requestable except the
@@ -117,15 +124,27 @@ cat > "$DEST/.htaccess" <<HT
 # Managed by scripts/install-module.sh
 Options -Indexes
 
-# Deny everything by default…
-<Files "*">
-    Require all denied
-</Files>
-
-# …except the guarded entry point, which enforces the GumCP login.
-<Files "$ENTRY">
-    Require all granted
-</Files>
+# Deny everything by default, except the guarded entry point that enforces the
+# GumCP login. Written for both Apache 2.4 and 2.2 — "Require all denied" is not
+# understood by 2.2 and would return a 500 there.
+<IfModule mod_authz_core.c>
+    <Files "*">
+        Require all denied
+    </Files>
+    <Files "$ENTRY">
+        Require all granted
+    </Files>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <Files "*">
+        Order allow,deny
+        Deny from all
+    </Files>
+    <Files "$ENTRY">
+        Order allow,deny
+        Allow from all
+    </Files>
+</IfModule>
 HT
 
 # Generated entry point: enforces GumCP's login before the third-party code runs.

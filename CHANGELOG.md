@@ -13,6 +13,7 @@ whatever executed commands printed.
 - New `deploy/gumcp-apache.conf` denies `buttons/`, `command_logs/`,
   `include/` and `modules/*/vendor/` in the **server** configuration, so the rules
   apply regardless of `AllowOverride`. `installer.sh` installs and enables it.
+- The shipped `.htaccess` files now work on **Apache 2.2 as well as 2.4**. They contained only `Require all denied`, which 2.2 does not understand — it returns a 500 rather than denying. Both syntaxes are now emitted behind `<IfModule mod_authz_core.c>`, in `buttons/`, `command_logs/` and the files the module installer writes.
 - **System Check now proves it** — it requests the paths over HTTP and reports
   what the server actually does, instead of assuming an `.htaccess` file works.
 - Existing installs: `sudo cp deploy/gumcp-apache.conf /etc/apache2/conf-available/gumcp.conf`
