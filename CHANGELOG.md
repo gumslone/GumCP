@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Install optional modules from the Actions page** — a new *Optional modules* panel shows whether Adminer / TinyFileManager are installed, which version, and whether they're enabled in `config.php`, with buttons to install, update to a chosen version, or remove them. Wraps `scripts/install-module.sh`; the module name is whitelisted and the version is pattern-checked before it reaches the shell.
+
+---
+
 ## [2.6.0] — 2026-07-30
 
 ### Security — unauthenticated access to bundled modules (high)

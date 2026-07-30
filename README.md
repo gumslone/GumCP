@@ -383,7 +383,9 @@ curl -H 'X-GumCP-Key: <32-char-hash>' http://<your-pi-ip>/GumCP/api.php
 Adminer (database manager) and TinyFileManager (web file manager) are **not
 bundled**. A vendored copy ships whatever vulnerabilities it had on the day it was
 copied in and then quietly goes stale — both projects have had security advisories.
-Install the version you choose from upstream instead:
+Install the version you choose from upstream instead. The easiest way is the
+**Optional modules** panel on the **Actions** page — it shows what's installed,
+installs or updates a chosen version, and removes it again. Or from a shell:
 
 ```bash
 cd /var/www/html/GumCP

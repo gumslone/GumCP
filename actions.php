@@ -211,6 +211,81 @@ require_once('./include/header.php');
         return confirm(msg);
     }
 
+    /* ── Optional modules ─────────────────────────────────────────────────── */
+    function modEsc(s) { return $('<div>').text(s == null ? '' : s).html(); }
+
+    function modShowError(msg) {
+        if (msg) { $('#mod-error').text(msg).show(); } else { $('#mod-error').hide(); }
+    }
+
+    function modRender(mods) {
+        var html = '';
+        Object.keys(mods || {}).forEach(function(k) {
+            var m = mods[k];
+            var state = m.installed
+                ? '<span class="label label-success">' + modEsc(m.version) + '</span>'
+                  + (m.enabled ? '' : ' <span class="label label-default" title="Installed but switched off in config.php">off</span>')
+                : '<span class="text-muted">not installed</span>';
+            html += '<tr>'
+                + '<td><strong>' + modEsc(m.title) + '</strong><br>'
+                +   '<small class="text-muted">' + modEsc(m.blurb) + ' — '
+                +   '<a href="' + modEsc(m.upstream) + '" target="_blank" rel="noopener">versions</a></small></td>'
+                + '<td>' + state + '</td>'
+                + '<td><input type="text" class="form-control input-sm" id="mod-ver-' + modEsc(m.key) + '"'
+                +   ' placeholder="latest" size="8"></td>'
+                + '<td style="text-align:right; white-space:nowrap">'
+                +   '<button class="btn btn-xs btn-primary" onclick="modInstall(\'' + modEsc(m.key) + '\')">'
+                +   '<i class="fa fa-download"></i> ' + (m.installed ? 'Reinstall / update' : 'Install') + '</button> '
+                +   (m.installed
+                        ? '<button class="btn btn-xs btn-danger" onclick="modRemove(\'' + modEsc(m.key) + '\')">'
+                          + '<i class="fa fa-trash"></i></button>'
+                        : '')
+                + '</td></tr>';
+        });
+        $('#mod-tbody').html(html || '<tr><td colspan="4" class="text-muted">No optional modules.</td></tr>');
+    }
+
+    function modLoad() {
+        $.ajax({
+            type: 'POST', url: 'ajax.php', dataType: 'json',
+            data: { action: 'module_list', csrf_token: CSRF_TOKEN },
+            success: function(d) { modRender(d && d.modules); },
+            error: function() { $('#mod-tbody').html('<tr><td colspan="4" class="text-danger">Failed to load.</td></tr>'); }
+        });
+    }
+
+    function modInstall(key) {
+        var version = $('#mod-ver-' + key).val() || '';
+        if (!confirm('Download and install ' + key + (version ? ' ' + version : ' (recommended version)')
+                     + ' from its upstream project?')) return;
+        modShowError('');
+        $('#mod-output').text('Downloading…').show();
+        $.ajax({
+            type: 'POST', url: 'ajax.php', dataType: 'json',
+            data: { action: 'module_install', module: key, version: version, csrf_token: CSRF_TOKEN },
+            success: function(d) {
+                $('#mod-output').text((d && d.output) || '').show();
+                if (d && d.type === 'error') { modShowError(d.message || 'Install failed'); }
+                if (d && d.modules) { modRender(d.modules); } else { modLoad(); }
+            },
+            error: function() { modShowError('Request failed.'); $('#mod-output').hide(); }
+        });
+    }
+
+    function modRemove(key) {
+        if (!confirm('Remove the installed ' + key + ' files?')) return;
+        modShowError('');
+        $.ajax({
+            type: 'POST', url: 'ajax.php', dataType: 'json',
+            data: { action: 'module_remove', module: key, csrf_token: CSRF_TOKEN },
+            success: function(d) {
+                if (d && d.type === 'error') { modShowError(d.message || 'Remove failed'); }
+                if (d && d.modules) { modRender(d.modules); } else { modLoad(); }
+            },
+            error: function() { modShowError('Request failed.'); }
+        });
+    }
+
     function refreshGitTags() {
         var $b = $('#git-refresh-btn');
         $b.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
@@ -238,6 +313,9 @@ require_once('./include/header.php');
     }
 
     $(document).ready(function() {
+
+        // Populate the optional-modules panel.
+        modLoad();
 
         // ── Background command form ───────────────────────────────────────────
         $('#advanced-command-form').on('submit', function(e) {
@@ -498,6 +576,35 @@ require_once('./include/header.php');
                 </div>
             </form>
 
+        </div>
+    </div>
+
+    <!-- Optional third-party modules -->
+    <div class="panel panel-default" style="margin-top:10px">
+        <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-puzzle-piece"></i> Optional modules</h3>
+        </div>
+        <div class="panel-body">
+            <p class="text-muted" style="font-size:13px">
+                Not bundled with GumCP — installed from upstream so you choose the version
+                and can update it. Leave the version blank for the recommended one.
+                After installing, enable the module in <code>include/config.php</code>.
+            </p>
+
+            <div class="alert alert-danger" id="mod-error" style="display:none"></div>
+
+            <table class="table table-condensed" style="margin-bottom:8px">
+                <thead>
+                    <tr><th>Module</th><th style="width:120px">Installed</th>
+                        <th style="width:150px">Version</th>
+                        <th style="width:220px; text-align:right">&nbsp;</th></tr>
+                </thead>
+                <tbody id="mod-tbody">
+                    <tr><td colspan="4" class="text-muted">Loading…</td></tr>
+                </tbody>
+            </table>
+
+            <pre id="mod-output" style="display:none; max-height:260px; overflow:auto; font-size:12px"></pre>
         </div>
     </div>
 

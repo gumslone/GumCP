@@ -481,6 +481,71 @@ switch ($action) {
         $out = ok('ok', ['images' => $images]);
         break;
 
+    // ── Optional modules: current install state ──────────────────────────────
+    case 'module_list':
+        $out = ok('ok', ['modules' => gumcp_optional_modules($gumcp_modules)]);
+        break;
+
+    // ── Optional modules: install/update from upstream ────────────────────────
+    case 'module_install':
+        $name    = (string)($_POST['module'] ?? '');
+        $version = trim((string)($_POST['version'] ?? ''));
+
+        if (!array_key_exists($name, gumcp_optional_module_defs())) {
+            $out = err('Unknown module');
+            break;
+        }
+        // Versions become part of a URL and a filename — keep them boring.
+        if ($version !== '' && !preg_match('/^[A-Za-z0-9._-]{1,32}$/', $version)) {
+            $out = err('Invalid version — letters, digits, dot, dash and underscore only.');
+            break;
+        }
+
+        $modules_dir = __DIR__ . '/modules';
+        if (!is_dir($modules_dir) || !is_writable($modules_dir)) {
+            $out = err('The modules/ directory is not writable by the web server. Fix with: '
+                     . 'sudo chown -R www-data:www-data ' . $modules_dir);
+            break;
+        }
+
+        $script = __DIR__ . '/scripts/install-module.sh';
+        if (!is_file($script)) {
+            $out = err('scripts/install-module.sh is missing — run a git pull first.');
+            break;
+        }
+
+        $cmd = 'bash ' . escapeshellarg($script) . ' ' . escapeshellarg($name);
+        if ($version !== '') {
+            $cmd .= ' ' . escapeshellarg($version);
+        }
+        $output = (string)@shell_exec($cmd . ' 2>&1');
+
+        $installed = gumcp_optional_modules($gumcp_modules);
+        $ok_now    = !empty($installed[$name]['installed']);
+        $out = $ok_now
+            ? ok('Installed', ['output' => $output, 'modules' => $installed])
+            : err('Install failed — see the output below.');
+        if (!$ok_now) $out['output'] = $output;
+        break;
+
+    // ── Optional modules: remove an installed copy ────────────────────────────
+    case 'module_remove':
+        $name = (string)($_POST['module'] ?? '');
+        if (!array_key_exists($name, gumcp_optional_module_defs())) {
+            $out = err('Unknown module');
+            break;
+        }
+        // $name is whitelisted, so this path can never escape modules/.
+        $dir = __DIR__ . '/modules/' . $name;
+        if (!is_dir($dir)) {
+            $out = err('Not installed');
+            break;
+        }
+        $out = gumcp_rrmdir($dir)
+            ? ok('Removed', ['modules' => gumcp_optional_modules($gumcp_modules)])
+            : err('Could not remove ' . $dir . ' — check permissions.');
+        break;
+
     // ── Update: fetch tags from origin and return the full release list ───────
     case 'git_tags':
         $dir = escapeshellarg(__DIR__);
@@ -708,6 +773,66 @@ switch ($action) {
 }
 
 echo json_encode($out);
+
+// ── Optional third-party modules ──────────────────────────────────────────────
+// Installed on demand rather than bundled — see scripts/install-module.sh.
+
+function gumcp_optional_module_defs(): array {
+    return [
+        'adminer' => [
+            'title'    => 'Adminer',
+            'blurb'    => 'Database manager',
+            'upstream' => 'https://github.com/vrana/adminer/releases',
+        ],
+        'tinyfilemanager' => [
+            'title'    => 'TinyFileManager',
+            'blurb'    => 'Web file manager',
+            'upstream' => 'https://github.com/prasathmani/tinyfilemanager/releases',
+        ],
+    ];
+}
+
+/**
+ * Install state for each optional module: is it present, which version, and is
+ * it switched on in config.php. Version comes from the vendored filename that
+ * install-module.sh writes (e.g. vendor/adminer-4.8.1.php).
+ */
+function gumcp_optional_modules(array $modules): array {
+    $result = [];
+    foreach (gumcp_optional_module_defs() as $key => $def) {
+        $dir     = __DIR__ . '/modules/' . $key;
+        $version = '';
+        $files   = @glob($dir . '/vendor/' . $key . '-*.php') ?: [];
+        if (!empty($files)) {
+            $base = basename($files[0], '.php');
+            $version = substr($base, strlen($key) + 1);
+        }
+        $result[$key] = [
+            'key'       => $key,
+            'title'     => $def['title'],
+            'blurb'     => $def['blurb'],
+            'upstream'  => $def['upstream'],
+            'installed' => $version !== '' && is_file($dir . '/' . $key . '.php'),
+            'version'   => $version,
+            'enabled'   => !empty($modules[$key]['module_active']),
+        ];
+    }
+    return $result;
+}
+
+/** Recursively delete a directory. */
+function gumcp_rrmdir(string $dir): bool {
+    if (!is_dir($dir)) return false;
+    foreach (array_diff(scandir($dir) ?: [], ['.', '..']) as $entry) {
+        $path = $dir . '/' . $entry;
+        if (is_dir($path) && !is_link($path)) {
+            if (!gumcp_rrmdir($path)) return false;
+        } elseif (!@unlink($path)) {
+            return false;
+        }
+    }
+    return @rmdir($dir);
+}
 
 // ── Cron schedule validation ──────────────────────────────────────────────────
 // Accepts an @keyword or five fields (min hour dom mon dow), each validated
