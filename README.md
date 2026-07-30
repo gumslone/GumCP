@@ -76,13 +76,17 @@ Once complete, open GumCP in a browser:
 http://<your-pi-ip>/GumCP/
 ```
 
-> **First run:** GumCP ships with **no password**, so the first page you open is a
-> short setup form — choose a username and password there and it applies them to
-> `include/config.php`, then deletes itself. (Setup only answers requests from a
-> local/private address, and refuses once a login exists.)
+> **Default credentials** (set in `include/config.php`):
+> - Username: `pi`
+> - Password: `raspberry`
 >
-> Prefer to do it by hand? Set `LOGIN_REQUIRED`, `LOGIN_USER` and `LOGIN_PASS` in
-> `include/config.php` instead.
+> You can sign in immediately — no extra setup step. **These are published here, so
+> change the password as soon as you are in:** until you do, anyone who can reach
+> the panel can sign in and run commands on this host. GumCP shows a warning banner
+> on every page, and flags it in System Check, while the default is still in use.
+>
+> Change it in `include/config.php` (`LOGIN_PASS`), or from the browser at
+> `setup.php` if no login is configured yet.
 
 ---
 

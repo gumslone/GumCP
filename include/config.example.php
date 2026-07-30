@@ -17,13 +17,14 @@ define('SSH_PASS', 'raspberry'); // SSH password — CHANGE THIS
 // authentication is configured. To deliberately run an open panel (for example
 // on an isolated network), you must also set GUMCP_ALLOW_UNAUTHENTICATED below —
 // be aware that anyone who can reach an open panel gets root on this host.
-// LOGIN_PASS is intentionally empty: GumCP ships with NO usable password, so a
-// fresh install cannot be logged into with a value that is public knowledge.
-// Open the panel in a browser and it will send you to first-run setup, or fill
-// these in by hand.
+// A fresh install can be signed into straight away with these defaults — no
+// extra setup step. They are published in the README, so CHANGE THE PASSWORD
+// as soon as you have logged in: until you do, anyone who can reach this panel
+// can sign in and run commands on this host. GumCP shows a warning banner on
+// every page, and flags it in System Check, while the default is still in use.
 define('LOGIN_REQUIRED', true);
 define('LOGIN_USER', 'pi');
-define('LOGIN_PASS', '');
+define('LOGIN_PASS', 'raspberry'); // CHANGE THIS
 
 // ── HTTP Basic Auth ───────────────────────────────────────────────────────────
 // When BASIC_AUTH is true the browser shows a native credentials dialog.

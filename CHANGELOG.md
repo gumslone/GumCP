@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- **A fresh install signs in with `pi` / `raspberry` again.** 2.6.0 shipped an empty `LOGIN_PASS` so new installs had to complete a first-run setup form; the defaults are back so the panel is usable immediately with no extra step. The warning banner and the System Check *"Credentials changed from defaults"* item still flag it until the password is changed. `setup.php` remains for installs that have no login configured (e.g. upgrades from before 2.5.2 that had `LOGIN_REQUIRED = false`).
+
 ### Added
 - **Install optional modules from the Actions page** — a new *Optional modules* panel shows whether Adminer / TinyFileManager are installed, which version, and whether they're enabled in `config.php`, with buttons to install, update or remove them. **Versions are listed in a dropdown**, read from the upstream repository with `git ls-remote --tags` — the same mechanism the GumCP update dropdown uses, so there is no API rate limit; the list is cached for an hour and falls back to a free-text box when offline. The module name is whitelisted and the version pattern-checked before reaching the shell.
 - **Installing a module now enables it.** Previously the panel downloaded the files and left you to edit `config.php` by hand, so the module still didn't appear. Install/Enable/Disable now write a marked block at the end of `config.php` (`// BEGIN GumCP managed module state`), which is rewritten in place each time and is safe to edit or delete yourself. Removing a module disables it too, so the navbar never links to a missing file. If `config.php` isn't writable the install still succeeds and the exact line to add is shown.
