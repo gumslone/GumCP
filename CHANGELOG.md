@@ -3,7 +3,8 @@
 ## Unreleased
 
 ### Added
-- **Install optional modules from the Actions page** — a new *Optional modules* panel shows whether Adminer / TinyFileManager are installed, which version, and whether they're enabled in `config.php`, with buttons to install, update to a chosen version, or remove them. Wraps `scripts/install-module.sh`; the module name is whitelisted and the version is pattern-checked before it reaches the shell.
+- **Install optional modules from the Actions page** — a new *Optional modules* panel shows whether Adminer / TinyFileManager are installed, which version, and whether they're enabled in `config.php`, with buttons to install, update or remove them. **Versions are listed in a dropdown**, read from the upstream repository with `git ls-remote --tags` — the same mechanism the GumCP update dropdown uses, so there is no API rate limit; the list is cached for an hour and falls back to a free-text box when offline. The module name is whitelisted and the version pattern-checked before reaching the shell.
+- Pinned default for Adminer moved from 4.8.1 (2021) to **5.5.1**; both download URLs verified against upstream.
 
 ---
 

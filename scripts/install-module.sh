@@ -25,7 +25,7 @@ fail()  { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 GUMCP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Defaults are pinned to a known-good release; override with the version argument.
-ADMINER_DEFAULT="4.8.1"
+ADMINER_DEFAULT="5.5.1"
 TFM_DEFAULT="2.6"
 
 usage() {

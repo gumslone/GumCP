@@ -783,13 +783,70 @@ function gumcp_optional_module_defs(): array {
             'title'    => 'Adminer',
             'blurb'    => 'Database manager',
             'upstream' => 'https://github.com/vrana/adminer/releases',
+            'repo'     => 'https://github.com/vrana/adminer.git',
+            // Tags are "v4.8.1" but the download URL and filename use "4.8.1".
+            'strip_v'  => true,
+            'default'  => '5.5.1',
         ],
         'tinyfilemanager' => [
             'title'    => 'TinyFileManager',
             'blurb'    => 'Web file manager',
             'upstream' => 'https://github.com/prasathmani/tinyfilemanager/releases',
+            'repo'     => 'https://github.com/prasathmani/tinyfilemanager.git',
+            'strip_v'  => false,
+            'default'  => '2.6',
         ],
     ];
+}
+
+/**
+ * Release tags for a module, newest first.
+ *
+ * Uses `git ls-remote --tags` against the upstream repository — the same
+ * mechanism the GumCP update dropdown uses, and unlike the GitHub REST API it
+ * has no rate limit (60 requests/hour per IP unauthenticated would be hit
+ * quickly, since this runs on every Actions page load).
+ *
+ * Cached for an hour. Returns [] when git or the network is unavailable, and
+ * the caller then falls back to a free-text version box.
+ */
+function gumcp_module_versions(string $key): array {
+    $defs = gumcp_optional_module_defs();
+    if (!isset($defs[$key]['repo'])) return [];
+
+    $cache = __DIR__ . '/command_logs/.versions_' . $key . '.json';
+    if (is_readable($cache) && (time() - (int)@filemtime($cache)) < 3600) {
+        $cached = json_decode((string)@file_get_contents($cache), true);
+        if (is_array($cached)) return $cached;
+    }
+
+    // --refs strips the ^{} dereference lines; output is "<sha>\trefs/tags/<tag>".
+    $raw = (string)@shell_exec(
+        'git ls-remote --tags --refs ' . escapeshellarg($defs[$key]['repo']) . ' 2>/dev/null'
+    );
+    if (trim($raw) === '') return [];
+
+    $versions = [];
+    foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
+        if (!preg_match('#refs/tags/(\S+)$#', trim($line), $m)) continue;
+        $tag = $m[1];
+        if (!empty($defs[$key]['strip_v']) && strtolower(substr($tag, 0, 1)) === 'v') {
+            $tag = substr($tag, 1);
+        }
+        // Must survive the same validation the install action applies.
+        if ($tag !== '' && preg_match('/^[A-Za-z0-9._-]{1,32}$/', $tag)) {
+            $versions[] = $tag;
+        }
+    }
+
+    $versions = array_values(array_unique($versions));
+    usort($versions, function ($a, $b) { return version_compare($b, $a); }); // newest first
+    $versions = array_slice($versions, 0, 30);
+
+    if (!empty($versions)) {
+        @file_put_contents($cache, json_encode($versions), LOCK_EX);
+    }
+    return $versions;
 }
 
 /**
@@ -807,6 +864,7 @@ function gumcp_optional_modules(array $modules): array {
             $base = basename($files[0], '.php');
             $version = substr($base, strlen($key) + 1);
         }
+        $available = gumcp_module_versions($key);
         $result[$key] = [
             'key'       => $key,
             'title'     => $def['title'],
@@ -815,6 +873,8 @@ function gumcp_optional_modules(array $modules): array {
             'installed' => $version !== '' && is_file($dir . '/' . $key . '.php'),
             'version'   => $version,
             'enabled'   => !empty($modules[$key]['module_active']),
+            'available' => $available,                 // [] when offline
+            'default'   => (string)($def['default'] ?? ''),
         ];
     }
     return $result;

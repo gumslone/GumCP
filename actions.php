@@ -218,6 +218,26 @@ require_once('./include/header.php');
         if (msg) { $('#mod-error').text(msg).show(); } else { $('#mod-error').hide(); }
     }
 
+    /* Version <select> from the upstream release list. Falls back to a free-text
+       box when the release list can't be fetched (offline / API rate-limited). */
+    function modVersionPicker(m) {
+        var id = 'mod-ver-' + modEsc(m.key);
+        if (!m.available || !m.available.length) {
+            return '<input type="text" class="form-control input-sm" id="' + id + '"'
+                 + ' placeholder="' + modEsc(m['default'] || 'version') + '" size="8"'
+                 + ' title="Could not reach the upstream release list — type a version.">';
+        }
+        var html = '<select class="form-control input-sm" id="' + id + '">';
+        html += '<option value="">Recommended'
+              + (m['default'] ? ' (' + modEsc(m['default']) + ')' : '') + '</option>';
+        m.available.forEach(function(v) {
+            var sel = (v === m.version) ? ' selected' : '';
+            html += '<option value="' + modEsc(v) + '"' + sel + '>' + modEsc(v)
+                  + (v === m.version ? ' — installed' : '') + '</option>';
+        });
+        return html + '</select>';
+    }
+
     function modRender(mods) {
         var html = '';
         Object.keys(mods || {}).forEach(function(k) {
@@ -231,8 +251,7 @@ require_once('./include/header.php');
                 +   '<small class="text-muted">' + modEsc(m.blurb) + ' — '
                 +   '<a href="' + modEsc(m.upstream) + '" target="_blank" rel="noopener">versions</a></small></td>'
                 + '<td>' + state + '</td>'
-                + '<td><input type="text" class="form-control input-sm" id="mod-ver-' + modEsc(m.key) + '"'
-                +   ' placeholder="latest" size="8"></td>'
+                + '<td>' + modVersionPicker(m) + '</td>'
                 + '<td style="text-align:right; white-space:nowrap">'
                 +   '<button class="btn btn-xs btn-primary" onclick="modInstall(\'' + modEsc(m.key) + '\')">'
                 +   '<i class="fa fa-download"></i> ' + (m.installed ? 'Reinstall / update' : 'Install') + '</button> '

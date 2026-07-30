@@ -394,7 +394,7 @@ installs or updates a chosen version, and removes it again. Or from a shell:
 ```bash
 cd /var/www/html/GumCP
 ./scripts/install-module.sh adminer                # pinned default version
-./scripts/install-module.sh adminer 4.8.1          # or pick one
+./scripts/install-module.sh adminer 4.8.1          # or pick any released version
 ./scripts/install-module.sh tinyfilemanager
 ```
 
