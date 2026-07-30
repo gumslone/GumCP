@@ -39,6 +39,12 @@ password.
   credential comparison. A successful login clears the counter.
 - State lives in `command_logs/.login_attempts.json` (denied to the web server),
   and stale entries are pruned so it cannot grow without bound.
+- **HTTP Basic Auth shares the same throttle**, since it was otherwise an
+  unlimited guessing channel to the same privileges. A request carrying no
+  credentials — the normal first request from a browser — is not counted as a
+  failure, so ordinary visits never trigger a lockout. While locked, GumCP
+  answers `429` with `Retry-After` instead of re-issuing the Basic Auth
+  challenge, which would loop the browser's password prompt with no explanation.
 
 ### Security — session cookie hardening
 A GumCP session grants shell access as a sudo-capable user, but the session

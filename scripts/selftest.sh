@@ -156,6 +156,31 @@ rm -rf "$TDIR"
     && pass "locks after repeated failures, per address, cleared on success" \
     || fail "login throttling (got '$out', want 'open,locked,open,open')"
 
+# Basic Auth uses the same throttle. A request with NO credentials is the normal
+# first request from a browser and must never count as a failed guess.
+TDIR=$(mktemp -d)
+mkdir -p "$TDIR/include" "$TDIR/command_logs"
+cp "$ROOT/include/auth.php" "$TDIR/include/"
+out=$(php -r "
+    define('BASIC_AUTH',true); define('BASIC_AUTH_USER','api'); define('BASIC_AUTH_PASS','s3cret');
+    define('LOGIN_MAX_FAILURES',3); define('LOGIN_FAILURE_WINDOW',900); define('LOGIN_LOCKOUT_TIME',900);
+    require '$TDIR/include/auth.php';
+    \$_SERVER['REMOTE_ADDR'] = '10.1.1.1';
+    \$r = [];
+    for (\$i=0; \$i<10; \$i++) gumcp_basic_authenticated();          // no credentials sent
+    \$r[] = gumcp_login_locked_for('10.1.1.1') ? 'locked' : 'open';
+    \$_SERVER['PHP_AUTH_USER']='api'; \$_SERVER['PHP_AUTH_PW']='wrong';
+    for (\$i=0; \$i<3; \$i++) gumcp_basic_authenticated();
+    \$r[] = gumcp_login_locked_for('10.1.1.1') ? 'locked' : 'open';
+    \$_SERVER['PHP_AUTH_PW']='s3cret';
+    \$r[] = gumcp_basic_authenticated() ? 'in' : 'refused';           // locked: refuse even if correct
+    echo implode(',', \$r);
+" 2>/dev/null)
+rm -rf "$TDIR"
+[ "$out" = "open,locked,refused" ] \
+    && pass "Basic Auth throttled; missing credentials are not a failed guess" \
+    || fail "Basic Auth throttling (got '$out', want 'open,locked,refused')"
+
 # ── Session hardening ─────────────────────────────────────────────────────────
 # A GumCP session grants shell access, so the cookie must not be readable by
 # JavaScript, must not ride along on cross-site requests, and the session ID must

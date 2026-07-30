@@ -239,9 +239,22 @@ function gumcp_basic_authenticated(): bool {
             list($user, $pass) = explode(':', $decoded, 2);
         }
     }
-    return $user !== ''
-        && hash_equals(BASIC_AUTH_USER, $user)
-        && hash_equals(BASIC_AUTH_PASS, $pass);
+
+    // No credentials offered yet — that is the normal first request, not a
+    // failed guess, so it must not count towards the lockout.
+    if ($user === '') return false;
+
+    // Same throttle as the login form: Basic Auth would otherwise be an
+    // unlimited password-guessing channel to the same privileges.
+    $ip = gumcp_client_ip();
+    if (gumcp_login_locked_for($ip) > 0) return false;
+
+    if (hash_equals(BASIC_AUTH_USER, $user) && hash_equals(BASIC_AUTH_PASS, $pass)) {
+        gumcp_login_clear($ip);
+        return true;
+    }
+    gumcp_login_record_failure($ip);
+    return false;
 }
 
 function gumcp_is_authenticated(): bool {
@@ -344,6 +357,20 @@ function gumcp_deny_access(string $reason) {
             http_response_code($reason === 'unconfigured' ? 503 : 401);
         }
         echo json_encode(['type' => 'error', 'success' => false, 'message' => $msg]);
+        exit();
+    }
+
+    // Locked out by the throttle: re-issuing the Basic Auth challenge would just
+    // loop the browser's password prompt with no explanation.
+    $locked = gumcp_login_locked_for(gumcp_client_ip());
+    if ($reason === 'unauthenticated' && $locked > 0) {
+        if (!headers_sent()) {
+            http_response_code(429);
+            header('Retry-After: ' . $locked);
+            header('Content-Type: text/plain; charset=UTF-8');
+        }
+        echo 'Too many failed attempts. Try again in about '
+           . max(1, (int)ceil($locked / 60)) . " minute(s).\n";
         exit();
     }
 
