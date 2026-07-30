@@ -215,12 +215,12 @@ GumCP supports three modes, configurable independently:
 **Optionally check the login against the real system account.** With
 `LOGIN_CHECK_SYSTEM_USER` set to `true`, the submitted username and password are
 verified by authenticating over SSH — the same thing GumCP does to run commands —
-instead of being compared to `LOGIN_PASS`. `LOGIN_USER` and `LOGIN_PASS` are then
-both unused (leave `LOGIN_PASS` empty if you like): the account is pinned to
-`SSH_USER`, and the password is checked by the operating system rather than
-compared to a stored value, so it cannot fall out of sync.
-Only `SSH_USER` may sign in, since letting any system account in would let a
-low-privileged user have GumCP run commands as `SSH_USER`. Off by default, in
+instead of being compared to `LOGIN_PASS`. `LOGIN_USER` still decides **who** may
+sign in — the submitted username must match it — while only the **password** is
+delegated to the OS, so `LOGIN_PASS` becomes unused and may be left empty and can
+never drift out of sync with the real one. `LOGIN_USER` defaults to `SSH_USER`;
+naming a different system account works, but whoever signs in can have GumCP run
+commands as `SSH_USER`, so don't name a less trusted account. Off by default, in
 which case the login is an ordinary config credential.
 
 **The login credentials are the Pi's own account.** `LOGIN_USER` / `LOGIN_PASS`

@@ -59,19 +59,23 @@ function gumcp_check_system_user(): bool {
 }
 
 /**
- * Verify a username/password against the actual system account, by attempting an
- * SSH authentication to localhost — the same mechanism GumCP already uses to run
- * every command, so no extra credential or service is involved. The password is
- * checked by the OS and never compared against anything stored in config.php.
+ * Verify a login against the real system account.
  *
- * Only SSH_USER is accepted. Letting any system account sign in would be a
- * privilege escalation: a low-privileged user could log in and then have GumCP
- * run commands as SSH_USER.
+ * LOGIN_USER still decides WHO may sign in — the submitted username must match
+ * it, so this is not an open door to every account on the box. Only the PASSWORD
+ * is delegated: it is checked by authenticating to localhost over SSH, the same
+ * mechanism GumCP already uses to run commands, so LOGIN_PASS is never consulted
+ * and cannot drift out of sync with the real one.
+ *
+ * LOGIN_USER defaults to SSH_USER, so out of the box this is the account GumCP
+ * runs commands as. Pointing it at a different system account is allowed but
+ * deliberate: whoever signs in can then have GumCP run commands as SSH_USER, so
+ * do not name an account less trusted than that one.
  */
 function gumcp_system_login(string $user, string $pass): bool {
     if (!gumcp_check_system_user()) return false;
     if ($user === '' || $pass === '') return false;
-    if (!defined('SSH_USER') || !hash_equals(SSH_USER, $user)) return false;
+    if (!defined('LOGIN_USER') || !hash_equals(LOGIN_USER, $user)) return false;
     if (!function_exists('ssh2_connect')) return false;
 
     $conn = @ssh2_connect('localhost', defined('SSH_PORT') ? (int)SSH_PORT : 22);

@@ -113,20 +113,22 @@ out=$(php -r "
          (gumcp_system_login('root','pw') ? 'other-user-allowed' : 'other-user-denied');
 " 2>/dev/null)
 [ "$out" = "configured:other-user-denied" ] \
-    && pass "when on: empty LOGIN_PASS is fine, non-SSH_USER refused" \
+    && pass "when on: empty LOGIN_PASS is fine, wrong username refused" \
     || fail "system-user mode (got '$out')"
 
-# LOGIN_USER is ignored too — the account is pinned to SSH_USER.
+# LOGIN_USER still decides who may sign in; only the password goes to the OS.
+# A username that does not match LOGIN_USER must be rejected before any SSH
+# attempt is made (no ssh2 extension is needed to prove that).
 out=$(php -r "
     define('LOGIN_CHECK_SYSTEM_USER',true);
     define('SSH_USER','pi'); define('SSH_PASS','pw'); define('SSH_PORT','22');
-    define('LOGIN_REQUIRED',true); define('LOGIN_USER','someone-else'); define('LOGIN_PASS','');
+    define('LOGIN_REQUIRED',true); define('LOGIN_USER','webadmin'); define('LOGIN_PASS','');
     define('BASIC_AUTH',false);
     require '$ROOT/include/auth.php';
-    echo gumcp_system_login('someone-else','pw') ? 'login_user-honoured' : 'pinned-to-ssh_user';
+    echo gumcp_system_login('somebody-else','pw') ? 'accepted' : 'rejected';
 " 2>/dev/null)
-[ "$out" = "pinned-to-ssh_user" ] && pass "when on: LOGIN_USER is ignored, account pinned to SSH_USER" \
-                                 || fail "LOGIN_USER should be ignored (got '$out')"
+[ "$out" = "rejected" ] && pass "when on: only LOGIN_USER may sign in" \
+                        || fail "non-LOGIN_USER should be rejected (got '$out')"
 
 # ── 5. Pure helpers ───────────────────────────────────────────────────────────
 echo "Validators"
