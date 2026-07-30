@@ -169,6 +169,25 @@ else
     print_warning "Could not detect PHP Apache module name — you may need to enable it manually."
 fi
 
+# ── Web-server hardening ──────────────────────────────────────────────────────
+# buttons/ (API hashes) and command_logs/ (command output) must not be served.
+# GumCP ships .htaccess files for this, but Debian sets "AllowOverride None" for
+# /var/www, which makes them inert — so install real server config instead.
+HARDEN_SRC="$GUMCP_DIR/deploy/gumcp-apache.conf"
+if [ -f "$HARDEN_SRC" ]; then
+    print_message "Installing Apache hardening rules..."
+    sudo sed "s|@GUMCP_DIR@|$GUMCP_DIR|g" "$HARDEN_SRC" > /tmp/gumcp-apache.conf
+    sudo cp /tmp/gumcp-apache.conf /etc/apache2/conf-available/gumcp.conf
+    rm -f /tmp/gumcp-apache.conf
+    if sudo a2enconf gumcp >/dev/null 2>&1; then
+        print_message "Apache hardening enabled (buttons/, command_logs/, include/ are not web-readable)"
+    else
+        print_warning "Could not enable the Apache hardening config — run: sudo a2enconf gumcp"
+    fi
+else
+    print_warning "deploy/gumcp-apache.conf not found — buttons/ and command_logs/ may be web-readable."
+fi
+
 print_message "Restarting Apache..."
 if ! sudo systemctl restart apache2; then
     print_error "Apache failed to restart — check: sudo journalctl -u apache2"

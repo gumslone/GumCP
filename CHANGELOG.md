@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Security — runtime data could be served over HTTP
+`buttons/` and `command_logs/` were protected only by `.htaccess`, but Debian and
+Raspberry Pi OS configure Apache with `AllowOverride None` for `/var/www`, which
+makes those files inert. On a default install the directories were therefore
+web-readable — `buttons/buttons.json` stores each button's **API hash**, a
+credential that triggers a command with no login, and `command_logs/` holds
+whatever executed commands printed.
+
+- New `deploy/gumcp-apache.conf` denies `buttons/`, `command_logs/`,
+  `include/` and `modules/*/vendor/` in the **server** configuration, so the rules
+  apply regardless of `AllowOverride`. `installer.sh` installs and enables it.
+- **System Check now proves it** — it requests the paths over HTTP and reports
+  what the server actually does, instead of assuming an `.htaccess` file works.
+- Existing installs: `sudo cp deploy/gumcp-apache.conf /etc/apache2/conf-available/gumcp.conf`
+  (substituting `@GUMCP_DIR@`), then `sudo a2enconf gumcp && sudo systemctl reload apache2`.
+
 ### Changed
 - **The login credentials are the Pi's system account.** `LOGIN_USER` / `LOGIN_PASS` now fall back to `SSH_USER` / `SSH_PASS` when a `config.php` doesn't set them, so there is one password to keep current rather than two that can drift apart — changing the Pi's password already requires updating `SSH_PASS` or commands stop working. Setting them explicitly still overrides, for anyone who wants a separate web password.
 - **Login processing moved into `include/auth.php`** (from the user-owned `config.php`, so it can be fixed by an upgrade) and now regenerates the session ID on success, preventing session fixation. The form posts `gumcp_login_*` field names so the legacy login block in older `config.php` files stays dormant instead of conflicting.

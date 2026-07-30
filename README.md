@@ -147,6 +147,12 @@ sudo chown -R www-data:www-data /var/www/html/GumCP
 sudo chmod -R 755 /var/www/html/GumCP
 sudo chmod 664 /var/www/html/GumCP/include/config.php
 
+# Stop the web server serving runtime data (button API hashes, command output).
+# .htaccess alone is ignored under Debian's default AllowOverride None.
+sudo sed "s|@GUMCP_DIR@|/var/www/html/GumCP|g" deploy/gumcp-apache.conf \
+    | sudo tee /etc/apache2/conf-available/gumcp.conf > /dev/null
+sudo a2enconf gumcp
+
 # Allow the web server to read GPU throttling status (dashboard Power & Throttling panel)
 sudo usermod -aG video www-data
 sudo systemctl restart apache2
@@ -377,7 +383,15 @@ sudo apt-get install -y php-sqlite3
 - The **System Check** page reports whether authentication is configured and whether default passwords are still in use
 - Button API is enabled by default — set `$gumcp_modules['button_api']['module_active'] = 0` in `config.php` to disable it
 - Button API hashes are secret URLs — treat them like passwords; use **Regenerate hash** if a hash is compromised
-- `command_logs/` and `buttons/` are blocked from direct web access via `.htaccess`
+- `command_logs/` and `buttons/` are blocked from direct web access by the Apache config the installer adds (`deploy/gumcp-apache.conf`). This matters: `buttons/buttons.json` stores each button's API hash, which triggers a command with no login, and `command_logs/` holds whatever your commands printed. **`.htaccess` alone is not enough** — Debian and Raspberry Pi OS set `AllowOverride None` for `/var/www`, which silently ignores it. If you installed before this was added, or set GumCP up by hand:
+
+```bash
+sudo cp deploy/gumcp-apache.conf /etc/apache2/conf-available/gumcp.conf
+sudo sed -i "s|@GUMCP_DIR@|/var/www/html/GumCP|g" /etc/apache2/conf-available/gumcp.conf
+sudo a2enconf gumcp && sudo systemctl reload apache2
+```
+
+  **System Check verifies this by actually requesting the files over HTTP**, so it reports what your server really does rather than assuming.
 - GumCP executes commands as the SSH user — use a dedicated user with only the permissions it needs
 - The Packages, Logs, Cron and Raspberry Pi pages run privileged commands (`apt`, `journalctl`, `raspi-config`, writing boot files) via `sudo` over SSH, which requires the SSH user to have passwordless `sudo` — the same assumption as the Actions page. See [Limiting what GumCP can run](#limiting-what-gumcp-can-run) below.
 - The **Button API** (`api.php`) executes a button's command with **no login** — the per-button hash is the only credential. It is **off by default** for new installs; enable it with `$gumcp_modules['button_api']['module_active'] = 1` only if you need it, and treat the URLs like passwords. Prefer sending the key as a header so it stays out of access logs and browser history:

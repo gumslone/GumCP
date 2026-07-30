@@ -38,6 +38,42 @@ function gumcp_modules_protected(): string {
     return implode('; ', $problems);
 }
 
+/**
+ * Actually fetch a path over HTTP to see whether the web server serves it.
+ *
+ * Checking that an .htaccess file exists proves nothing: Debian and Raspberry Pi
+ * OS use "AllowOverride None" for /var/www, which makes .htaccess inert. The only
+ * reliable test is to request the URL and look at what comes back.
+ *
+ * Returns 'protected', 'EXPOSED' or 'unknown' (could not test).
+ */
+function gumcp_probe_path(string $relative): string {
+    $base = gumcp_base_url();
+    if ($base === '' || !function_exists('curl_init')) return 'unknown';
+
+    $ch = curl_init($base . '/' . ltrim($relative, '/'));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);   // self-signed is common here
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    $body = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if (PHP_VERSION_ID < 80000) curl_close($ch);   // no-op since 8.0, deprecated in 8.5
+
+    if ($body === false || $code === 0) return 'unknown';
+    if ($code === 200 && trim((string)$body) !== '') return 'EXPOSED';
+    return 'protected';   // 403/404/empty — not being served
+}
+
+function gumcp_base_url(): string {
+    $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+    if ($host === '') return '';
+    $https  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    $scheme = $https ? 'https' : 'http';
+    $dir    = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/'))), '/');
+    return $scheme . '://' . $host . $dir;
+}
+
 function cmd_exists(string $cmd): bool {
     return !empty(shell_exec('command -v ' . escapeshellarg($cmd) . ' 2>/dev/null'));
 }
@@ -52,6 +88,14 @@ $php_major   = (int)PHP_MAJOR_VERSION;
 $php_minor   = (int)PHP_MINOR_VERSION;
 $pi_model    = trim((string)@file_get_contents('/proc/device-tree/model'));
 $is_pi5      = stripos($pi_model, 'Raspberry Pi 5') !== false;
+
+// Probe the sensitive directories over HTTP once, and reuse the result below.
+// A missing file would 404 and look "protected", so ask for something that
+// definitely exists where possible.
+$probe_buttons = gumcp_probe_path(
+    is_file($gumcp_dir . '/buttons/buttons.json') ? 'buttons/buttons.json' : 'buttons/'
+);
+$probe_logs = gumcp_probe_path('command_logs/');
 
 $sections = [];
 
@@ -153,14 +197,25 @@ $sections['Directories'] = [
         'gumcp_chown'
     ),
     chk(
-        file_exists($buttons_dir . '/.htaccess'),
-        'buttons/ protected from web access',
-        file_exists($buttons_dir . '/.htaccess') ? '.htaccess present' : 'missing .htaccess — buttons.json may be publicly downloadable'
+        $probe_buttons !== 'EXPOSED',
+        'buttons/ not readable over HTTP',
+        $probe_buttons === 'EXPOSED'
+            ? 'buttons.json IS downloadable — it contains each button\'s API hash, which triggers commands without a login. Run: sudo a2enconf gumcp && sudo systemctl reload apache2'
+            : ($probe_buttons === 'protected'
+                ? 'verified by request — the web server refuses it'
+                : 'could not test (needs php-curl); .htaccess '
+                  . (file_exists($buttons_dir . '/.htaccess') ? 'present' : 'MISSING')
+                  . ' — note .htaccess is ignored when Apache uses AllowOverride None')
     ),
     chk(
-        file_exists($logs_dir . '/.htaccess'),
-        'command_logs/ protected from web access',
-        file_exists($logs_dir . '/.htaccess') ? '.htaccess present' : 'missing .htaccess — log files may be publicly downloadable'
+        $probe_logs !== 'EXPOSED',
+        'command_logs/ not readable over HTTP',
+        $probe_logs === 'EXPOSED'
+            ? 'command output IS downloadable — it may contain anything your commands printed. Run: sudo a2enconf gumcp && sudo systemctl reload apache2'
+            : ($probe_logs === 'protected'
+                ? 'verified by request — the web server refuses it'
+                : 'could not test (needs php-curl); .htaccess '
+                  . (file_exists($logs_dir . '/.htaccess') ? 'present' : 'MISSING'))
     ),
     chk(
         file_exists(__DIR__ . '/include/config.defaults.php'),
