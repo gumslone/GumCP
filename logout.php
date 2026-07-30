@@ -5,6 +5,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Record the sign-out before the session goes away (auth.php defines functions
+// only, so this is safe without the rest of the bootstrap).
+require_once(__DIR__ . '/include/auth.php');
+gumcp_auth_log('logout');
+
 // Clear all session data, expire the cookie, and destroy the session.
 $_SESSION = [];
 

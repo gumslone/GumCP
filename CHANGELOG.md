@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Authentication log
+GumCP runs every command as a single system user, so the web server's own logs
+cannot tell an intruder's session apart from the owner's — a compromise left no
+trace. Sign-ins, failed attempts, lockouts, timeouts and sign-outs are now
+written to `command_logs/auth.log` (denied to the web server, capped at 500
+lines). Passwords are never recorded, and tabs/newlines in a username or
+user-agent are flattened so a crafted login cannot forge log rows.
+
+**System Check** gained a *Recent sign-in activity* panel showing the last ten
+events with time, address and outcome.
+
 ### Hardening — sessions now expire
 A signed-in session is shell access, but the cookie lasted until the browser was
 closed — on a desktop that can be weeks. A tab left open on a shared or stolen

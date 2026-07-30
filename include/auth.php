@@ -80,6 +80,7 @@ function gumcp_session_expired(): bool {
     if ($expired) {
         gumcp_end_session();
         gumcp_session_was_expired(true);
+        gumcp_auth_log('expired', 'session timed out');
         return true;
     }
 
@@ -157,6 +158,76 @@ function gumcp_system_login(string $user, string $pass): bool {
 }
 
 
+
+
+// ── Authentication log ────────────────────────────────────────────────────────
+// Who signed in, from where, and what failed. Without it a compromise leaves no
+// trace at all: GumCP runs commands as one system user, so the web server logs
+// cannot tell an intruder's session apart from the owner's. Lives in
+// command_logs/, which the web server is denied.
+
+function gumcp_auth_log_file(): string {
+    return dirname(__DIR__) . '/command_logs/auth.log';
+}
+
+/**
+ * Append one authentication event.
+ *
+ * $event is a short machine-readable key (login_ok, login_failed, locked,
+ * expired, logout). Never pass a password or a token — this file records that
+ * something happened, not what the secret was.
+ */
+function gumcp_auth_log(string $event, string $detail = '') {
+    $file = gumcp_auth_log_file();
+    if (!is_dir(dirname($file))) return;
+
+    $line = sprintf(
+        "%s\t%s\t%s\t%s\t%s\n",
+        date('Y-m-d H:i:s'),
+        $event,
+        gumcp_client_ip() ?: '-',
+        str_replace(["\t", "\n", "\r"], ' ', $detail) ?: '-',
+        substr(str_replace(["\t", "\n", "\r"], ' ', (string)($_SERVER['HTTP_USER_AGENT'] ?? '-')), 0, 120)
+    );
+    @file_put_contents($file, $line, FILE_APPEND | LOCK_EX);
+    gumcp_auth_log_trim($file);
+}
+
+/** Keep the log bounded — this runs on a Pi with a small SD card. */
+function gumcp_auth_log_trim(string $file, int $max_lines = 500) {
+    if (!is_file($file) || filesize($file) < 200000) return;
+    $lines = @file($file, FILE_IGNORE_NEW_LINES);
+    if (!is_array($lines) || count($lines) <= $max_lines) return;
+    @file_put_contents(
+        $file,
+        implode("\n", array_slice($lines, -$max_lines)) . "\n",
+        LOCK_EX
+    );
+}
+
+/**
+ * The most recent events, newest first, as
+ * ['time' => ..., 'event' => ..., 'ip' => ..., 'detail' => ..., 'agent' => ...].
+ */
+function gumcp_auth_log_recent(int $limit = 10): array {
+    $lines = @file(gumcp_auth_log_file(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if (!is_array($lines)) return [];
+
+    $out = [];
+    foreach (array_reverse(array_slice($lines, -200)) as $line) {
+        $f = explode("\t", $line);
+        if (count($f) < 3) continue;
+        $out[] = [
+            'time'   => $f[0],
+            'event'  => $f[1],
+            'ip'     => $f[2],
+            'detail' => isset($f[3]) ? $f[3] : '',
+            'agent'  => isset($f[4]) ? $f[4] : '',
+        ];
+        if (count($out) >= $limit) break;
+    }
+    return $out;
+}
 
 // ── Login throttling ──────────────────────────────────────────────────────────
 // A successful login grants shell access as a sudo-capable user, so unlimited
@@ -259,6 +330,7 @@ function gumcp_process_login() {
     $ip = gumcp_client_ip();
     $wait = gumcp_login_locked_for($ip);
     if ($wait > 0) {
+        gumcp_auth_log('locked', 'attempt while locked out');
         header('Location: ./login.php?action=locked&wait=' . $wait);
         exit();
     }
@@ -276,6 +348,7 @@ function gumcp_process_login() {
             session_regenerate_id(true);          // prevent session fixation
             $_SESSION['GUMCP_SYS_USER'] = $user;
             gumcp_mark_login_time();
+            gumcp_auth_log('login_ok', 'system account: ' . $user);
             header('Location: ./index.php');
             exit();
         }
@@ -288,12 +361,15 @@ function gumcp_process_login() {
             $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
             $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
             gumcp_mark_login_time();
+            gumcp_auth_log('login_ok', 'config account: ' . $user);
             header('Location: ./index.php');
             exit();
         }
     }
 
     gumcp_login_record_failure($ip);
+    // The username is logged; the password never is.
+    gumcp_auth_log('login_failed', $valid_csrf ? 'user: ' . $user : 'stale CSRF token');
     header('Location: ./login.php?action=incorrect_login');
     exit();
 }

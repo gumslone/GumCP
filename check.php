@@ -396,6 +396,49 @@ require_once('./include/header.php');
         </div>
     <?php endforeach; ?>
 
+    <?php $auth_events = gumcp_auth_log_recent(10); ?>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-sign-in"></i> Recent sign-in activity</h3>
+        </div>
+        <?php if (empty($auth_events)): ?>
+            <div class="panel-body text-muted" style="font-size:13px">
+                No authentication events recorded yet. Sign-ins, failed attempts and
+                lockouts are written to <code>command_logs/auth.log</code>.
+            </div>
+        <?php else: ?>
+            <table class="table table-condensed" style="margin-bottom:0">
+                <tbody>
+                <?php foreach ($auth_events as $e):
+                    $labels = [
+                        'login_ok'     => ['success', 'Signed in'],
+                        'login_failed' => ['danger',  'Failed attempt'],
+                        'locked'       => ['warning', 'Locked out'],
+                        'expired'      => ['default', 'Session expired'],
+                        'logout'       => ['default', 'Signed out'],
+                    ];
+                    $l = isset($labels[$e['event']]) ? $labels[$e['event']] : ['default', $e['event']];
+                ?>
+                    <tr>
+                        <td style="width:150px; padding-left:15px; vertical-align:middle">
+                            <span class="label label-<?php echo $l[0]; ?>"><?php echo htmlspecialchars($l[1], ENT_QUOTES, 'UTF-8'); ?></span>
+                        </td>
+                        <td style="width:145px; vertical-align:middle; font-size:13px">
+                            <?php echo htmlspecialchars($e['time'], ENT_QUOTES, 'UTF-8'); ?>
+                        </td>
+                        <td style="width:130px; vertical-align:middle; font-size:13px">
+                            <?php echo htmlspecialchars($e['ip'], ENT_QUOTES, 'UTF-8'); ?>
+                        </td>
+                        <td class="text-muted" style="font-size:13px; vertical-align:middle">
+                            <?php echo htmlspecialchars($e['detail'], ENT_QUOTES, 'UTF-8'); ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+
     <button id="recheck-btn" type="button" class="btn btn-default" onclick="recheck()">
         <i class="fa fa-refresh"></i> Re-check
     </button>

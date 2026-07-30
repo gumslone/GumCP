@@ -300,6 +300,37 @@ out=$(php -r "
 [ "$out" = "kept" ] && pass "pre-upgrade sessions are not signed out on deploy" \
                     || fail "upgrade signs existing sessions out (got '$out')"
 
+# ── Authentication log ────────────────────────────────────────────────────────
+# GumCP runs every command as one system user, so the web server log cannot tell
+# an intruder's session from the owner's. The auth log is the only record.
+echo "Authentication log"
+out=$(php -r "
+    require '$ROOT/include/auth.php';
+    \$f = gumcp_auth_log_file();
+    \$backup = is_file(\$f) ? file_get_contents(\$f) : null;
+    \$_SERVER['REMOTE_ADDR'] = '10.1.2.3';
+    \$_SERVER['HTTP_USER_AGENT'] = \"evil\tagent\nnewline\";
+    gumcp_auth_log('login_failed', \"user: bo\tb\");
+    \$recent = gumcp_auth_log_recent(5);
+    \$r = '';
+    \$r .= (count(\$recent) >= 1 && \$recent[0]['event'] === 'login_failed') ? 'a' : '-';
+    \$r .= \$recent[0]['ip'] === '10.1.2.3' ? 'b' : '-';
+    // Injected tabs/newlines must not create extra columns or forged rows.
+    \$r .= (strpos(\$recent[0]['detail'], 'bo b') !== false) ? 'c' : '-';
+    \$r .= (substr_count(file_get_contents(\$f), \"\\n\") === substr_count(\$backup === null ? '' : \$backup, \"\\n\") + 1) ? 'd' : '-';
+    // A password must never reach the log.
+    \$r .= (strpos(file_get_contents(\$f), 'hunter2') === false) ? 'e' : '-';
+    if (\$backup === null) { @unlink(\$f); } else { file_put_contents(\$f, \$backup); }
+    echo \$r;
+" 2>/dev/null)
+[ "$out" = "abcde" ] && pass "auth events recorded, one line each, no injection" \
+                     || fail "auth log (got '$out', want 'abcde')"
+
+# The log records credentials being used, so it must never be web-readable.
+grep -q "Deny from all\|Require all denied" "$ROOT/command_logs/.htaccess" \
+    && pass "auth log directory is denied to the web server" \
+    || fail "command_logs/.htaccess does not deny access"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise
