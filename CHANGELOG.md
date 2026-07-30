@@ -25,6 +25,21 @@ whatever executed commands printed.
 - **Upgrade-safety checks in `scripts/selftest.sh`** — `include/config.php` is user-owned and never overwritten, so a setting added to `config.example.php` without a matching fallback in `config.defaults.php` would leave every existing install hitting an undefined constant on upgrade. CI now fails if that happens, and also if `config.defaults.php` ever gains an unguarded `define()` that would clobber a value the user set.
 - **`scripts/selftest.sh`** — runs without a web server or a Pi, and covers the logic that breaks silently: the access gate (fail-closed, open mode, session validity, the `api.php` bypass), `LOGIN_*` inheriting from `SSH_*`, the API IP allow-list, cron validation, and PHP 7.0/shell syntax. Wired into CI, and verified to fail when fail-closed behaviour is deliberately broken.
 
+### Security — login throttling
+There was no rate limiting on the login form, so anyone who could reach the panel
+could guess passwords indefinitely — and a correct guess is shell access as a
+sudo-capable user. That matters more given GumCP ships with a published default
+password.
+
+- After `LOGIN_MAX_FAILURES` (5) failures within `LOGIN_FAILURE_WINDOW` (15 min),
+  that client address is refused for `LOGIN_LOCKOUT_TIME` (15 min). All three are
+  configurable in `config.php`.
+- Counting is **per client address**, so someone hammering the login cannot lock
+  the administrator out from a different address, and the check runs before any
+  credential comparison. A successful login clears the counter.
+- State lives in `command_logs/.login_attempts.json` (denied to the web server),
+  and stale entries are pruned so it cannot grow without bound.
+
 ### Security — session cookie hardening
 A GumCP session grants shell access as a sudo-capable user, but the session
 cookie used PHP's defaults: readable by JavaScript, sent on cross-site requests,

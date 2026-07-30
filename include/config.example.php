@@ -46,6 +46,15 @@ define('LOGIN_PASS', 'raspberry'); // CHANGE THIS (and SSH_PASS above)
 //   Requires the php-ssh2 extension.
 define('LOGIN_CHECK_SYSTEM_USER', false);
 
+// ── Login throttling ──────────────────────────────────────────────────────────
+// A successful login grants shell access, so password guessing is rate limited.
+// After LOGIN_MAX_FAILURES failures within LOGIN_FAILURE_WINDOW seconds, that
+// client address is refused for LOGIN_LOCKOUT_TIME seconds. Counting is per
+// address, so someone hammering the login cannot lock you out from elsewhere.
+define('LOGIN_MAX_FAILURES', 5);
+define('LOGIN_FAILURE_WINDOW', 900);   // 15 minutes
+define('LOGIN_LOCKOUT_TIME', 900);     // 15 minutes
+
 // ── HTTP Basic Auth ───────────────────────────────────────────────────────────
 // When BASIC_AUTH is true the browser shows a native credentials dialog.
 // Useful for curl / API clients. Can be active alongside LOGIN_REQUIRED —

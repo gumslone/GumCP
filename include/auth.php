@@ -88,6 +88,90 @@ function gumcp_system_login(string $user, string $pass): bool {
 
 
 
+// ── Login throttling ──────────────────────────────────────────────────────────
+// A successful login grants shell access as a sudo-capable user, so unlimited
+// password guessing is not acceptable — especially on a panel that ships with a
+// published default password.
+//
+// Failures are counted per client address, so an attacker hammering the login
+// cannot lock the administrator out from a different address. State lives in
+// command_logs/, which is denied to the web server.
+
+function gumcp_throttle_file(): string {
+    return dirname(__DIR__) . '/command_logs/.login_attempts.json';
+}
+
+function gumcp_throttle_settings(): array {
+    return [
+        'max_failures' => defined('LOGIN_MAX_FAILURES') ? (int)LOGIN_MAX_FAILURES : 5,
+        'window'       => defined('LOGIN_FAILURE_WINDOW') ? (int)LOGIN_FAILURE_WINDOW : 900,
+        'lockout'      => defined('LOGIN_LOCKOUT_TIME') ? (int)LOGIN_LOCKOUT_TIME : 900,
+    ];
+}
+
+function gumcp_throttle_load(): array {
+    $raw = @file_get_contents(gumcp_throttle_file());
+    if ($raw === false) return [];
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : [];
+}
+
+function gumcp_throttle_save(array $data) {
+    $file = gumcp_throttle_file();
+    if (!is_dir(dirname($file))) return;
+    @file_put_contents($file, json_encode($data), LOCK_EX);
+}
+
+/**
+ * Seconds the caller must wait before another attempt, or 0 when allowed.
+ */
+function gumcp_login_locked_for(string $ip): int {
+    if ($ip === '') return 0;
+    $cfg  = gumcp_throttle_settings();
+    $data = gumcp_throttle_load();
+    if (empty($data[$ip])) return 0;
+
+    $entry = $data[$ip];
+    $count = (int)($entry['count'] ?? 0);
+    $last  = (int)($entry['last'] ?? 0);
+
+    if ($count < $cfg['max_failures']) return 0;
+    $remaining = ($last + $cfg['lockout']) - time();
+    return $remaining > 0 ? $remaining : 0;
+}
+
+function gumcp_login_record_failure(string $ip) {
+    if ($ip === '') return;
+    $cfg  = gumcp_throttle_settings();
+    $now  = time();
+    $data = gumcp_throttle_load();
+
+    // Drop entries that are no longer relevant, so the file cannot grow forever.
+    foreach ($data as $key => $entry) {
+        $last = (int)($entry['last'] ?? 0);
+        if ($now - $last > max($cfg['window'], $cfg['lockout']) * 2) {
+            unset($data[$key]);
+        }
+    }
+
+    $count = (int)($data[$ip]['count'] ?? 0);
+    $last  = (int)($data[$ip]['last'] ?? 0);
+    // Outside the window the streak has expired: start counting again.
+    if ($now - $last > $cfg['window']) $count = 0;
+
+    $data[$ip] = ['count' => $count + 1, 'last' => $now];
+    gumcp_throttle_save($data);
+}
+
+function gumcp_login_clear(string $ip) {
+    if ($ip === '') return;
+    $data = gumcp_throttle_load();
+    if (isset($data[$ip])) {
+        unset($data[$ip]);
+        gumcp_throttle_save($data);
+    }
+}
+
 /**
  * Handle a submitted login form. Lives here rather than in the user-owned
  * config.php so it can be fixed by an upgrade, and uses gumcp_-prefixed field
@@ -100,6 +184,15 @@ function gumcp_system_login(string $user, string $pass): bool {
 function gumcp_process_login() {
     if (empty($_POST['gumcp_login_user']) || empty($_POST['gumcp_login_pass'])) return;
 
+    // Refuse before checking anything, so a locked-out client cannot keep
+    // guessing — and cannot use response timing to probe validity either.
+    $ip = gumcp_client_ip();
+    $wait = gumcp_login_locked_for($ip);
+    if ($wait > 0) {
+        header('Location: ./login.php?action=locked&wait=' . $wait);
+        exit();
+    }
+
     $user = (string)$_POST['gumcp_login_user'];
     $pass = (string)$_POST['gumcp_login_pass'];
 
@@ -109,6 +202,7 @@ function gumcp_process_login() {
     if ($valid_csrf) {
         // Against the real system account, when that mode is switched on…
         if (gumcp_system_login($user, $pass)) {
+            gumcp_login_clear($ip);
             session_regenerate_id(true);          // prevent session fixation
             $_SESSION['GUMCP_SYS_USER'] = $user;
             header('Location: ./index.php');
@@ -118,6 +212,7 @@ function gumcp_process_login() {
         if (!gumcp_check_system_user()
             && defined('LOGIN_USER') && defined('LOGIN_PASS')
             && hash_equals(LOGIN_USER, $user) && hash_equals(LOGIN_PASS, $pass)) {
+            gumcp_login_clear($ip);
             session_regenerate_id(true);
             $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
             $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
@@ -126,6 +221,7 @@ function gumcp_process_login() {
         }
     }
 
+    gumcp_login_record_failure($ip);
     header('Location: ./login.php?action=incorrect_login');
     exit();
 }

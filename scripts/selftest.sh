@@ -130,6 +130,32 @@ out=$(php -r "
 [ "$out" = "rejected" ] && pass "when on: only LOGIN_USER may sign in" \
                         || fail "non-LOGIN_USER should be rejected (got '$out')"
 
+# ── Login throttling ──────────────────────────────────────────────────────────
+# A successful login is shell access, so password guessing must be rate limited —
+# and the limit must be per-address, or an attacker could lock the admin out.
+echo "Login throttling"
+TDIR=$(mktemp -d)
+mkdir -p "$TDIR/include" "$TDIR/command_logs"
+cp "$ROOT/include/auth.php" "$TDIR/include/"
+out=$(php -r "
+    define('LOGIN_MAX_FAILURES',3);
+    define('LOGIN_FAILURE_WINDOW',900);
+    define('LOGIN_LOCKOUT_TIME',900);
+    require '$TDIR/include/auth.php';
+    \$r = [];
+    \$r[] = gumcp_login_locked_for('10.0.0.1') ? 'locked' : 'open';
+    for (\$i=0; \$i<3; \$i++) gumcp_login_record_failure('10.0.0.1');
+    \$r[] = gumcp_login_locked_for('10.0.0.1') > 0 ? 'locked' : 'open';
+    \$r[] = gumcp_login_locked_for('10.0.0.2') > 0 ? 'locked' : 'open';
+    gumcp_login_clear('10.0.0.1');
+    \$r[] = gumcp_login_locked_for('10.0.0.1') > 0 ? 'locked' : 'open';
+    echo implode(',', \$r);
+" 2>/dev/null)
+rm -rf "$TDIR"
+[ "$out" = "open,locked,open,open" ] \
+    && pass "locks after repeated failures, per address, cleared on success" \
+    || fail "login throttling (got '$out', want 'open,locked,open,open')"
+
 # ── Session hardening ─────────────────────────────────────────────────────────
 # A GumCP session grants shell access, so the cookie must not be readable by
 # JavaScript, must not ride along on cross-site requests, and the session ID must

@@ -24,6 +24,12 @@ switch ($action) {
         $message      = 'Incorrect username or password. Please try again.';
         $message_type = 'danger';
         break;
+    case 'locked':
+        $wait_min = max(1, (int)ceil(((int)($_GET['wait'] ?? 0)) / 60));
+        $message      = 'Too many failed attempts. Try again in about '
+                      . $wait_min . ' minute' . ($wait_min === 1 ? '' : 's') . '.';
+        $message_type = 'warning';
+        break;
     case 'logout':
         $message      = 'You have been successfully logged out.';
         $message_type = 'success';
