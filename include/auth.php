@@ -42,6 +42,41 @@ function gumcp_session_authenticated(): bool {
         && hash_equals(md5(LOGIN_PASS), (string)$_SESSION['LOGIN_PASS']);
 }
 
+
+
+/**
+ * Handle a submitted login form. Lives here rather than in the user-owned
+ * config.php so it can be fixed by an upgrade, and uses gumcp_-prefixed field
+ * names so the legacy login block still present in older config.php files never
+ * fires (it would exit() on a system-account password before we got here).
+ *
+ * Called from include/init.php before the access gate, so a just-authenticated
+ * session is visible to it.
+ */
+function gumcp_process_login() {
+    if (empty($_POST['gumcp_login_user']) || empty($_POST['gumcp_login_pass'])) return;
+
+    $user = (string)$_POST['gumcp_login_user'];
+    $pass = (string)$_POST['gumcp_login_pass'];
+
+    $valid_csrf = isset($_SESSION['csrf_token'])
+               && hash_equals($_SESSION['csrf_token'], (string)($_POST['csrf_token'] ?? ''));
+
+    if ($valid_csrf) {
+        if (defined('LOGIN_USER') && defined('LOGIN_PASS')
+            && hash_equals(LOGIN_USER, $user) && hash_equals(LOGIN_PASS, $pass)) {
+            session_regenerate_id(true);
+            $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
+            $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
+            header('Location: ./index.php');
+            exit();
+        }
+    }
+
+    header('Location: ./login.php?action=incorrect_login');
+    exit();
+}
+
 function gumcp_basic_authenticated(): bool {
     if (!defined('BASIC_AUTH') || BASIC_AUTH !== true) return false;
 

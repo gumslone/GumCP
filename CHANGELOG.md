@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Changed
+- **The login credentials are the Pi's system account.** `LOGIN_USER` / `LOGIN_PASS` now fall back to `SSH_USER` / `SSH_PASS` when a `config.php` doesn't set them, so there is one password to keep current rather than two that can drift apart — changing the Pi's password already requires updating `SSH_PASS` or commands stop working. Setting them explicitly still overrides, for anyone who wants a separate web password.
+- **Login processing moved into `include/auth.php`** (from the user-owned `config.php`, so it can be fixed by an upgrade) and now regenerates the session ID on success, preventing session fixation. The form posts `gumcp_login_*` field names so the legacy login block in older `config.php` files stays dormant instead of conflicting.
 - **A fresh install signs in with `pi` / `raspberry` again.** 2.6.0 shipped an empty `LOGIN_PASS` so new installs had to complete a first-run setup form; the defaults are back so the panel is usable immediately with no extra step. The warning banner and the System Check *"Credentials changed from defaults"* item still flag it until the password is changed. `setup.php` remains for installs that have no login configured (e.g. upgrades from before 2.5.2 that had `LOGIN_REQUIRED = false`).
 
 ### Added

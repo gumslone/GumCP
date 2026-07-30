@@ -13,8 +13,12 @@ defined('SSH_PASS')        || define('SSH_PASS',        'raspberry');
 // explicitly configured otherwise. GumCP executes shell commands as a
 // privileged user, so an unauthenticated panel is a full host compromise.
 defined('LOGIN_REQUIRED')  || define('LOGIN_REQUIRED',  true);
-defined('LOGIN_USER')      || define('LOGIN_USER',      'pi');
-defined('LOGIN_PASS')      || define('LOGIN_PASS',      'raspberry');
+// The login credentials ARE the Pi's system account — the same ones GumCP needs
+// for SSH. Falling back to SSH_USER/SSH_PASS means a config.php that only sets
+// the SSH credentials gets a matching login for free, and there is one password
+// to keep current instead of two that can drift apart.
+defined('LOGIN_USER')      || define('LOGIN_USER',      SSH_USER);
+defined('LOGIN_PASS')      || define('LOGIN_PASS',      SSH_PASS);
 
 defined('BASIC_AUTH')      || define('BASIC_AUTH',      false);
 defined('BASIC_AUTH_USER') || define('BASIC_AUTH_USER', 'api');

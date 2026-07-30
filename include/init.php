@@ -29,4 +29,5 @@ if (session_status() === PHP_SESSION_ACTIVE && !isset($_SESSION['csrf_token'])) 
 // here. Lives in shipped code rather than in the user-owned config.php so the
 // gate can be fixed by an upgrade. Fails closed when no auth is configured.
 require_once(__DIR__ . '/auth.php');
-gumcp_enforce_access();
+gumcp_process_login();   // handle a submitted login form first…
+gumcp_enforce_access();  // …then decide whether this request may proceed

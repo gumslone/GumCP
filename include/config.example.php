@@ -17,14 +17,18 @@ define('SSH_PASS', 'raspberry'); // SSH password — CHANGE THIS
 // authentication is configured. To deliberately run an open panel (for example
 // on an isolated network), you must also set GUMCP_ALLOW_UNAUTHENTICATED below —
 // be aware that anyone who can reach an open panel gets root on this host.
-// A fresh install can be signed into straight away with these defaults — no
-// extra setup step. They are published in the README, so CHANGE THE PASSWORD
-// as soon as you have logged in: until you do, anyone who can reach this panel
-// can sign in and run commands on this host. GumCP shows a warning banner on
-// every page, and flags it in System Check, while the default is still in use.
+// These are the Pi's own account — the same credentials as SSH_USER/SSH_PASS
+// above, so there is one password to keep current. Change the password on the
+// Pi and you must update SSH_PASS anyway (or commands stop working); update
+// LOGIN_PASS to match, or delete these two lines and they inherit from SSH_*.
+//
+// A fresh install signs in straight away with the defaults — no setup step.
+// They are published in the README, so CHANGE THE PASSWORD once you are in:
+// until you do, anyone who can reach this panel can sign in and run commands
+// here. A warning banner and System Check flag it while the default is in use.
 define('LOGIN_REQUIRED', true);
 define('LOGIN_USER', 'pi');
-define('LOGIN_PASS', 'raspberry'); // CHANGE THIS
+define('LOGIN_PASS', 'raspberry'); // CHANGE THIS (and SSH_PASS above)
 
 // ── HTTP Basic Auth ───────────────────────────────────────────────────────────
 // When BASIC_AUTH is true the browser shows a native credentials dialog.
@@ -184,27 +188,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_regenerate_id();
 }
 
-// ── Login processing ──────────────────────────────────────────────────────────
-// Only triggered when the login form is submitted (POST with credentials).
-
-if (!empty($_POST['login_user']) && !empty($_POST['login_pass'])) {
-    // CSRF check: token must exist in session and match the submitted value.
-    $submitted_token = (string)($_POST['csrf_token'] ?? '');
-    $valid_csrf = isset($_SESSION['csrf_token'])
-               && hash_equals($_SESSION['csrf_token'], $submitted_token);
-
-    // Credential check: constant-time comparison prevents timing attacks.
-    $valid_user = $valid_csrf && hash_equals(LOGIN_USER, $_POST['login_user']);
-    $valid_pass = $valid_user && hash_equals(LOGIN_PASS, $_POST['login_pass']);
-
-    if ($valid_pass) {
-        $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
-        $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
-    } else {
-        header('Location: ./login.php?action=incorrect_login');
-        exit();
-    }
-}
+// ── Login processing ────────────────────────────────────────────────────────
+// Handled by include/auth.php (loaded via include/init.php), so it can be
+// fixed by an upgrade — config.php is yours and is never overwritten.
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
 // Access control now lives in include/auth.php (loaded by include/init.php).

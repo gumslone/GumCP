@@ -135,7 +135,7 @@ switch ($action) {
                                 <i class="fa fa-user"></i> Username
                             </label>
                             <input type="text" class="form-control"
-                                   name="login_user" id="login_user"
+                                   name="gumcp_login_user" id="login_user"
                                    placeholder="Enter your username"
                                    required autofocus autocomplete="username" maxlength="50">
                         </div>
@@ -145,7 +145,7 @@ switch ($action) {
                                 <i class="fa fa-lock"></i> Password
                             </label>
                             <input type="password" class="form-control"
-                                   name="login_pass" id="login_pass"
+                                   name="gumcp_login_pass" id="login_pass"
                                    placeholder="Enter your password"
                                    required autocomplete="current-password" maxlength="100">
                         </div>
