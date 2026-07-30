@@ -19,6 +19,9 @@ whatever executed commands printed.
 - Existing installs: `sudo cp deploy/gumcp-apache.conf /etc/apache2/conf-available/gumcp.conf`
   (substituting `@GUMCP_DIR@`), then `sudo a2enconf gumcp && sudo systemctl reload apache2`.
 
+### Added
+- **`scripts/selftest.sh`** — runs without a web server or a Pi, and covers the logic that breaks silently: the access gate (fail-closed, open mode, session validity, the `api.php` bypass), `LOGIN_*` inheriting from `SSH_*`, the API IP allow-list, cron validation, and PHP 7.0/shell syntax. Wired into CI, and verified to fail when fail-closed behaviour is deliberately broken.
+
 ### Changed
 - **The login credentials are the Pi's system account.** `LOGIN_USER` / `LOGIN_PASS` now fall back to `SSH_USER` / `SSH_PASS` when a `config.php` doesn't set them, so there is one password to keep current rather than two that can drift apart — changing the Pi's password already requires updating `SSH_PASS` or commands stop working. Setting them explicitly still overrides, for anyone who wants a separate web password.
 - **Login processing moved into `include/auth.php`** (from the user-owned `config.php`, so it can be fixed by an upgrade) and now regenerates the session ID on success, preventing session fixation. The form posts `gumcp_login_*` field names so the legacy login block in older `config.php` files stays dormant instead of conflicting.
