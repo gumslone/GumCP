@@ -77,6 +77,18 @@ out=$(php -r "
 [ "$out" = "oleg:pw" ] && pass "LOGIN_* inherit SSH_* when unset" \
                        || fail "LOGIN_* inheritance (got '$out')"
 
+# ...but an explicit web login must still override, so the panel password can
+# differ from the system account.
+out=$(php -r "
+    define('SSH_USER','pi'); define('SSH_PASS','systempw'); define('SSH_PORT','22');
+    define('LOGIN_USER','webadmin'); define('LOGIN_PASS','webpw');
+    \$gumcp_modules=[];
+    require '$ROOT/include/config.defaults.php';
+    echo LOGIN_USER . ':' . LOGIN_PASS;
+" 2>/dev/null)
+[ "$out" = "webadmin:webpw" ] && pass "explicit LOGIN_* overrides SSH_* (separate web login)" \
+                             || fail "explicit LOGIN_* override (got '$out')"
+
 # ── 5. Pure helpers ───────────────────────────────────────────────────────────
 echo "Validators"
 php -r "
