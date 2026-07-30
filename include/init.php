@@ -6,6 +6,11 @@ declare(strict_types=1);
 // 2. Fill in defaults for any settings not present in an older config.php.
 // 3. Set up i18n and a per-session CSRF token.
 
+// Harden the session cookie before anything starts a session — config.php does,
+// and cookie parameters cannot be changed once it has.
+require_once(__DIR__ . '/session.php');
+gumcp_start_session();
+
 require_once(__DIR__ . '/config.php');
 require_once(__DIR__ . '/config.defaults.php');
 require_once(__DIR__ . '/i18n.php');

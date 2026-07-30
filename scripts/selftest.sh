@@ -130,6 +130,44 @@ out=$(php -r "
 [ "$out" = "rejected" ] && pass "when on: only LOGIN_USER may sign in" \
                         || fail "non-LOGIN_USER should be rejected (got '$out')"
 
+# ── Session hardening ─────────────────────────────────────────────────────────
+# A GumCP session grants shell access, so the cookie must not be readable by
+# JavaScript, must not ride along on cross-site requests, and the session ID must
+# not be client-choosable. Cookie params only apply if set before session_start().
+echo "Session cookie"
+out=$(php -r "
+    require '$ROOT/include/session.php';
+    \$_SERVER = ['SERVER_PORT' => 80];
+    gumcp_start_session();
+    \$p = session_get_cookie_params();
+    echo (\$p['httponly'] ? 'h' : '-')
+       . (ini_get('session.use_strict_mode') ? 's' : '-')
+       . (ini_get('session.use_only_cookies') ? 'c' : '-')
+       . ((PHP_VERSION_ID < 70300 || (isset(\$p['samesite']) && \$p['samesite'] !== '')) ? 'x' : '-');
+" 2>/dev/null)
+[ "$out" = "hscx" ] && pass "HttpOnly, strict mode, cookies-only, SameSite" \
+                    || fail "session cookie flags (got '$out', want 'hscx')"
+
+out=$(php -r "
+    require '$ROOT/include/session.php';
+    \$_SERVER = ['HTTPS' => 'on', 'SERVER_PORT' => 443];
+    gumcp_start_session();
+    \$p = session_get_cookie_params();
+    echo \$p['secure'] ? 'secure' : 'not-secure';
+" 2>/dev/null)
+[ "$out" = "secure" ] && pass "Secure flag set when served over HTTPS" \
+                      || fail "Secure flag over HTTPS (got '$out')"
+
+# The hardening only works if it runs before anything starts a session.
+for f in include/init.php setup.php update.php; do
+    sl=$(grep -n 'gumcp_start_session()' "$ROOT/$f" | head -1 | cut -d: -f1)
+    cl=$(grep -n "include/config.php'\|/config.php'" "$ROOT/$f" | head -1 | cut -d: -f1)
+    if [ -n "$sl" ] && [ -n "$cl" ] && [ "$sl" -lt "$cl" ]; then :; else
+        fail "$f starts the session after loading config.php — cookie flags would be ignored"
+    fi
+done
+pass "session hardening runs before config.php in every entry point"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise

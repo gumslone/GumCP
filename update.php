@@ -13,11 +13,12 @@ declare(strict_types=1);
 if (!defined('GUMCP_API_REQUEST')) {
     define('GUMCP_API_REQUEST', true);
 }
-include_once(__DIR__ . '/include/config.php');
+// Cookie parameters must be set before anything starts a session, and
+// config.php starts one — so this comes first.
+require_once(__DIR__ . '/include/session.php');
+gumcp_start_session();
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include_once(__DIR__ . '/include/config.php');
 
 // ── Access control ────────────────────────────────────────────────────────────
 // Allowed if: a valid emergency key is supplied, OR the normal login/Basic Auth

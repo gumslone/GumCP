@@ -23,6 +23,11 @@ if (!defined('GUMCP_API_REQUEST')) {
     define('GUMCP_API_REQUEST', true);
 }
 
+// Cookie parameters must be set before anything starts a session, and
+// config.php starts one — so this comes first.
+require_once(__DIR__ . '/include/session.php');
+gumcp_start_session();
+
 $root        = __DIR__;
 $config_file = $root . '/include/config.php';
 $example_file = $root . '/include/config.example.php';
@@ -33,9 +38,6 @@ if (is_readable($config_file)) {
 require_once($root . '/include/config.defaults.php');
 require_once($root . '/include/auth.php');
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }

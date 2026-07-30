@@ -25,6 +25,21 @@ whatever executed commands printed.
 - **Upgrade-safety checks in `scripts/selftest.sh`** — `include/config.php` is user-owned and never overwritten, so a setting added to `config.example.php` without a matching fallback in `config.defaults.php` would leave every existing install hitting an undefined constant on upgrade. CI now fails if that happens, and also if `config.defaults.php` ever gains an unguarded `define()` that would clobber a value the user set.
 - **`scripts/selftest.sh`** — runs without a web server or a Pi, and covers the logic that breaks silently: the access gate (fail-closed, open mode, session validity, the `api.php` bypass), `LOGIN_*` inheriting from `SSH_*`, the API IP allow-list, cron validation, and PHP 7.0/shell syntax. Wired into CI, and verified to fail when fail-closed behaviour is deliberately broken.
 
+### Security — session cookie hardening
+A GumCP session grants shell access as a sudo-capable user, but the session
+cookie used PHP's defaults: readable by JavaScript, sent on cross-site requests,
+and with client-supplied session IDs accepted.
+
+- New `include/session.php` sets `HttpOnly`, `SameSite=Lax`, `Secure` (when the
+  request is over HTTPS), `session.use_strict_mode` (rejects session IDs the
+  client invented, closing session fixation) and `session.use_only_cookies`
+  (keeps the ID out of URLs, where it would leak via `Referer` and logs).
+- Loaded before `config.php` in every entry point, since cookie parameters have
+  no effect once a session has started. `login.php`, `setup.php` and `update.php`
+  use it too. `SameSite` needs PHP 7.3+; the other flags apply from 7.0.
+- Covered by `selftest.sh`, including a check that the hardening still runs
+  *before* `config.php` — get that ordering wrong and the flags silently do nothing.
+
 ### Fixed
 - **`iframe.php` honours `module_active`** — a module switched off in `config.php` was hidden from the navbar but still rendered if its `iframe.php?module=…` URL was requested directly. Disabling a module now actually makes it unreachable. (The `module` parameter was never a traversal risk: it is only ever used as a key into `$gumcp_modules`, so the config is the whitelist.)
 

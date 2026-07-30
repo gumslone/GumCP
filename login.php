@@ -1,9 +1,8 @@
 <?php
 declare(strict_types=1);
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once(__DIR__ . '/include/session.php');
+gumcp_start_session();
 
 // Redirect to dashboard if already authenticated.
 if (isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])) {
