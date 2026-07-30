@@ -33,7 +33,7 @@ More screenshots in the [screenshots folder](screenshots/).
 - **Users & Groups** — read-only listing of system users and groups from `/etc/passwd` and `/etc/group`
 - **Docker** — list containers, start/stop/restart/pause/remove them, view container logs, and browse images (disabled by default; enable in `config.php` if you run Docker)
 - **Command Buttons** — create custom one-click buttons for any shell command; choose between a confirmation modal or direct execution with inline output; drag to reorder
-- **Button API** — every button gets a unique secret URL; call it from curl, Home Assistant, or any automation tool without logging in
+- **Button API** — optional (off by default): every button gets a unique secret key so curl, Home Assistant or any automation tool can trigger it without a login; restrictable by IP
 - **Actions** — execute arbitrary shell commands over SSH; run commands in the background with output saved to a log file; reboot; pull the latest GumCP version from GitHub with one click
 - **phpinfo** — view PHP configuration directly from the browser
 - **System Check** — built-in diagnostic page (`check.php`) that verifies PHP extensions, directory permissions, SSH connectivity and GPIO tools; Fix buttons repair common issues over SSH without touching the terminal
@@ -76,11 +76,13 @@ Once complete, open GumCP in a browser:
 http://<your-pi-ip>/GumCP/
 ```
 
-> **Default credentials** (set in `include/config.php`):
-> - Username: `pi`
-> - Password: `raspberry`
+> **First run:** GumCP ships with **no password**, so the first page you open is a
+> short setup form — choose a username and password there and it applies them to
+> `include/config.php`, then deletes itself. (Setup only answers requests from a
+> local/private address, and refuses once a login exists.)
 >
-> **Change these before exposing GumCP to any network.**
+> Prefer to do it by hand? Set `LOGIN_REQUIRED`, `LOGIN_USER` and `LOGIN_PASS` in
+> `include/config.php` instead.
 
 ---
 
@@ -225,16 +227,18 @@ Toggle between modes with the **Direct execution** checkbox when creating or edi
 
 ### Button API
 
-Enabled by default. Disable in `config.php` like any other module:
+**Off by default** for new installs — it is the one endpoint that runs a command
+without a login, so you opt in. Enable it in `config.php`:
 
 ```php
-$gumcp_modules['button_api']['module_active'] = 0;
+$gumcp_modules['button_api']['module_active'] = 1;
 ```
 
-Every button gets a unique secret hash. Use it to trigger the button from any HTTP client without logging in — no session or Basic Auth required:
+Every button then gets a unique secret hash. That hash **is** the credential, so
+treat it like a password — no session or Basic Auth is required to use it:
 
 ```bash
-curl http://<your-pi-ip>/GumCP/api.php?hash=<32-char-hash>
+curl -H 'X-GumCP-Key: <32-char-hash>' http://<your-pi-ip>/GumCP/api.php
 ```
 
 Response:
