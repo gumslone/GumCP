@@ -170,12 +170,15 @@ Key settings:
 
 ```php
 define('SSH_PORT', '22');        // SSH port
-define('SSH_USER', 'pi');        // SSH username
-define('SSH_PASS', 'raspberry'); // SSH password
+define('SSH_USER', 'pi');        // the Pi account GumCP runs commands as
+define('SSH_PASS', 'raspberry'); // its REAL system password — commands fail if wrong
 
-define('LOGIN_REQUIRED', false); // true = require login via the login page
+// Web login. If you omit these they inherit SSH_USER / SSH_PASS above, so there
+// is one password to keep current. Set them explicitly only if you want the web
+// login to be a different account or password from the system one.
+define('LOGIN_REQUIRED', true);  // false does NOT open the panel — see below
 define('LOGIN_USER', 'pi');
-define('LOGIN_PASS', 'raspberry');
+define('LOGIN_PASS', 'raspberry'); // CHANGE THIS (and SSH_PASS above)
 
 define('BASIC_AUTH', false);     // true = also accept HTTP Basic Auth
 define('BASIC_AUTH_USER', 'api');
@@ -203,10 +206,18 @@ GumCP supports three modes, configurable independently:
 
 | Mode | Config | Description |
 |---|---|---|
-| Open | both `false` | No login required (local network use) |
-| Login page | `LOGIN_REQUIRED=true` | Browser redirected to login form |
-| Basic Auth | `BASIC_AUTH=true` | Browser shows native credentials dialog; curl/API clients send `Authorization` header |
-| Both | both `true` | Either method grants access; separate credentials for each |
+| Login page *(default)* | `LOGIN_REQUIRED=true` | Browser redirected to the login form |
+| Basic Auth | `BASIC_AUTH=true` | Browser shows the native credentials dialog; curl/API clients send an `Authorization` header |
+| Both | both `true` | Either method grants access, with independent credentials |
+| Refuses to serve | both `false` | **Not an open panel.** With no authentication configured GumCP shows setup instructions instead of the panel |
+| Open *(dangerous)* | `GUMCP_ALLOW_UNAUTHENTICATED=true` | Deliberate opt-out. Anyone who can reach the panel can run commands as `SSH_USER`; a red banner is shown on every page |
+
+**The login credentials are the Pi's own account.** `LOGIN_USER` / `LOGIN_PASS`
+default to `SSH_USER` / `SSH_PASS`, because GumCP needs the real system password
+for SSH anyway — changing the Pi's password means updating `SSH_PASS` or every
+command stops working, and the login follows automatically. Set `LOGIN_USER` /
+`LOGIN_PASS` explicitly if you would rather the web login be a separate account
+or password; Basic Auth always uses its own credentials.
 
 ```php
 // Login page
