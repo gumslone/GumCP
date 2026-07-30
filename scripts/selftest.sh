@@ -130,6 +130,36 @@ out=$(php -r "
 [ "$out" = "rejected" ] && pass "when on: only LOGIN_USER may sign in" \
                         || fail "non-LOGIN_USER should be rejected (got '$out')"
 
+# ── Upgrade safety ────────────────────────────────────────────────────────────
+# include/config.php is user-owned and never overwritten, so any setting added to
+# config.example.php MUST also have a fallback in config.defaults.php — otherwise
+# existing installs hit an undefined constant the moment they upgrade.
+echo "Upgrade safety"
+php -r "
+\$ex = file_get_contents('$ROOT/include/config.example.php');
+\$df = file_get_contents('$ROOT/include/config.defaults.php');
+\$bad = [];
+preg_match_all('/^define\(\s*.([A-Z0-9_]+)./m', \$ex, \$m);
+foreach (array_unique(\$m[1]) as \$c) {
+    if (strpos(\$df, \"defined('\$c')\") === false) \$bad[] = \$c;
+}
+preg_match_all('/^\\\$(gumcp_[a-z_]+)\s*=/m', \$ex, \$a);
+foreach (array_unique(\$a[1]) as \$v) {
+    if (strpos(\$df, '\$' . \$v) === false) \$bad[] = '\$' . \$v;
+}
+if (\$bad) { fwrite(STDERR, implode(', ', \$bad)); exit(1); }
+" 2>/tmp/gumcp_missing_defaults && pass "every config.example setting has a fallback in config.defaults" \
+    || fail "no upgrade fallback for: $(cat /tmp/gumcp_missing_defaults 2>/dev/null)"
+
+# Defaults must never clobber a value the user already set.
+php -r "
+\$df = file_get_contents('$ROOT/include/config.defaults.php');
+// every define() in defaults must be guarded by defined() || define(...)
+preg_match_all('/^\s*define\(\s*.([A-Z0-9_]+)./m', \$df, \$m);
+exit(empty(\$m[1]) ? 0 : 1);
+" 2>/dev/null && pass "config.defaults never overrides a user setting" \
+              || fail "config.defaults has an unguarded define() — it would override config.php"
+
 # ── 5. Pure helpers ───────────────────────────────────────────────────────────
 echo "Validators"
 php -r "
