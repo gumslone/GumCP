@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.6.0] — 2026-07-30
 
 ### Security — unauthenticated access to bundled modules (high)
 `modules/adminer/adminer.php` contained no authentication code at all, so the
