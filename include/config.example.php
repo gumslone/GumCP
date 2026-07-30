@@ -30,6 +30,18 @@ define('LOGIN_REQUIRED', true);
 define('LOGIN_USER', 'pi');
 define('LOGIN_PASS', 'raspberry'); // CHANGE THIS (and SSH_PASS above)
 
+// ── Check the login against the Pi's system account ───────────────────────────
+// false (default): the login form is checked against LOGIN_USER / LOGIN_PASS
+//   above — an ordinary config credential, which may be anything you like.
+// true: the submitted username and password are verified against the REAL
+//   system account by authenticating over SSH, exactly as GumCP does to run
+//   commands. LOGIN_PASS is then unused and need not be kept in sync; the
+//   password is checked by the OS and never compared to a stored value.
+//   Only SSH_USER may sign in — allowing any system account would let a
+//   low-privileged user in and then have GumCP run commands as SSH_USER.
+//   Requires the php-ssh2 extension.
+define('LOGIN_CHECK_SYSTEM_USER', false);
+
 // ── HTTP Basic Auth ───────────────────────────────────────────────────────────
 // When BASIC_AUTH is true the browser shows a native credentials dialog.
 // Useful for curl / API clients. Can be active alongside LOGIN_REQUIRED —

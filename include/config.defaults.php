@@ -20,6 +20,11 @@ defined('LOGIN_REQUIRED')  || define('LOGIN_REQUIRED',  true);
 defined('LOGIN_USER')      || define('LOGIN_USER',      SSH_USER);
 defined('LOGIN_PASS')      || define('LOGIN_PASS',      SSH_PASS);
 
+// Check the login form against the Pi's real system account (verified over SSH)
+// instead of the LOGIN_USER/LOGIN_PASS values above. Off by default, in which
+// case the login is purely a config credential.
+defined('LOGIN_CHECK_SYSTEM_USER') || define('LOGIN_CHECK_SYSTEM_USER', false);
+
 defined('BASIC_AUTH')      || define('BASIC_AUTH',      false);
 defined('BASIC_AUTH_USER') || define('BASIC_AUTH_USER', 'api');
 defined('BASIC_AUTH_PASS') || define('BASIC_AUTH_PASS', 'secret');

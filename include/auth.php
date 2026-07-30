@@ -20,9 +20,11 @@ declare(strict_types=1);
  * sends the admin to setup.php rather than handing out a blank login.
  */
 function gumcp_auth_configured(): bool {
-    if (defined('LOGIN_REQUIRED') && LOGIN_REQUIRED === true
-        && defined('LOGIN_PASS') && LOGIN_PASS !== '') {
-        return true;
+    if (defined('LOGIN_REQUIRED') && LOGIN_REQUIRED === true) {
+        // With system checking on, the credential lives in the OS, so an empty
+        // LOGIN_PASS is fine — it is not used.
+        if (gumcp_check_system_user()) return true;
+        if (defined('LOGIN_PASS') && LOGIN_PASS !== '') return true;
     }
     if (defined('BASIC_AUTH') && BASIC_AUTH === true
         && defined('BASIC_AUTH_PASS') && BASIC_AUTH_PASS !== '') {
@@ -36,10 +38,48 @@ function gumcp_open_mode(): bool {
 }
 
 function gumcp_session_authenticated(): bool {
+    // Signed in against the system account: the password is never stored, so the
+    // server-side session flag is the record. A client cannot forge session data.
+    if (!empty($_SESSION['GUMCP_SYS_USER']) && gumcp_check_system_user()) {
+        return true;
+    }
     if (!defined('LOGIN_USER') || !defined('LOGIN_PASS')) return false;
     if (!isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])) return false;
     return hash_equals(md5(LOGIN_USER), (string)$_SESSION['LOGIN_USER'])
         && hash_equals(md5(LOGIN_PASS), (string)$_SESSION['LOGIN_PASS']);
+}
+
+/**
+ * Should the login form be checked against the Pi's real system account rather
+ * than the LOGIN_USER / LOGIN_PASS values in config.php? Off by default, in
+ * which case the login is purely a config credential.
+ */
+function gumcp_check_system_user(): bool {
+    return defined('LOGIN_CHECK_SYSTEM_USER') && LOGIN_CHECK_SYSTEM_USER === true;
+}
+
+/**
+ * Verify a username/password against the actual system account, by attempting an
+ * SSH authentication to localhost — the same mechanism GumCP already uses to run
+ * every command, so no extra credential or service is involved. The password is
+ * checked by the OS and never compared against anything stored in config.php.
+ *
+ * Only SSH_USER is accepted. Letting any system account sign in would be a
+ * privilege escalation: a low-privileged user could log in and then have GumCP
+ * run commands as SSH_USER.
+ */
+function gumcp_system_login(string $user, string $pass): bool {
+    if (!gumcp_check_system_user()) return false;
+    if ($user === '' || $pass === '') return false;
+    if (!defined('SSH_USER') || !hash_equals(SSH_USER, $user)) return false;
+    if (!function_exists('ssh2_connect')) return false;
+
+    $conn = @ssh2_connect('localhost', defined('SSH_PORT') ? (int)SSH_PORT : 22);
+    if ($conn === false) return false;
+
+    $ok = @ssh2_auth_password($conn, $user, $pass);
+    unset($conn);
+    return $ok === true;
 }
 
 
@@ -63,7 +103,16 @@ function gumcp_process_login() {
                && hash_equals($_SESSION['csrf_token'], (string)($_POST['csrf_token'] ?? ''));
 
     if ($valid_csrf) {
-        if (defined('LOGIN_USER') && defined('LOGIN_PASS')
+        // Against the real system account, when that mode is switched on…
+        if (gumcp_system_login($user, $pass)) {
+            session_regenerate_id(true);          // prevent session fixation
+            $_SESSION['GUMCP_SYS_USER'] = $user;
+            header('Location: ./index.php');
+            exit();
+        }
+        // …otherwise against the credentials configured in config.php.
+        if (!gumcp_check_system_user()
+            && defined('LOGIN_USER') && defined('LOGIN_PASS')
             && hash_equals(LOGIN_USER, $user) && hash_equals(LOGIN_PASS, $pass)) {
             session_regenerate_id(true);
             $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
@@ -104,7 +153,10 @@ function gumcp_is_authenticated(): bool {
  * defaults — surfaced as a warning in the UI and by System Check.
  */
 function gumcp_default_credentials(): bool {
+    // Not applicable when the login is checked against the system account:
+    // LOGIN_PASS is unused there, so its value says nothing about security.
     if (defined('LOGIN_REQUIRED') && LOGIN_REQUIRED === true
+        && !gumcp_check_system_user()
         && defined('LOGIN_PASS') && LOGIN_PASS === 'raspberry') {
         return true;
     }

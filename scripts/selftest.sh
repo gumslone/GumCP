@@ -89,6 +89,33 @@ out=$(php -r "
 [ "$out" = "webadmin:webpw" ] && pass "explicit LOGIN_* overrides SSH_* (separate web login)" \
                              || fail "explicit LOGIN_* override (got '$out')"
 
+# System-user checking: off by default, and when on the config password is
+# not accepted (only the OS may validate the login).
+echo "System-user login flag"
+out=$(php -r "
+    define('SSH_USER','pi'); define('SSH_PASS','pw'); define('SSH_PORT','22');
+    \$gumcp_modules=[];
+    require '$ROOT/include/config.defaults.php';
+    require '$ROOT/include/auth.php';
+    echo gumcp_check_system_user() ? 'on' : 'off';
+" 2>/dev/null)
+[ "$out" = "off" ] && pass "defaults to off (login is a config credential)" \
+                   || fail "should default to off (got '$out')"
+
+out=$(php -r "
+    define('LOGIN_CHECK_SYSTEM_USER',true);
+    define('SSH_USER','pi'); define('SSH_PASS','pw'); define('SSH_PORT','22');
+    define('LOGIN_REQUIRED',true); define('LOGIN_USER','pi'); define('LOGIN_PASS','');
+    define('BASIC_AUTH',false);
+    require '$ROOT/include/auth.php';
+    // empty LOGIN_PASS must still count as configured, and must never authenticate
+    echo (gumcp_auth_configured() ? 'configured' : 'unconfigured') . ':' .
+         (gumcp_system_login('root','pw') ? 'other-user-allowed' : 'other-user-denied');
+" 2>/dev/null)
+[ "$out" = "configured:other-user-denied" ] \
+    && pass "when on: empty LOGIN_PASS is fine, non-SSH_USER refused" \
+    || fail "system-user mode (got '$out')"
+
 # ── 5. Pure helpers ───────────────────────────────────────────────────────────
 echo "Validators"
 php -r "

@@ -212,6 +212,15 @@ GumCP supports three modes, configurable independently:
 | Refuses to serve | both `false` | **Not an open panel.** With no authentication configured GumCP shows setup instructions instead of the panel |
 | Open *(dangerous)* | `GUMCP_ALLOW_UNAUTHENTICATED=true` | Deliberate opt-out. Anyone who can reach the panel can run commands as `SSH_USER`; a red banner is shown on every page |
 
+**Optionally check the login against the real system account.** With
+`LOGIN_CHECK_SYSTEM_USER` set to `true`, the submitted username and password are
+verified by authenticating over SSH — the same thing GumCP does to run commands —
+instead of being compared to `LOGIN_PASS`. The password is then checked by the
+operating system and never stored for comparison, so it cannot fall out of sync.
+Only `SSH_USER` may sign in, since letting any system account in would let a
+low-privileged user have GumCP run commands as `SSH_USER`. Off by default, in
+which case the login is an ordinary config credential.
+
 **The login credentials are the Pi's own account.** `LOGIN_USER` / `LOGIN_PASS`
 default to `SSH_USER` / `SSH_PASS`, because GumCP needs the real system password
 for SSH anyway — changing the Pi's password means updating `SSH_PASS` or every
