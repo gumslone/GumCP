@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Hardening — security response headers, and SameSite on PHP 7.0
+A GumCP session can run shell commands, so framing matters as much as data
+theft: an attacker who frames the panel can trick a signed-in admin into
+clicking a button that executes something.
+
+- Every page now sends `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options:
+  nosniff`, `Referrer-Policy: same-origin`, and a `Content-Security-Policy`
+  limiting resources to this origin (`frame-ancestors 'self'`, `object-src
+  'none'`, `form-action 'self'`). Everything GumCP loads is bundled, so nothing
+  external is needed. Third-party modules get only the framing rule, since some
+  builds legitimately load assets from a CDN.
+- The session cookie now carries `SameSite=Lax` on **PHP 7.0–7.2** too. The
+  attribute was previously set only on 7.3+, where `session_set_cookie_params()`
+  accepts it as an option — but Raspberry Pi OS ships PHP 7.0, so the installs
+  most likely to be exposed were the ones missing it.
+- `scripts/selftest.sh` asserts all of this against a real HTTP response rather
+  than by reading the source.
+
 ### Security — AJAX actions were reachable by GET without a CSRF token
 `ajax.php` verified the CSRF token only on `POST`, but read its action from
 `$_REQUEST` — so any action that needed no `$_POST` parameter could be triggered

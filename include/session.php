@@ -39,11 +39,63 @@ if (!function_exists('gumcp_start_session')) {
                 'samesite' => 'Lax',
             ]);
         } else {
-            // PHP 7.0–7.2: positional form, no SameSite support. HttpOnly and
-            // Secure are the parts that matter most and are available here.
-            session_set_cookie_params(0, '/', '', $https, true);
+            // PHP 7.0–7.2: positional form, no 'samesite' key. The attribute is
+            // still reachable by appending it to the path — PHP writes the path
+            // verbatim into the Set-Cookie header. Raspberry Pi OS (stretch)
+            // ships PHP 7.0, so this is the version most installs actually run.
+            session_set_cookie_params(0, '/; SameSite=Lax', '', $https, true);
         }
 
         session_start();
+        gumcp_send_security_headers();
+    }
+
+    /**
+     * Response headers sent on every GumCP page.
+     *
+     * A GumCP session can run shell commands, so the risk is not just data
+     * theft: an attacker who can frame the panel can trick a logged-in admin
+     * into clicking a button that executes something.
+     */
+    function gumcp_send_security_headers() {
+        if (headers_sent()) {
+            return;
+        }
+
+        // Clickjacking. iframe.php frames modules from this same origin, so
+        // SAMEORIGIN rather than DENY.
+        header('X-Frame-Options: SAMEORIGIN');
+        // Never let the browser guess a type — a stored file that sniffs as
+        // HTML would otherwise run as HTML.
+        header('X-Content-Type-Options: nosniff');
+        // Panel URLs name the host and the page being administered; don't hand
+        // them to third-party sites.
+        header('Referrer-Policy: same-origin');
+
+        // Third-party modules (Adminer, Tiny File Manager) are not ours to
+        // audit and some builds pull assets from a CDN, so they get only the
+        // framing restriction — a resource policy would silently break them.
+        if (defined('GUMCP_MODULE_KEY')) {
+            header("Content-Security-Policy: frame-ancestors 'self'");
+            return;
+        }
+
+        // GumCP is entirely self-hosted (jQuery, Bootstrap and FontAwesome are
+        // bundled), so 'self' is enough for every real resource. 'unsafe-inline'
+        // is required because pages carry inline <script>/<style>; the policy is
+        // still worth having for what it does block — external script sources,
+        // exfiltration to another origin, plugins, and framing by other sites.
+        header(
+            "Content-Security-Policy: default-src 'self'; "
+            . "img-src 'self' data:; "
+            . "style-src 'self' 'unsafe-inline'; "
+            . "script-src 'self' 'unsafe-inline'; "
+            . "font-src 'self' data:; "
+            . "connect-src 'self'; "
+            . "form-action 'self'; "
+            . "frame-ancestors 'self'; "
+            . "base-uri 'self'; "
+            . "object-src 'none'"
+        );
     }
 }

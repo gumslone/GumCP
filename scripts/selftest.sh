@@ -194,7 +194,8 @@ out=$(php -r "
     echo (\$p['httponly'] ? 'h' : '-')
        . (ini_get('session.use_strict_mode') ? 's' : '-')
        . (ini_get('session.use_only_cookies') ? 'c' : '-')
-       . ((PHP_VERSION_ID < 70300 || (isset(\$p['samesite']) && \$p['samesite'] !== '')) ? 'x' : '-');
+       . (((isset(\$p['samesite']) && \$p['samesite'] !== '')
+           || stripos(\$p['path'], 'samesite=lax') !== false) ? 'x' : '-');
 " 2>/dev/null)
 [ "$out" = "hscx" ] && pass "HttpOnly, strict mode, cookies-only, SameSite" \
                     || fail "session cookie flags (got '$out', want 'hscx')"
@@ -208,6 +209,32 @@ out=$(php -r "
 " 2>/dev/null)
 [ "$out" = "secure" ] && pass "Secure flag set when served over HTTPS" \
                       || fail "Secure flag over HTTPS (got '$out')"
+
+# Response headers. GumCP can run shell commands, so an attacker who can frame
+# the panel can trick a logged-in admin into clicking a button that executes
+# something. Checked over a real HTTP response, not by reading the source.
+docroot="$(mktemp -d)"
+printf '%s' "<?php require '$ROOT/include/session.php'; gumcp_start_session(); echo 'ok';" \
+    > "$docroot/i.php"
+php -S 127.0.0.1:8919 -t "$docroot" >/dev/null 2>&1 &
+srv=$!
+sleep 1
+hdrs=$(curl -sI http://127.0.0.1:8919/i.php 2>/dev/null)
+kill $srv 2>/dev/null || true
+rm -rf "$docroot"
+
+missing=""
+for h in "X-Frame-Options: SAMEORIGIN" "X-Content-Type-Options: nosniff" \
+         "Referrer-Policy: same-origin" "frame-ancestors 'self'" "object-src 'none'"; do
+    case "$hdrs" in *"$h"*) ;; *) missing="$missing [$h]";; esac
+done
+[ -z "$missing" ] && pass "clickjacking / sniffing / CSP headers sent" \
+                  || fail "missing response headers:$missing"
+
+case "$hdrs" in
+    *"SameSite=Lax"*) pass "Set-Cookie carries SameSite=Lax on this PHP version" ;;
+    *)                fail "Set-Cookie has no SameSite attribute" ;;
+esac
 
 # The hardening only works if it runs before anything starts a session.
 for f in include/init.php setup.php update.php; do
