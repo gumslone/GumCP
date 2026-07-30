@@ -256,7 +256,11 @@ require_once('./include/header.php');
                 +   '<button class="btn btn-xs btn-primary" onclick="modInstall(\'' + modEsc(m.key) + '\')">'
                 +   '<i class="fa fa-download"></i> ' + (m.installed ? 'Reinstall / update' : 'Install') + '</button> '
                 +   (m.installed
-                        ? '<button class="btn btn-xs btn-danger" onclick="modRemove(\'' + modEsc(m.key) + '\')">'
+                        ? '<button class="btn btn-xs ' + (m.enabled ? 'btn-default' : 'btn-success') + '"'
+                          + ' onclick="modEnable(\'' + modEsc(m.key) + '\',' + (m.enabled ? 0 : 1) + ')">'
+                          + (m.enabled ? '<i class="fa fa-toggle-on"></i> Disable'
+                                       : '<i class="fa fa-toggle-off"></i> Enable') + '</button> '
+                          + '<button class="btn btn-xs btn-danger" onclick="modRemove(\'' + modEsc(m.key) + '\')">'
                           + '<i class="fa fa-trash"></i></button>'
                         : '')
                 + '</td></tr>';
@@ -285,9 +289,29 @@ require_once('./include/header.php');
             success: function(d) {
                 $('#mod-output').text((d && d.output) || '').show();
                 if (d && d.type === 'error') { modShowError(d.message || 'Install failed'); }
+                else if (d && d.warning)     { modShowError(d.warning); }
                 if (d && d.modules) { modRender(d.modules); } else { modLoad(); }
+                // Installing also enables it; reload so the navbar entry appears.
+                if (d && d.type === 'success' && !d.warning) {
+                    setTimeout(function(){ location.reload(); }, 800);
+                }
             },
             error: function() { modShowError('Request failed.'); $('#mod-output').hide(); }
+        });
+    }
+
+    function modEnable(key, on) {
+        modShowError('');
+        $.ajax({
+            type: 'POST', url: 'ajax.php', dataType: 'json',
+            data: { action: 'module_enable', module: key, enabled: on, csrf_token: CSRF_TOKEN },
+            success: function(d) {
+                if (d && d.type === 'error') { modShowError(d.message || 'Failed'); }
+                if (d && d.modules) { modRender(d.modules); } else { modLoad(); }
+                // The navbar is rendered server-side, so reload to show/hide the entry.
+                if (d && d.type === 'success') { setTimeout(function(){ location.reload(); }, 400); }
+            },
+            error: function() { modShowError('Request failed.'); }
         });
     }
 

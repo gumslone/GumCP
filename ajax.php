@@ -521,11 +521,39 @@ switch ($action) {
         $output = (string)@shell_exec($cmd . ' 2>&1');
 
         $installed = gumcp_optional_modules($gumcp_modules);
-        $ok_now    = !empty($installed[$name]['installed']);
-        $out = $ok_now
-            ? ok('Installed', ['output' => $output, 'modules' => $installed])
-            : err('Install failed — see the output below.');
-        if (!$ok_now) $out['output'] = $output;
+        if (empty($installed[$name]['installed'])) {
+            $out = err('Install failed — see the output below.');
+            $out['output'] = $output;
+            break;
+        }
+
+        // Installing is the opt-in, so switch the module on rather than making
+        // the user go and edit config.php by hand afterwards.
+        $enable_err = gumcp_module_set_enabled($name, true);
+        $gumcp_modules[$name]['module_active'] = 1;   // reflect it in this response
+        $installed = gumcp_optional_modules($gumcp_modules);
+
+        $out = ok($enable_err === '' ? 'Installed and enabled' : 'Installed',
+                  ['output' => $output, 'modules' => $installed]);
+        if ($enable_err !== '') {
+            $out['warning'] = $enable_err;
+        }
+        break;
+
+    // ── Optional modules: enable / disable ────────────────────────────────────
+    case 'module_enable':
+        $name = (string)($_POST['module'] ?? '');
+        $on   = ((int)($_POST['enabled'] ?? 0)) === 1;
+        if (!array_key_exists($name, gumcp_optional_module_defs())) {
+            $out = err('Unknown module');
+            break;
+        }
+        $enable_err = gumcp_module_set_enabled($name, $on);
+        $gumcp_modules[$name]['module_active'] = $on ? 1 : 0;
+        $mods = gumcp_optional_modules($gumcp_modules);
+        $out = $enable_err === ''
+            ? ok($on ? 'Enabled' : 'Disabled', ['modules' => $mods])
+            : err($enable_err);
         break;
 
     // ── Optional modules: remove an installed copy ────────────────────────────
@@ -541,9 +569,14 @@ switch ($action) {
             $out = err('Not installed');
             break;
         }
-        $out = gumcp_rrmdir($dir)
-            ? ok('Removed', ['modules' => gumcp_optional_modules($gumcp_modules)])
-            : err('Could not remove ' . $dir . ' — check permissions.');
+        if (!gumcp_rrmdir($dir)) {
+            $out = err('Could not remove ' . $dir . ' — check permissions.');
+            break;
+        }
+        // Don't leave a removed module switched on — the navbar would link to a 404.
+        gumcp_module_set_enabled($name, false);
+        $gumcp_modules[$name]['module_active'] = 0;
+        $out = ok('Removed', ['modules' => gumcp_optional_modules($gumcp_modules)]);
         break;
 
     // ── Update: fetch tags from origin and return the full release list ───────
@@ -878,6 +911,67 @@ function gumcp_optional_modules(array $modules): array {
         ];
     }
     return $result;
+}
+
+/**
+ * Turn a module on or off by maintaining a marked block at the end of
+ * include/config.php:
+ *
+ *     // BEGIN GumCP managed module state
+ *     $gumcp_modules['adminer']['module_active'] = 1;
+ *     // END GumCP managed module state
+ *
+ * Appending overrides is deliberate — rewriting the $gumcp_modules array literal
+ * in place would mean parsing arbitrary PHP, which is fragile. The block runs
+ * after the array is defined, so it wins, and rewriting the whole block each
+ * time keeps it idempotent.
+ *
+ * Returns '' on success, or a message explaining what to do by hand.
+ */
+function gumcp_module_set_enabled(string $key, bool $on): string {
+    $file  = __DIR__ . '/include/config.php';
+    $line  = "\$gumcp_modules['" . $key . "']['module_active'] = " . ($on ? '1' : '0') . ';';
+
+    if (!is_file($file) || !is_writable($file)) {
+        return 'include/config.php is not writable by the web server, so the module '
+             . 'could not be switched ' . ($on ? 'on' : 'off') . ' automatically. Add this line yourself: '
+             . $line;
+    }
+
+    $src   = (string)file_get_contents($file);
+    $begin = '// BEGIN GumCP managed module state';
+    $end   = '// END GumCP managed module state';
+
+    // Carry over any state already recorded in the block.
+    $state = [];
+    $re = '/' . preg_quote($begin, '/') . '(.*?)' . preg_quote($end, '/') . '/s';
+    if (preg_match($re, $src, $m)) {
+        if (preg_match_all(
+                '/\$gumcp_modules\[\'([a-zA-Z0-9_]+)\'\]\[\'module_active\'\]\s*=\s*([01])\s*;/',
+                $m[1], $found, PREG_SET_ORDER)) {
+            foreach ($found as $f) {
+                $state[$f[1]] = (int)$f[2];
+            }
+        }
+        $src = (string)preg_replace('/\n*' . preg_quote($begin, '/') . '.*?' . preg_quote($end, '/') . '\n*/s', "\n", $src);
+    }
+    $state[$key] = $on ? 1 : 0;
+
+    $block = "\n" . $begin . "\n"
+           . "// Written by the Actions page. Safe to edit or delete by hand.\n";
+    foreach ($state as $k => $v) {
+        $block .= "\$gumcp_modules['" . $k . "']['module_active'] = " . $v . ";\n";
+    }
+    $block .= $end . "\n";
+
+    $src = (string)preg_replace('/\?>\s*$/', '', $src);   // never leave a closing tag mid-file
+    $src = rtrim($src) . "\n" . $block;
+
+    @copy($file, $file . '.modules.bak');
+    if (@file_put_contents($file, $src, LOCK_EX) === false) {
+        return 'Could not write include/config.php. Add this line yourself: ' . $line;
+    }
+    return '';
 }
 
 /** Recursively delete a directory. */

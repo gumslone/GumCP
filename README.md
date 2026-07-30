@@ -398,7 +398,7 @@ cd /var/www/html/GumCP
 ./scripts/install-module.sh tinyfilemanager
 ```
 
-Then enable it in `include/config.php`:
+Installing from the Actions panel also enables the module. From the shell, enable it afterwards in `include/config.php`:
 
 ```php
 $gumcp_modules['adminer']['module_active'] = 1;
