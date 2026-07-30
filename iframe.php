@@ -11,7 +11,13 @@ require_once('./include/init.php');
 
 $module = trim((string)($_GET['module'] ?? ''));
 
-if ($module === '' || !isset($gumcp_modules[$module])) {
+// $module is only ever used to look up an entry in $gumcp_modules, so it cannot
+// be turned into an arbitrary path — the config is the whitelist. A disabled
+// module is treated as absent, so switching one off in config.php really does
+// make it unreachable rather than only hiding it from the navbar.
+if ($module === ''
+    || !isset($gumcp_modules[$module])
+    || empty($gumcp_modules[$module]['module_active'])) {
     header('Location: index.php');
     exit;
 }
