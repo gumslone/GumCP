@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Security — AJAX actions were reachable by GET without a CSRF token
+`ajax.php` verified the CSRF token only on `POST`, but read its action from
+`$_REQUEST` — so any action that needed no `$_POST` parameter could be triggered
+by a plain `GET` from a malicious page while an administrator was logged in.
+Fifteen actions qualified, including `pkg_upgrade` (`sudo apt-get -y upgrade`),
+`pkg_check`, `git_tags`, and `edit_button`, which returns a button's API hash.
+
+- `ajax.php` now rejects any non-`POST` request with `405` and reads the action
+  and its parameters from `$_POST` only, so the token check covers every action.
+- The dashboard poller (`static/js/gumcp.js`) posts instead of getting.
+- `scripts/selftest.sh` pins the invariant: no `$_REQUEST` in `ajax.php`, the
+  POST guard is present, and no frontend `GET` call remains.
+
 ### Security — runtime data could be served over HTTP
 `buttons/` and `command_logs/` were protected only by `.htaccess`, but Debian and
 Raspberry Pi OS configure Apache with `AllowOverride None` for `/var/www`, which

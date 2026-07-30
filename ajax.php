@@ -6,14 +6,27 @@ header('Content-Type: application/json');
 
 require_once('./include/init.php');
 
-// ── CSRF guard (all POST requests) ───────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
-        http_response_code(403);
-        echo json_encode(err('CSRF token mismatch'));
-        exit();
-    }
+// ── Method + CSRF guard ──────────────────────────────────────────────────────
+// Every action here either changes state or returns privileged information, and
+// the CSRF token is the only thing distinguishing a genuine request from one a
+// malicious page made an authenticated browser send.
+//
+// POST is required so the token check below covers ALL actions. Previously the
+// check ran only for POST while the action came from $_REQUEST, so anything not
+// needing a $_POST parameter — including pkg_upgrade, which runs
+// 'sudo apt-get -y upgrade' — could be triggered by a plain GET with no token.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    header('Allow: POST');
+    echo json_encode(err('POST required'));
+    exit();
+}
+
+$token = (string)($_POST['csrf_token'] ?? '');
+if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+    http_response_code(403);
+    echo json_encode(err('CSRF token mismatch'));
+    exit();
 }
 
 // ── Response helpers ──────────────────────────────────────────────────────────
@@ -81,7 +94,7 @@ function sanitize_button(array $post): array {
 }
 
 // ── Dispatch ──────────────────────────────────────────────────────────────────
-$action = trim((string)($_REQUEST['action'] ?? ''));
+$action = trim((string)($_POST['action'] ?? ''));
 $out    = err('Unknown action');
 
 switch ($action) {
@@ -120,12 +133,12 @@ switch ($action) {
 
     // ── Buttons: read for edit dialog ─────────────────────────────────────────
     case 'edit_button':
-        if (!isset($_REQUEST['button_id']) || !validate_button_id($_REQUEST['button_id'])) {
+        if (!isset($_POST['button_id']) || !validate_button_id($_POST['button_id'])) {
             $out = err('Invalid button ID');
             break;
         }
         $buttons = load_buttons();
-        $idx     = (int)$_REQUEST['button_id'];
+        $idx     = (int)$_POST['button_id'];
         if ($buttons === null || !isset($buttons[$idx])) {
             $out = err('Button not found');
             break;

@@ -37,9 +37,9 @@ function fmtKB(kb) {
 
 function refreshStats() {
     $.ajax({
-        type: 'GET',
+        type: 'POST',
         url: 'ajax.php',
-        data: { action: 'server_info' },
+        data: { action: 'server_info', csrf_token: (window.CSRF_TOKEN || '') },
         dataType: 'json',
         success: function(d) {
             if (!d || d.type === 'error') return;

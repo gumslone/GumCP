@@ -278,6 +278,32 @@ foreach (['0 4 * * *'=>true,'*/15 * * * *'=>true,'@reboot'=>true,'0 9-17 * * mon
 exit(\$f === 0 ? 0 : 1);
 " 2>/dev/null && pass "cron schedule validation" || fail "cron schedule validation"
 
+# ── AJAX CSRF coverage ────────────────────────────────────────────────────────
+# The CSRF token is the only thing separating a genuine request from one a
+# malicious page made an authenticated browser send. If ajax.php ever reads its
+# action (or an action parameter) from $_REQUEST, a GET can reach the dispatcher
+# without a token — that is how pkg_upgrade once became CSRF-triggerable.
+echo "AJAX CSRF coverage"
+php -r "
+\$src = file_get_contents('$ROOT/ajax.php');
+\$src = preg_replace('!//.*!', '', \$src);           // ignore comments
+exit(strpos(\$src, '\$_REQUEST') === false ? 0 : 1);
+" 2>/dev/null && pass "ajax.php never reads \$_REQUEST" \
+              || fail "ajax.php reads \$_REQUEST — GET would bypass the CSRF check"
+
+php -r "
+\$src = file_get_contents('$ROOT/ajax.php');
+exit(preg_match('/REQUEST_METHOD..\s*!==\s*.POST./', \$src) ? 0 : 1);
+" 2>/dev/null && pass "ajax.php rejects non-POST requests" \
+              || fail "ajax.php does not require POST"
+
+# The dashboard poller is the one caller that used to be GET.
+if grep -q "type: 'GET'" "$ROOT/static/js/gumcp.js"; then
+    fail "static/js/gumcp.js still issues a GET to ajax.php"
+else
+    pass "no frontend GET calls to ajax.php"
+fi
+
 echo ""
 if [ $FAIL -eq 0 ]; then
     echo "All self-tests passed."
