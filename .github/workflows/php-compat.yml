@@ -42,6 +42,12 @@ jobs:
       - name: Self-test (access gate, validators, syntax)
         run: bash scripts/selftest.sh
 
+      # Drives a real HTTP server with real cookies. Every vulnerability that
+      # reached users was a wiring bug — a gate never invoked, a CSRF check a
+      # GET walked around — which unit-level tests cannot see.
+      - name: Integration test (live server, real cookies)
+        run: bash scripts/inttest.sh
+
       - name: Guard against known PHP 7.1+ syntax (belt and suspenders)
         run: |
           if grep -rnE ':[[:space:]]*void|\([[:space:]]*\?[a-zA-Z]|,[[:space:]]*\?[a-zA-Z]|:[[:space:]]*\?[a-zA-Z]' \

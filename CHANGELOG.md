@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Integration tests
+`scripts/selftest.sh` calls functions directly; the new `scripts/inttest.sh`
+drives a real HTTP server with real cookies. That distinction matters, because
+every vulnerability that reached users was a **wiring** bug rather than a logic
+bug — an access gate that was never invoked, session hardening placed after
+something had already started the session, a CSRF check that a GET walked
+around. None of those are visible from a unit test.
+
+21 checks against a throwaway install: the gate on every page, the full login
+flow (wrong password, missing CSRF token, session-ID regeneration), the AJAX
+method and token guards, security headers, the Button API staying off until
+enabled, a real 2-second session timeout, and the auth log recording events
+without recording the password. Runs in CI on PHP 7.0 alongside the self-tests.
+
 ### Button API — the log was a working credential
 `api.php` runs a shell command with no login: the button hash *is* the
 credential. Every call wrote that hash in full to
