@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Button API — the log was a working credential
+`api.php` runs a shell command with no login: the button hash *is* the
+credential. Every call wrote that hash in full to
+`command_logs/api_calls.log`, so anyone who could read the log — a backup, a
+copied SD card, another local account — could execute buttons. The log now
+stores only an 8-character prefix, enough to tell calls apart.
+
+- Unknown keys are now **rate limited** per client address. The hash is 128 bits
+  of `random_bytes`, so guessing was never realistic, but an unauthenticated
+  endpoint that runs commands should not be an unbounded oracle. Counted under a
+  separate key, so hammering the API can never lock that address out of the web
+  login.
+- `api_calls.log` is capped at 1000 lines instead of growing until the SD card
+  fills.
+
 ### Authentication log
 GumCP runs every command as a single system user, so the web server's own logs
 cannot tell an intruder's session apart from the owner's — a compromise left no

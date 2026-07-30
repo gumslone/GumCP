@@ -38,10 +38,26 @@ $api_allow_ips = isset($gumcp_api_allow_ips) && is_array($gumcp_api_allow_ips)
     : [];
 $client_ip = gumcp_client_ip();
 
+// ── Throttle key guessing ─────────────────────────────────────────────────────
+// The hash is a 128-bit random bearer token, so guessing it is hopeless — but
+// this endpoint runs shell commands without a login, and an unbounded oracle
+// deserves a limit anyway. Counted under a separate key so hammering the API
+// can never lock the same address out of the web login.
+$throttle_key = 'api:' . $client_ip;
+
 if (!gumcp_ip_allowed($client_ip, $api_allow_ips)) {
     api_log('', null, 'denied', '', 'IP not allowed: ' . $client_ip);
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Forbidden']);
+    exit();
+}
+
+$api_wait = gumcp_login_locked_for($throttle_key);
+if ($api_wait > 0) {
+    api_log('', null, 'locked', '', 'too many unknown keys from ' . $client_ip);
+    http_response_code(429);
+    header('Retry-After: ' . $api_wait);
+    echo json_encode(['success' => false, 'error' => 'Too many failed attempts']);
     exit();
 }
 
@@ -84,11 +100,14 @@ foreach ($buttons as $b) {
 }
 
 if ($button === null) {
+    gumcp_login_record_failure($throttle_key);
     http_response_code(404);
     api_log($hash, null, 'not_found', '', '');
     echo json_encode(['success' => false, 'error' => 'Button not found']);
     exit();
 }
+
+gumcp_login_clear($throttle_key);
 
 $cmd = trim($button['button_command'] ?? '');
 if ($cmd === '') {
@@ -129,7 +148,9 @@ function api_log(string $hash, $button, string $status, string $output, string $
     $entry = json_encode([
         'time'         => date('Y-m-d H:i:s'),
         'ts'           => time(),
-        'hash'         => $hash,
+        // Only a prefix: the full hash executes commands with no login, so
+        // writing it here would turn the log into a working credential.
+        'hash'         => $hash === '' ? '' : substr($hash, 0, 8) . '…',
         'button_title' => $button['button_title'] ?? null,
         'command'      => $button['button_command'] ?? null,
         'status'       => $status,
@@ -140,4 +161,13 @@ function api_log(string $hash, $button, string $status, string $output, string $
     ]);
 
     @file_put_contents(API_LOG_FILE, $entry . "\n", FILE_APPEND | LOCK_EX);
+    api_log_trim();
+}
+
+/** Keep the log from filling an SD card. */
+function api_log_trim(int $max_lines = 1000) {
+    if (!is_file(API_LOG_FILE) || filesize(API_LOG_FILE) < 500000) return;
+    $lines = @file(API_LOG_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if (!is_array($lines) || count($lines) <= $max_lines) return;
+    @file_put_contents(API_LOG_FILE, implode("\n", array_slice($lines, -$max_lines)) . "\n", LOCK_EX);
 }

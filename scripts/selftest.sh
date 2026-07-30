@@ -331,6 +331,36 @@ grep -q "Deny from all\|Require all denied" "$ROOT/command_logs/.htaccess" \
     && pass "auth log directory is denied to the web server" \
     || fail "command_logs/.htaccess does not deny access"
 
+# ── Button API ────────────────────────────────────────────────────────────────
+# api.php runs shell commands with no login — the hash IS the credential.
+echo "Button API"
+out=$(php -r "
+    define('LOGIN_MAX_FAILURES', 2);
+    define('LOGIN_FAILURE_WINDOW', 900);
+    define('LOGIN_LOCKOUT_TIME', 900);
+    require '$ROOT/include/auth.php';
+    \$f = gumcp_throttle_file();
+    \$backup = is_file(\$f) ? file_get_contents(\$f) : null;
+    gumcp_login_clear('api:9.9.9.9'); gumcp_login_clear('9.9.9.9');
+    gumcp_login_record_failure('api:9.9.9.9');
+    gumcp_login_record_failure('api:9.9.9.9');
+    gumcp_login_record_failure('api:9.9.9.9');
+    \$r  = gumcp_login_locked_for('api:9.9.9.9') > 0 ? 'a' : '-';
+    // Hammering the API must never lock that address out of the web login.
+    \$r .= gumcp_login_locked_for('9.9.9.9') === 0 ? 'b' : '-';
+    gumcp_login_clear('api:9.9.9.9');
+    if (\$backup === null) { @unlink(\$f); } else { file_put_contents(\$f, \$backup); }
+    echo \$r;
+" 2>/dev/null)
+[ "$out" = "ab" ] && pass "unknown API keys are throttled, separately from the login" \
+                  || fail "API key throttling (got '$out', want 'ab')"
+
+if grep -qE "'hash' +=> +[$]hash *," "$ROOT/api.php"; then
+    fail "api.php logs the full button hash — the log becomes a credential"
+else
+    pass "API log stores only a hash prefix"
+fi
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise
