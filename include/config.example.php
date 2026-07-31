@@ -29,6 +29,10 @@ define('SSH_PASS', 'raspberry'); // SSH password — CHANGE THIS
 define('LOGIN_REQUIRED', true);
 define('LOGIN_USER', 'pi');
 define('LOGIN_PASS', 'raspberry'); // CHANGE THIS (and SSH_PASS above)
+// LOGIN_PASS (and BASIC_AUTH_PASS) may instead hold a password_hash() value, so
+// the web password never sits in cleartext in this file. Generate one with:
+//   php -r "echo password_hash('your-password', PASSWORD_DEFAULT), PHP_EOL;"
+// setup.php writes a hash automatically. Cleartext keeps working as before.
 
 // ── Check the login against the Pi's system account ───────────────────────────
 // false (default): the login form is checked against LOGIN_USER / LOGIN_PASS

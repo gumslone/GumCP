@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Hardening — the login password no longer has to sit in cleartext
+`include/config.php` is readable on the SD card next to the code, so anyone who
+pulls the card (or finds any file-disclosure bug) got the web password itself.
+
+- `LOGIN_PASS` and `BASIC_AUTH_PASS` may now hold a `password_hash()` value;
+  cleartext keeps working unchanged, so no existing config breaks. Generate one
+  with `php -r "echo password_hash('your-password', PASSWORD_DEFAULT), PHP_EOL;"`.
+- **setup.php now writes a hash automatically** — fresh installs configured
+  through the browser never store the password in cleartext at all.
+- The integration suite's test install now uses a hashed password, so the full
+  login flow is exercised through `password_verify()` on every CI run.
+
+Note the boundary honestly: `SSH_PASS` must remain recoverable (GumCP has to
+present it to SSH), so this protects the *web* credential — most valuable when
+the two are different, e.g. with `LOGIN_CHECK_SYSTEM_USER` or a dedicated
+login user.
+
 ### Hardening — the recovery updater now follows the same rules as everything else
 `update.php` can run `git reset --hard` yet sat outside every protection added
 recently: the emergency `?key=` could be guessed with no rate limit, a session

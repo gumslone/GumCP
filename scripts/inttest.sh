@@ -44,7 +44,7 @@ define('SSH_USER', 'pi');
 define('SSH_PASS', 'raspberry');
 define('LOGIN_REQUIRED', true);
 define('LOGIN_USER', 'tester');
-define('LOGIN_PASS', 'correct-horse');
+define('LOGIN_PASS', '__PASS_HASH__'); // replaced below with a bcrypt hash
 define('SESSION_IDLE_TIMEOUT', 2);
 define('SESSION_ABSOLUTE_TIMEOUT', 0);
 define('GUMCP_UPDATE_KEY', 'recovery-key-for-tests');
@@ -52,6 +52,14 @@ define('LOGIN_MAX_FAILURES', 3);
 // The Button API runs a command with no login, so it stays off here.
 $gumcp_modules = ['button_api' => ['module_active' => 0]];
 CFG
+
+# The login password is stored hashed, exactly as setup.php writes it — so the
+# whole login flow is exercised through password_verify(), not string equality.
+php -r "
+    \$f = '$TDIR/app/include/config.php';
+    file_put_contents(\$f, str_replace('__PASS_HASH__',
+        password_hash('correct-horse', PASSWORD_DEFAULT), file_get_contents(\$f)));
+"
 
 php -S "127.0.0.1:$PORT" -t "$TDIR/app" >"$TDIR/server.log" 2>&1 &
 SRV=$!

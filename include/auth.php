@@ -121,6 +121,25 @@ function gumcp_mark_login_time() {
 }
 
 /**
+ * Compare a submitted password against a stored one that may be either
+ * cleartext or a password_hash() value.
+ *
+ * config.php sits readable on the SD card next to the code, so storing the
+ * login password as a bcrypt hash means pulling the card (or any file
+ * disclosure) no longer yields the web password itself. Cleartext stays
+ * supported — every existing config.php uses it, and SSH_PASS has to be
+ * recoverable anyway, so this is an opt-in for the login credential only.
+ */
+function gumcp_password_matches(string $stored, string $given): bool {
+    if ($stored === '' || $given === '') return false;
+    $info = password_get_info($stored);
+    if (!empty($info['algo'])) {
+        return password_verify($given, $stored);
+    }
+    return hash_equals($stored, $given);
+}
+
+/**
  * Should the login form be checked against the Pi's real system account rather
  * than the LOGIN_USER / LOGIN_PASS values in config.php? Off by default, in
  * which case the login is purely a config credential.
@@ -355,7 +374,7 @@ function gumcp_process_login() {
         // …otherwise against the credentials configured in config.php.
         if (!gumcp_check_system_user()
             && defined('LOGIN_USER') && defined('LOGIN_PASS')
-            && hash_equals(LOGIN_USER, $user) && hash_equals(LOGIN_PASS, $pass)) {
+            && hash_equals(LOGIN_USER, $user) && gumcp_password_matches(LOGIN_PASS, $pass)) {
             gumcp_login_clear($ip);
             session_regenerate_id(true);
             $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
@@ -397,7 +416,7 @@ function gumcp_basic_authenticated(): bool {
     $ip = gumcp_client_ip();
     if (gumcp_login_locked_for($ip) > 0) return false;
 
-    if (hash_equals(BASIC_AUTH_USER, $user) && hash_equals(BASIC_AUTH_PASS, $pass)) {
+    if (hash_equals(BASIC_AUTH_USER, $user) && gumcp_password_matches(BASIC_AUTH_PASS, $pass)) {
         gumcp_login_clear($ip);
         return true;
     }

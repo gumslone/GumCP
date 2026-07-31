@@ -391,6 +391,29 @@ php -r "
 " 2>/dev/null && pass "auth.log and api_calls.log are reserved" \
               || fail "the audit trail is not in the reserved list"
 
+# ── Password storage ──────────────────────────────────────────────────────────
+# config.php sits readable on the SD card, so LOGIN_PASS may hold a
+# password_hash() value instead of cleartext. Both must keep working.
+echo "Password storage"
+out=$(php -r "
+    require '$ROOT/include/auth.php';
+    \$h = password_hash('correct-horse', PASSWORD_DEFAULT);
+    \$r  = gumcp_password_matches('plain-secret', 'plain-secret') ? 'a' : '-';
+    \$r .= gumcp_password_matches('plain-secret', 'wrong')        ? '-' : 'b';
+    \$r .= gumcp_password_matches(\$h, 'correct-horse')           ? 'c' : '-';
+    \$r .= gumcp_password_matches(\$h, 'wrong')                   ? '-' : 'd';
+    \$r .= gumcp_password_matches('', '')                         ? '-' : 'e';
+    // The literal hash string must not work as the password itself.
+    \$r .= gumcp_password_matches(\$h, \$h)                        ? '-' : 'f';
+    echo \$r;
+" 2>/dev/null)
+[ "$out" = "abcdef" ] && pass "cleartext and password_hash() values both verify" \
+                      || fail "password matching (got '$out', want 'abcdef')"
+
+grep -q "password_hash(" "$ROOT/setup.php" \
+    && pass "setup.php stores a hash, not the password" \
+    || fail "setup.php writes the password in cleartext"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise

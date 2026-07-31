@@ -90,7 +90,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$already_configured && $is_local) 
 
         $src = gumcp_set_define($src, 'LOGIN_REQUIRED', 'true');
         $src = gumcp_set_define($src, 'LOGIN_USER', var_export($user, true));
-        $src = gumcp_set_define($src, 'LOGIN_PASS', var_export($pass, true));
+        // Store a hash, not the password: config.php sits readable on the SD
+        // card, so cleartext there hands out the login to anyone with the card.
+        $src = gumcp_set_define($src, 'LOGIN_PASS',
+            var_export(password_hash($pass, PASSWORD_DEFAULT), true));
         // Never leave an explicit open-access opt-out behind.
         $src = gumcp_set_define($src, 'GUMCP_ALLOW_UNAUTHENTICATED', 'false');
 
