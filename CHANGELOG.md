@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed — background command output was invisible
+`execute_command.php` wrote each background command's output to
+`command_logs/*.txt`, but the Actions page lists only `*.log` and the Delete
+button accepts only `*.log`. So every background command's log was unreachable
+from the panel and could never be cleaned up — it just accumulated on the SD
+card. Output is now written as `.log`, and the Actions page also lists existing
+`.txt` files so nothing already on disk is orphaned.
+
+`command_logs/auth.log` and `api_calls.log` are excluded from that list and
+refused by `delete_log`: they are the audit trail, not command output, and a
+Delete button next to them would quietly discard the record of who signed in.
+
 ### Button API exposure is now visible, and documented accurately
 A `config.php` with no `button_api` entry is backfilled as **enabled** — a
 deliberate choice so upgrades do not break existing automations, since the API

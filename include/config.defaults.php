@@ -50,6 +50,15 @@ defined('GUMCP_LANG')           || define('GUMCP_LANG',           'en'); // en|d
 // unavailable — a recovery escape hatch. Keep it long and secret.
 defined('GUMCP_UPDATE_KEY')     || define('GUMCP_UPDATE_KEY',     '');
 
+// Logs in command_logs/ that are NOT background command output: the audit trail
+// and the API call log. They must not appear in the Actions log list, where a
+// "Delete" button would quietly discard the record of who signed in.
+if (!function_exists('gumcp_reserved_logs')) {
+    function gumcp_reserved_logs(): array {
+        return ['auth.log', 'api_calls.log'];
+    }
+}
+
 // Ensure button_api module entry exists for configs created before this feature.
 // Deliberately left ENABLED here, unlike config.example.php where new installs
 // get it off: flipping this to 0 would silently break existing api.php

@@ -50,7 +50,10 @@ try {
     }
 
     // Generate unique log filename
-    $log_filename = date('Y-m-d_H-i-s') . '_' . substr(md5($cmd . microtime()), 0, 8) . '.txt';
+    // Must end in .log — that is what the Actions page lists and what
+    // delete_log accepts. These were written as .txt, so every background
+    // command's output was invisible in the UI and could never be cleaned up.
+    $log_filename = date('Y-m-d_H-i-s') . '_' . substr(md5($cmd . microtime()), 0, 8) . '.log';
     $log_path = $command_logs_dir . '/' . $log_filename;
     $relative_log_path = './command_logs/' . $log_filename;
 

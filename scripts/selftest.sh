@@ -361,6 +361,36 @@ else
     pass "API log stores only a hash prefix"
 fi
 
+# ── Command logs ──────────────────────────────────────────────────────────────
+# The Actions page lists command output and offers a Delete button. If the
+# writer, the lister and the deleter disagree on which files those are, output
+# goes missing (or the audit trail becomes deletable).
+echo "Command logs"
+grep -q "'.log';" "$ROOT/execute_command.php" \
+    && pass "background command output is written as .log" \
+    || fail "execute_command.php does not write .log — output will not be listed"
+
+php -r "
+    \$act = file_get_contents('$ROOT/actions.php');
+    \$aj  = file_get_contents('$ROOT/ajax.php');
+    \$f = 0;
+    // Both sides must skip the reserved logs…
+    if (strpos(\$act, 'gumcp_reserved_logs()') === false) \$f++;
+    if (strpos(\$aj,  'gumcp_reserved_logs()') === false) \$f++;
+    // …and both must accept the legacy extension.
+    if (strpos(\$act, \".txt\") === false) \$f++;
+    if (strpos(\$aj,  \".txt\") === false) \$f++;
+    exit(\$f === 0 ? 0 : 1);
+" 2>/dev/null && pass "listing and deletion agree, audit logs excluded from both" \
+              || fail "actions.php and ajax.php disagree about which logs are command output"
+
+php -r "
+    require '$ROOT/include/config.defaults.php';
+    \$r = gumcp_reserved_logs();
+    exit((in_array('auth.log', \$r, true) && in_array('api_calls.log', \$r, true)) ? 0 : 1);
+" 2>/dev/null && pass "auth.log and api_calls.log are reserved" \
+              || fail "the audit trail is not in the reserved list"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise

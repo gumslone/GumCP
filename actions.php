@@ -174,7 +174,9 @@ if (is_dir($command_logs_dir)) {
     foreach (array_diff(scandir($command_logs_dir), ['.', '..']) as $file) {
         if ($file[0] === '.') continue; // skip .htaccess and other dot-files
         $path = $command_logs_dir . '/' . $file;
-        if (is_file($path) && substr($file, -4) === '.log') {
+        if (in_array($file, gumcp_reserved_logs(), true)) continue;  // audit trail, not command output
+        // .txt is the legacy extension — still listed so older output stays reachable.
+        if (is_file($path) && (substr($file, -4) === '.log' || substr($file, -4) === '.txt')) {
             $log_files[] = ['name' => $file, 'mtime' => (int)filemtime($path)];
         }
     }

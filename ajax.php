@@ -278,8 +278,14 @@ switch ($action) {
     // The log files are local to the server — no SSH needed, just unlink().
     case 'delete_log':
         $file = basename(trim((string)($_POST['log_file'] ?? '')));
-        if ($file === '' || $file[0] === '.' || substr($file, -4) !== '.log') {
+        $ext  = substr($file, -4);
+        if ($file === '' || $file[0] === '.' || ($ext !== '.log' && $ext !== '.txt')) {
             $out = err('Invalid filename');
+            break;
+        }
+        // The audit trail is not command output and must not be deletable here.
+        if (in_array($file, gumcp_reserved_logs(), true)) {
+            $out = err('That log is part of the audit trail and cannot be deleted here.');
             break;
         }
         $path = __DIR__ . '/command_logs/' . $file;
