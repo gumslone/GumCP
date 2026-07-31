@@ -159,6 +159,18 @@ $sections['Security'] = [
             ? 'still using a shipped default password — change it in include/config.php'
             : 'not using the shipped defaults'
     ),
+    chk(
+        empty($gumcp_modules['button_api']['module_active'])
+            || !empty($gumcp_api_allow_ips),
+        'Button API is off, or restricted by IP',
+        empty($gumcp_modules['button_api']['module_active'])
+            ? 'the Button API is disabled'
+            : (!empty($gumcp_api_allow_ips)
+                ? 'enabled, limited to: ' . implode(', ', $gumcp_api_allow_ips)
+                : 'ENABLED for any address — api.php runs a button\'s command with no '
+                  . 'login when given its hash. Set $gumcp_api_allow_ips in '
+                  . 'include/config.php, or switch the module off if you do not use it.')
+    ),
 ];
 
 $sections['Directories'] = [

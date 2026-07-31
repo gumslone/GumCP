@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Button API exposure is now visible, and documented accurately
+A `config.php` with no `button_api` entry is backfilled as **enabled** — a
+deliberate choice so upgrades do not break existing automations, since the API
+predates the module flag. The consequence was invisible: a hand-written or
+trimmed config quietly gained an endpoint that runs a command with no login.
+
+- **System Check** now reports the Button API as a problem when it is enabled
+  without `$gumcp_api_allow_ips`, and shows the allow-list when there is one.
+- `SECURITY.md` said only that the API is "disabled by default for new
+  installs". True of `config.example.php`, but it omitted the backfill — the
+  case where a user is exposed without having chosen anything. Now stated.
+- `SECURITY.md` also documents the session timeouts and `command_logs/auth.log`.
+
 ### Integration tests
 `scripts/selftest.sh` calls functions directly; the new `scripts/inttest.sh`
 drives a real HTTP server with real cookies. That distinction matters, because

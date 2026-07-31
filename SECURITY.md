@@ -44,8 +44,13 @@ So the following are **working as intended**, not vulnerabilities:
   [Limiting what GumCP can run](README.md#limiting-what-gumcp-can-run) to reduce
   the blast radius with a scoped `sudoers` allow-list.
 - The **Button API** (`api.php`) executes a button without a login when given that
-  button's 32-hex secret hash. The hash *is* the credential. It is disabled by
-  default for new installs and can be restricted with `$gumcp_api_allow_ips`.
+  button's 32-hex secret hash. The hash *is* the credential. New installs get it
+  **off** (`config.example.php` ships `module_active => 0`) and it can be
+  restricted with `$gumcp_api_allow_ips`. Note that a `config.php` with **no**
+  `button_api` entry — one written before the module flag existed, or trimmed by
+  hand — is backfilled as **enabled**, so that upgrades do not silently break
+  existing automations. System Check reports when it is on without an IP
+  allow-list; pin `module_active` in your `config.php` to choose explicitly.
 - Running with `GUMCP_ALLOW_UNAUTHENTICATED = true` disables authentication. That
   is a deliberate, documented opt-in that shows a red banner on every page.
 
@@ -67,6 +72,11 @@ Reports we very much **do** want:
 - Give the SSH user only the `sudo` rights it needs (see the README section above).
 - Keep the Button API disabled unless you use it; restrict it by IP and send keys
   via the `X-GumCP-Key` header rather than a query string.
+- Sessions end after `SESSION_IDLE_TIMEOUT` (1 hour) and
+  `SESSION_ABSOLUTE_TIMEOUT` (12 hours); shorten them if the panel is used from
+  shared machines.
+- Review `command_logs/auth.log` — every sign-in, failed attempt, lockout and
+  timeout is recorded there, and the last ten appear on the System Check page.
 - Run the built-in **System Check** page — it reports whether authentication is
   configured and whether default passwords are still in use.
 
