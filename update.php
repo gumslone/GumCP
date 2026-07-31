@@ -19,23 +19,51 @@ require_once(__DIR__ . '/include/session.php');
 gumcp_start_session();
 
 include_once(__DIR__ . '/include/config.php');
+// Defaults + the shared auth helpers (throttle, timeouts, audit log). auth.php
+// only defines functions, so pulling it in keeps this page standalone — it
+// still works when init.php or i18n is broken.
+require_once(__DIR__ . '/include/config.defaults.php');
+require_once(__DIR__ . '/include/auth.php');
 
 // ── Access control ────────────────────────────────────────────────────────────
 // Allowed if: a valid emergency key is supplied, OR the normal login/Basic Auth
 // succeeds, OR no authentication is configured (open install).
 $update_key = defined('GUMCP_UPDATE_KEY') ? (string)GUMCP_UPDATE_KEY : '';
 $req_key    = (string)($_REQUEST['key'] ?? ''); // GET query or POST body
-$has_key    = $update_key !== '' && hash_equals($update_key, $req_key);
+
+// The emergency key is a bearer credential for an endpoint that can run
+// git reset --hard, so guessing it must cost something. Same throttle as the
+// login, under its own key so recovery attempts cannot lock the web login and
+// vice versa.
+$throttle_key = 'update:' . gumcp_client_ip();
+if ($req_key !== '' && gumcp_login_locked_for($throttle_key) > 0) {
+    gumcp_auth_log('locked', 'update.php key attempt while locked out');
+    http_response_code(429);
+    header('Retry-After: ' . gumcp_login_locked_for($throttle_key));
+    echo 'Too many failed attempts.';
+    exit();
+}
+
+$has_key = $update_key !== '' && hash_equals($update_key, $req_key);
+if ($req_key !== '') {
+    if ($has_key) {
+        gumcp_login_clear($throttle_key);
+        gumcp_auth_log('login_ok', 'update.php emergency key');
+    } else {
+        gumcp_login_record_failure($throttle_key);
+        gumcp_auth_log('login_failed', 'update.php: wrong emergency key');
+    }
+}
 
 $login_on = defined('LOGIN_REQUIRED') && LOGIN_REQUIRED === true;
 $basic_on = defined('BASIC_AUTH') && BASIC_AUTH === true;
 
 $allowed = $has_key || (!$login_on && !$basic_on);
 
-if (!$allowed && $login_on
-    && isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])
-    && $_SESSION['LOGIN_USER'] === md5(LOGIN_USER)
-    && $_SESSION['LOGIN_PASS'] === md5(LOGIN_PASS)) {
+// Reuse the shared session check rather than comparing the stamps by hand:
+// it also enforces the idle/absolute timeouts, which a raw comparison would
+// silently bypass — this page must not be the one place a dead session works.
+if (!$allowed && $login_on && gumcp_session_authenticated()) {
     $allowed = true;
 }
 
@@ -48,8 +76,20 @@ if (!$allowed && $basic_on) {
             list($bu, $bp) = explode(':', $decoded, 2);
         }
     }
-    if ($bu !== '' && hash_equals(BASIC_AUTH_USER, $bu) && hash_equals(BASIC_AUTH_PASS, $bp)) {
-        $allowed = true;
+    if ($bu !== '') {
+        if (gumcp_login_locked_for($throttle_key) > 0) {
+            http_response_code(429);
+            header('Retry-After: ' . gumcp_login_locked_for($throttle_key));
+            echo 'Too many failed attempts.';
+            exit();
+        }
+        if (hash_equals(BASIC_AUTH_USER, $bu) && hash_equals(BASIC_AUTH_PASS, $bp)) {
+            gumcp_login_clear($throttle_key);
+            $allowed = true;
+        } else {
+            gumcp_login_record_failure($throttle_key);
+            gumcp_auth_log('login_failed', 'update.php: wrong Basic Auth');
+        }
     }
 }
 

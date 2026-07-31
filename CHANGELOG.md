@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Hardening — the recovery updater now follows the same rules as everything else
+`update.php` can run `git reset --hard` yet sat outside every protection added
+recently: the emergency `?key=` could be guessed with no rate limit, a session
+accepted there never expired (it compared the session stamps by hand instead of
+using the shared check), Basic Auth attempts against it were unthrottled, and
+none of it reached the auth log.
+
+- Key and Basic Auth guessing are throttled under their own counter — hammering
+  the updater cannot lock you out of the normal login, and vice versa. Once
+  locked, even the correct key is refused until the lockout passes.
+- Sessions used on the updater honour the idle/absolute timeouts, and a
+  system-account session (`LOGIN_CHECK_SYSTEM_USER`) can now use the updater at
+  all — the hand-rolled check silently didn't accept those.
+- Key successes and failures are recorded in `command_logs/auth.log`.
+- Five new integration checks cover the anonymous refusal, session access, the
+  emergency key, the throttle, and that lockout applies to the correct key too.
+
 ### Fixed — background command output was invisible
 `execute_command.php` wrote each background command's output to
 `command_logs/*.txt`, but the Actions page lists only `*.log` and the Delete

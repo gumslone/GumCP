@@ -47,6 +47,8 @@ define('LOGIN_USER', 'tester');
 define('LOGIN_PASS', 'correct-horse');
 define('SESSION_IDLE_TIMEOUT', 2);
 define('SESSION_ABSOLUTE_TIMEOUT', 0);
+define('GUMCP_UPDATE_KEY', 'recovery-key-for-tests');
+define('LOGIN_MAX_FAILURES', 3);
 // The Button API runs a command with no login, so it stays off here.
 $gumcp_modules = ['button_api' => ['module_active' => 0]];
 CFG
@@ -206,6 +208,34 @@ echo "Button API"
 [ "$(code "$BASE/api.php?hash=deadbeefdeadbeefdeadbeefdeadbeef")" = "403" ] \
     && pass "Button API is disabled unless switched on" \
     || fail "api.php answered while the module is disabled"
+
+# ── Recovery updater ──────────────────────────────────────────────────────────
+# update.php can run git reset --hard, so it must sit behind the same rules as
+# everything else: no anonymous access, throttled key guessing, expiring sessions.
+echo "Recovery updater"
+
+[ "$(code "$BASE/update.php")" = "302" ] \
+    && pass "update.php refuses an anonymous request" \
+    || fail "update.php served without a login ($(code "$BASE/update.php"))"
+
+[ "$(code -b "$JAR" "$BASE/update.php")" = "200" ] \
+    && pass "a signed-in session reaches the updater" \
+    || fail "signed-in session was refused by update.php"
+
+[ "$(code "$BASE/update.php?key=recovery-key-for-tests")" = "200" ] \
+    && pass "the emergency key works without a session" \
+    || fail "valid emergency key was refused"
+
+# Three wrong keys → locked; the right key must then be refused too.
+for k in wrong1 wrong2 wrong3; do
+    curl -s -o /dev/null "$BASE/update.php?key=$k"
+done
+[ "$(code "$BASE/update.php?key=wrong4")" = "429" ] \
+    && pass "key guessing is throttled (429 after repeated failures)" \
+    || fail "update.php key guessing is not throttled"
+[ "$(code "$BASE/update.php?key=recovery-key-for-tests")" = "429" ] \
+    && pass "lockout applies even to the correct key" \
+    || fail "lockout can be bypassed by guessing correctly"
 
 # ── Session expiry ────────────────────────────────────────────────────────────
 # SESSION_IDLE_TIMEOUT is 2s in this install, so this is a real wait, not a stub.
