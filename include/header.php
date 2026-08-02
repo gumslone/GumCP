@@ -27,7 +27,6 @@ $show_menu_reorder = !empty($show_menu_reorder);
     <link rel="icon"          href="./static/images/raspberry.png" type="image/png">
     <title>GumCP <?php echo htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8'); ?></title>
     <link href="./static/css.php" rel="stylesheet" type="text/css">
-    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="./static/js.php" type="text/javascript"></script>
 </head>
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Fixed — icons and loading spinners disappeared under the CSP (2.7.0 regression)
+FontAwesome was still loaded from `maxcdn.bootstrapcdn.com`, and the
+Content-Security-Policy introduced in 2.7.0 (`style-src 'self'`) rightly blocks
+external stylesheets — so every `fa` icon vanished. Most visibly: buttons that
+swap their label for a spinner while working (direct command buttons, Execute,
+Save) appeared to just go blank with no loader.
+
+The FontAwesome CSS was already bundled in `static/css/` (with all font files in
+`static/fonts/`) — it is now part of the `static/css.php` bundle and the CDN
+`<link>` is gone from every page. A self-test now fails if any page references
+an external stylesheet or script, since the CSP blocks those silently with no
+server-side error.
 ## [2.7.0] — 2026-08-02
 
 ### Hardening — the login password no longer has to sit in cleartext

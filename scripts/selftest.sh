@@ -414,6 +414,18 @@ grep -q "password_hash(" "$ROOT/setup.php" \
     && pass "setup.php stores a hash, not the password" \
     || fail "setup.php writes the password in cleartext"
 
+# ── No external assets ────────────────────────────────────────────────────────
+# The CSP allows styles/scripts/fonts from this origin only, so a CDN <link> or
+# <script> is silently blocked by the browser — icons vanish with no PHP error
+# anywhere. Everything must ship in static/.
+echo "External assets"
+if grep -rnE '<(link|script)[^>]+(href|src)="(//|https?://)' --include='*.php' "$ROOT" \
+        | grep -v "/modules/" | grep -v 'rel="alternate"' | grep -q .; then
+    fail "a page loads CSS/JS from an external host — the CSP will block it"
+else
+    pass "all stylesheets and scripts are served from this origin"
+fi
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise

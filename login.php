@@ -56,7 +56,6 @@ switch ($action) {
     <link rel="icon"          href="./static/images/raspberry.png" type="image/png">
     <title>Sign In &mdash; GumCP</title>
     <link href="./static/css.php" rel="stylesheet" type="text/css">
-    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

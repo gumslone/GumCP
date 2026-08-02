@@ -31,6 +31,10 @@ include __DIR__ . '/css/flags.css';
 include __DIR__ . '/css/bootstrap-theme.min.css';
 include __DIR__ . '/css/bootstrap.min.css';
 include __DIR__ . '/css/bootstrap-switch.min.css';
+// Bundled FontAwesome — was loaded from maxcdn.bootstrapcdn.com, which the CSP
+// (style-src 'self') rightly blocks. Its url('./fonts/…') resolves against this
+// file's URL directory (static/), landing on static/fonts/ where the files are.
+include __DIR__ . '/css/font-awesome.min.css';
 include __DIR__ . '/css/style.css';
 $out = (string)ob_get_clean();
 

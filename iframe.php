@@ -46,7 +46,6 @@ $module_path  = htmlspecialchars($module_path_raw, ENT_QUOTES, 'UTF-8');
     <link rel="icon"          href="./static/images/raspberry.png" type="image/png">
     <title><?php echo $module_title; ?> &mdash; GumCP</title>
     <link href="./static/css.php" rel="stylesheet" type="text/css">
-    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="./static/js.php" type="text/javascript"></script>
     <style>
         .iframe-container { position:relative; width:100%; min-height:500px; }
