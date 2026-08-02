@@ -39,7 +39,7 @@ More screenshots in the [screenshots folder](screenshots/).
 - **System Check** — built-in diagnostic page (`check.php`) that verifies PHP extensions, directory permissions, SSH connectivity and GPIO tools; Fix buttons repair common issues over SSH without touching the terminal
 - **Menu reorder** — drag and drop navbar items into any order; preference saved automatically
 - **Multilanguage** — English, German, Ukrainian, Spanish and French; set the default in `config.php` and switch from the navbar (remembered per session). Untranslated strings fall back to English; add a language by dropping a file into `include/lang/`
-- **Authentication** — optional login page, HTTP Basic Auth, or both simultaneously with separate credentials
+- **Authentication** — login page (required by default), HTTP Basic Auth, or both with separate credentials; optional check against the real system account (`LOGIN_CHECK_SYSTEM_USER`); passwords storable as `password_hash()` values; brute-force throttling, expiring sessions, and a sign-in audit log surfaced on System Check
 - **Optional modules** — File Manager and Database Manager (installed on demand from upstream, see [Optional third-party modules](#optional-third-party-modules)), TeHyBug sensor support (temperature, humidity, barometric pressure)
 
 ## Compatibility
@@ -399,11 +399,13 @@ sudo apt-get install -y php-sqlite3
 > `LOGIN_REQUIRED` nor `BASIC_AUTH` is enabled, it refuses to serve and shows setup
 > instructions instead. Never expose GumCP directly to the internet.
 
-- **Change default credentials** in `include/config.php` before putting GumCP on any network — the shipped defaults are public
+- **Change default credentials** in `include/config.php` before putting GumCP on any network — the shipped defaults are public. `LOGIN_PASS` (and `BASIC_AUTH_PASS`) may hold a `password_hash()` value instead of cleartext, so pulling the SD card doesn't yield the web password — `setup.php` writes a hash automatically, or generate one with `php -r "echo password_hash('your-password', PASSWORD_DEFAULT), PHP_EOL;"`
 - `LOGIN_REQUIRED` is **enabled by default**. Disabling it does not open the panel; GumCP refuses to serve until some authentication is configured
 - Running an open panel requires deliberately setting `GUMCP_ALLOW_UNAUTHENTICATED` to `true`, which disables all authentication. Only consider this on a fully isolated network; a red warning banner is shown on every page while it is active
-- The **System Check** page reports whether authentication is configured and whether default passwords are still in use
-- Button API is enabled by default — set `$gumcp_modules['button_api']['module_active'] = 0` in `config.php` to disable it
+- The **System Check** page reports whether authentication is configured, whether default passwords are still in use, and shows the last ten sign-in events
+- **Failed logins are throttled** per client address (5 failures → 15-minute lockout, tunable via `LOGIN_MAX_FAILURES` / `LOGIN_LOCKOUT_TIME`); the same limit covers Basic Auth, the Button API and the recovery updater, each under its own counter
+- **Sessions expire** — after `SESSION_IDLE_TIMEOUT` (default 1 h idle) and `SESSION_ABSOLUTE_TIMEOUT` (default 12 h); the dashboard's auto-refresh does not keep a session alive. Set either to `0` to disable
+- Every sign-in, failed attempt, lockout and timeout is recorded in `command_logs/auth.log` (never the password); the panel also sends the usual security headers (CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy`)
 - Button API hashes are secret URLs — treat them like passwords; use **Regenerate hash** if a hash is compromised
 - `command_logs/` and `buttons/` are blocked from direct web access by the Apache config the installer adds (`deploy/gumcp-apache.conf`). This matters: `buttons/buttons.json` stores each button's API hash, which triggers a command with no login, and `command_logs/` holds whatever your commands printed. **`.htaccess` alone is not enough** — Debian and Raspberry Pi OS set `AllowOverride None` for `/var/www`, which silently ignores it. If you installed before this was added, or set GumCP up by hand:
 
@@ -416,7 +418,7 @@ sudo a2enconf gumcp && sudo systemctl reload apache2
   **System Check verifies this by actually requesting the files over HTTP**, so it reports what your server really does rather than assuming.
 - GumCP executes commands as the SSH user — use a dedicated user with only the permissions it needs
 - The Packages, Logs, Cron and Raspberry Pi pages run privileged commands (`apt`, `journalctl`, `raspi-config`, writing boot files) via `sudo` over SSH, which requires the SSH user to have passwordless `sudo` — the same assumption as the Actions page. See [Limiting what GumCP can run](#limiting-what-gumcp-can-run) below.
-- The **Button API** (`api.php`) executes a button's command with **no login** — the per-button hash is the only credential. It is **off by default** for new installs; enable it with `$gumcp_modules['button_api']['module_active'] = 1` only if you need it, and treat the URLs like passwords. Prefer sending the key as a header so it stays out of access logs and browser history:
+- The **Button API** (`api.php`) executes a button's command with **no login** — the per-button hash is the only credential. It is **off by default** for new installs — but a `config.php` written before the module flag existed is backfilled as **enabled**, so upgrades don't break existing automations; System Check flags it when it is on without an IP allow-list (`$gumcp_api_allow_ips`). Pin `module_active` in `config.php` to choose explicitly, and treat the URLs like passwords. Prefer sending the key as a header so it stays out of access logs and browser history:
 
 ```bash
 curl -H 'X-GumCP-Key: <32-char-hash>' http://<your-pi-ip>/GumCP/api.php
