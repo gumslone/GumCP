@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.7.0] — 2026-08-02
 
 ### Hardening — the login password no longer has to sit in cleartext
 `include/config.php` is readable on the SD card next to the code, so anyone who
@@ -222,7 +222,7 @@ and with client-supplied session IDs accepted.
 
 ---
 
-## [2.6.0] — 2026-07-30
+## [2.6.0] — 2026-07-30 *(tag withdrawn; these changes first shipped in 2.7.0)*
 
 ### Security — unauthenticated access to bundled modules (high)
 `modules/adminer/adminer.php` contained no authentication code at all, so the
