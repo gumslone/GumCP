@@ -244,6 +244,25 @@ body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
        -d "action=script_delete" -d "name=int-test.sh" -d "csrf_token=$atoken")
 case "$body" in *success*) pass "script deletes" ;; *) fail "script delete failed" ;; esac
 
+# A symlink planted inside user_scripts/ must not become a read or write
+# primitive against files outside it.
+mkdir -p "$TDIR/app/user_scripts"
+ln -sf "$TDIR/app/include/config.php" "$TDIR/app/user_scripts/evil.sh"
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=script_load" -d "name=evil.sh" -d "csrf_token=$atoken")
+case "$body" in
+    *LOGIN_PASS*) fail "script_load followed a symlink out of user_scripts/" ;;
+    *)            pass "a planted symlink cannot read files outside user_scripts/" ;;
+esac
+before=$(cat "$TDIR/app/include/config.php")
+curl -s -o /dev/null -b "$JAR" -X POST "$BASE/ajax.php" \
+     -d "action=script_save" -d "name=evil.sh" -d "csrf_token=$atoken" \
+     --data-urlencode "content=clobbered"
+after=$(cat "$TDIR/app/include/config.php")
+[ "$before" = "$after" ] && pass "a planted symlink cannot overwrite files outside user_scripts/" \
+                         || fail "script_save wrote through a symlink and clobbered config.php"
+rm -f "$TDIR/app/user_scripts/evil.sh"
+
 # ── Recovery updater ──────────────────────────────────────────────────────────
 # update.php can run git reset --hard, so it must sit behind the same rules as
 # everything else: no anonymous access, throttled key guessing, expiring sessions.

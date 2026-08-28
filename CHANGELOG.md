@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Script Editor — symlink containment, and Command Button integration
+- A symlink planted inside `user_scripts/` (a restored backup, another local
+  process) could have turned the editor into a read/write primitive against any
+  file the web server can touch — loading it would disclose the target,
+  saving would overwrite it. Every script path is now resolved and must be a
+  regular file inside `user_scripts/`; the integration suite proves both
+  attacks are refused (reading `config.php` through a link, and writing
+  through one).
+- The **Command Button** dialog gained an *Insert a saved script* picker: choose
+  a script from the Script Editor and the command fills in with its run line
+  (`bash`/`python3` + quoted absolute path). One click from "script saved" to
+  "button on the dashboard".
+
 ### Added — Script Editor with syntax highlighting and Raspberry Pi examples
 New **System → Scripts** page: write shell and Python scripts in the browser
 with CodeMirror highlighting (bundled locally — the CSP forbids CDNs, and the

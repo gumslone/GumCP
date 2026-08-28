@@ -284,7 +284,34 @@ function openButtonModal(title, buttonId) {
     $('#modal-button-id').val(buttonId !== undefined ? buttonId : '');
     $('#modal-button-direct').prop('checked', false);
     $('#modal-api-section').hide();
+    buttonLoadScriptOptions();
     $('#button-modal').modal('show');
+}
+
+/* Fill the modal's "Insert a saved script" picker from the Script Editor. */
+function buttonLoadScriptOptions() {
+    var $sel = $('#modal-button-script');
+    if (!$sel.length) return;
+    $.ajax({
+        type: 'POST', url: 'ajax.php', dataType: 'json',
+        data: { action: 'script_list', csrf_token: CSRF_TOKEN }
+    }).done(function (d) {
+        if (!d || d.type !== 'success') return;
+        $sel.find('option:not(:first)').remove();
+        (d.files || []).forEach(function (f) {
+            if (!/\.(sh|py)$/.test(f.name)) return;   // .txt cannot run
+            $('<option></option>').attr('value', f.name).text(f.name).appendTo($sel);
+        });
+    });
+}
+
+function buttonInsertScript(sel) {
+    var name = sel.value;
+    if (!name) return;
+    var interp = /\.py$/.test(name) ? 'python3' : 'bash';
+    // The name is server-validated to [A-Za-z0-9._-]+, so quoting is enough.
+    $('#modal-button-command').val(interp + " '" + GUMCP_DIR + "/user_scripts/" + name + "'");
+    sel.value = '';
 }
 
 function addButton() {

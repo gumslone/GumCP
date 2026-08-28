@@ -42,6 +42,7 @@ require_once('./include/header.php');
 ?>
 
 <script>
+    var GUMCP_DIR = <?php echo json_encode(__DIR__); ?>;
     var CSRF_TOKEN         = <?php echo json_encode($_SESSION['csrf_token']); ?>;
     var BUTTON_API_ENABLED = <?php echo json_encode(!empty($gumcp_modules['button_api']['module_active'])); ?>;
     </script>
@@ -203,6 +204,14 @@ require_once('./include/header.php');
                                name="button_command" placeholder="e.g., sudo systemctl restart apache2"
                                required>
                         <small class="help-block">Shell command executed over SSH when the button is clicked</small>
+                        <div class="input-group input-group-sm" style="margin-top:6px; max-width:420px">
+                            <span class="input-group-addon"><i class="fa fa-code"></i> Script</span>
+                            <select class="form-control" id="modal-button-script"
+                                    onchange="buttonInsertScript(this)">
+                                <option value="">Insert a saved script…</option>
+                            </select>
+                        </div>
+                        <small class="help-block">Scripts from the <a href="./scripts.php">Script Editor</a> — selecting one fills the command with its run line</small>
                     </div>
 
                     <div class="form-group">

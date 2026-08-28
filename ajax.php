@@ -728,10 +728,18 @@ switch ($action) {
             $out = err('Invalid script name');
             break;
         }
-        $path = ($from === 'template' ? __DIR__ . '/scripts/examples' : gumcp_scripts_dir()) . '/' . $name;
-        if (!is_file($path)) {
-            $out = err('Script not found');
-            break;
+        if ($from === 'template') {
+            $path = __DIR__ . '/scripts/examples/' . $name;
+            if (!is_file($path) || is_link($path)) {
+                $out = err('Script not found');
+                break;
+            }
+        } else {
+            $path = gumcp_script_path($name, true);
+            if ($path === '') {
+                $out = err('Script not found');
+                break;
+            }
         }
         $out = ok('ok', ['name' => $name, 'content' => (string)file_get_contents($path)]);
         break;
@@ -753,7 +761,12 @@ switch ($action) {
             $out = err('Could not create ' . $dir);
             break;
         }
-        if (@file_put_contents($dir . '/' . $name, $content, LOCK_EX) === false) {
+        $path = gumcp_script_path($name, false);
+        if ($path === '') {
+            $out = err('Refusing to write: the target is not a regular file in user_scripts/');
+            break;
+        }
+        if (@file_put_contents($path, $content, LOCK_EX) === false) {
             $out = err('Could not write the file — is user_scripts/ writable by the web server?');
             break;
         }
@@ -768,7 +781,9 @@ switch ($action) {
             break;
         }
         $path = gumcp_scripts_dir() . '/' . $name;
-        if (!is_file($path)) {
+        // Deleting a symlink removes only the link, so allow it — but refuse
+        // anything that is neither a link nor a regular file.
+        if (!is_link($path) && !is_file($path)) {
             $out = err('Script not found');
             break;
         }
@@ -784,8 +799,8 @@ switch ($action) {
             $out = err('Invalid script name');
             break;
         }
-        $path = gumcp_scripts_dir() . '/' . $name;
-        if (!is_file($path)) {
+        $path = gumcp_script_path($name, true);
+        if ($path === '') {
             $out = err('Save the script first');
             break;
         }
@@ -1153,6 +1168,32 @@ function gumcp_rrmdir(string $dir): bool {
 /** Directory holding the user's editable scripts. Web access is denied. */
 function gumcp_scripts_dir(): string {
     return __DIR__ . '/user_scripts';
+}
+
+/**
+ * Resolve a validated script name to a safe absolute path, or '' if the entry
+ * must not be touched. The name regex already blocks traversal; this closes
+ * the other file-level hole — a symlink planted inside user_scripts/ that
+ * points at something else (config.php, /etc/...). Reading through it would
+ * disclose the target, and saving through it would overwrite the target.
+ */
+function gumcp_script_path(string $name, bool $must_exist): string {
+    if (!gumcp_script_name_valid($name)) return '';
+    $dir  = gumcp_scripts_dir();
+    $path = $dir . '/' . $name;
+
+    if (is_link($path)) return '';
+    if (file_exists($path)) {
+        if (!is_file($path)) return '';
+        // Belt and suspenders: the resolved location must stay inside the dir.
+        $real = realpath($path);
+        $base = realpath($dir);
+        if ($real === false || $base === false
+            || strpos($real, $base . '/') !== 0) return '';
+    } elseif ($must_exist) {
+        return '';
+    }
+    return $path;
 }
 
 /**
