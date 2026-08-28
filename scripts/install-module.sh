@@ -51,6 +51,7 @@ case "$1" in -h|--help|--list) usage; exit 0;; esac
 MODULE="$1"
 VERSION="${2:-}"
 
+ENTRY_EXTRA=""
 case "$MODULE" in
     adminer)
         VERSION="${VERSION:-$ADMINER_DEFAULT}"
@@ -63,6 +64,9 @@ case "$MODULE" in
         URL="https://raw.githubusercontent.com/prasathmani/tinyfilemanager/${VERSION}/tinyfilemanager.php"
         VENDOR_FILE="tinyfilemanager-${VERSION}.modulesrc"
         ENTRY="tinyfilemanager.php"
+        # TFM's official embed mode: skips its OWN login (default admin/admin@123),
+        # since GumCP's guard above is already the gate. One login, not two.
+        ENTRY_EXTRA="define('FM_EMBED', true);"
         ;;
     *)
         fail "Unknown module '$MODULE'. Run with --list to see the options."
@@ -164,6 +168,7 @@ declare(strict_types=1);
 define('GUMCP_MODULE_KEY', '$MODULE');
 require_once __DIR__ . '/../../include/module_guard.php';
 
+${ENTRY_EXTRA:-}
 require __DIR__ . '/vendor/$VENDOR_FILE';
 ENTRYPHP
 chmod 644 "$DEST/$ENTRY"

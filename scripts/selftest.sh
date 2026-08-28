@@ -461,6 +461,12 @@ grep -q "name '\*.php' -delete" "$ROOT/scripts/install-module.sh" \
     && pass "installer removes stale executable vendor files" \
     || fail "install-module.sh does not clean vendor/*.php from old installs"
 
+# GumCP's guard is the gate; TFM's built-in login (default admin/admin@123)
+# must be disabled via its official embed mode, or users face two logins.
+grep -q "FM_EMBED" "$ROOT/scripts/install-module.sh" \
+    && pass "TinyFileManager entry point disables the redundant second login" \
+    || fail "TFM entry point does not define FM_EMBED — users get a second login"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise

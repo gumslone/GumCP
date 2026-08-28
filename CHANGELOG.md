@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Fixed — TinyFileManager no longer asks for a second login
+Opening the File Manager showed TFM's own login form (defaults
+`admin/admin@123`) after you had already signed in to GumCP. The generated
+entry point now uses TFM's official embed mode (`FM_EMBED`), which disables
+only its internal auth — GumCP's login guard remains the sole gate, and an
+unauthenticated request is still redirected to the GumCP login (verified
+live). **Reinstall the module from Actions after updating** to regenerate the
+entry point.
+
 ### Fixed — "Installed, but NOT protected … reinstall the module" could never clear
 Installs made by older GumCP versions stored the module's upstream file as
 `vendor/<name>-<version>.php` — directly executable, bypassing the login guard,
