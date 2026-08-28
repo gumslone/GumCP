@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Script Editor polish
+- The example list no longer dominates the sidebar: the seventeen Raspberry Pi
+  examples sit in a collapsed panel (with a count badge) that expands on click,
+  grouped into GPIO, Motors, Sensors and System.
 - The **Cron** page gained the same *Insert a saved script* picker as the
   Command Button dialog — schedule a saved script without typing its path.
 - The editor warns before discarding unsaved changes (loading another script,

@@ -675,13 +675,33 @@ function scriptRefreshList(selectName) {
                 .on('click', function () { scriptLoad(f.name, 'user'); })
                 .appendTo($l);
         });
+        // Seventeen examples make a long sidebar, so they sit in a collapsed
+        // panel, grouped by what they drive rather than alphabetically.
         var $t = $('#template-list').empty();
-        (d.templates || []).forEach(function (name) {
-            $('<a class="list-group-item"></a>')
-                .html('<i class="fa fa-magic"></i> ' + esc(name))
-                .on('click', function () { scriptLoad(name, 'template'); })
+        var groups = [
+            { label: 'GPIO',    icon: 'fa-microchip', match: /^gpio-/ },
+            { label: 'Motors',  icon: 'fa-cog',       match: /^motor-/ },
+            { label: 'Sensors', icon: 'fa-thermometer-half', match: /^sensor-/ },
+            { label: 'System',  icon: 'fa-linux',     match: /./ }
+        ];
+        var templates = d.templates || [];
+        var used = {};
+        groups.forEach(function (g) {
+            var members = templates.filter(function (n) { return !used[n] && g.match.test(n); });
+            if (!members.length) return;
+            members.forEach(function (n) { used[n] = true; });
+            $('<span class="list-group-item disabled" style="padding:4px 12px; font-size:11px; '
+              + 'text-transform:uppercase; letter-spacing:0.5px; background:#f9f9f9"></span>')
+                .html('<i class="fa ' + g.icon + '"></i> ' + g.label)
                 .appendTo($t);
+            members.forEach(function (name) {
+                $('<a class="list-group-item"></a>')
+                    .html('<i class="fa fa-magic"></i> ' + esc(name))
+                    .on('click', function () { scriptLoad(name, 'template'); })
+                    .appendTo($t);
+            });
         });
+        $('#template-count').text(templates.length);
         if (d.writable === false) {
             scriptStatus('user_scripts/ is not writable by the web server — saving will fail.', true);
         }

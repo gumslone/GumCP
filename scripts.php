@@ -47,10 +47,16 @@ require_once('./include/header.php');
         </div>
 
         <div class="panel panel-default">
-            <div class="panel-heading">
+            <div class="panel-heading" style="cursor:pointer"
+                 data-toggle="collapse" data-target="#template-collapse"
+                 aria-expanded="false" aria-controls="template-collapse">
                 <i class="fa fa-magic"></i> <?php echo htmlspecialchars(t('scripts.examples', 'Raspberry Pi examples'), ENT_QUOTES, 'UTF-8'); ?>
+                <span class="badge pull-right" id="template-count"></span>
+                <i class="fa fa-caret-down pull-right" style="margin:2px 8px 0 0"></i>
             </div>
-            <div class="list-group" id="template-list" style="margin-bottom:0"></div>
+            <div class="collapse" id="template-collapse">
+                <div class="list-group" id="template-list" style="margin-bottom:0"></div>
+            </div>
         </div>
     </div>
 
