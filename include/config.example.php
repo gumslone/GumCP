@@ -181,6 +181,12 @@ $gumcp_modules = [
         'module_active'                   => 1, // users & groups (read-only)
         'module_group'                    => 'System',
     ],
+    'scripts' => [
+        'module_title'                    => 'Scripts',
+        'module_index_file_relative_path' => './scripts.php',
+        'module_active'                   => 1, // script editor with highlighting
+        'module_group'                    => 'System',
+    ],
     // Button API — no navbar link; set module_active => 0 to disable api.php
     // Button API — no navbar link. Off by default: it is the one endpoint that
     // executes commands WITHOUT a login, authenticated only by a per-button

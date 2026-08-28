@@ -26,8 +26,8 @@ $show_menu_reorder = !empty($show_menu_reorder);
     <link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png">
     <link rel="icon"          href="./static/images/raspberry.png" type="image/png">
     <title>GumCP <?php echo htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8'); ?></title>
-    <link href="./static/css.php" rel="stylesheet" type="text/css">
-    <script src="./static/js.php" type="text/javascript"></script>
+    <link href="./static/css.php?v=<?php echo gumcp_asset_version(); ?>" rel="stylesheet" type="text/css">
+    <script src="./static/js.php?v=<?php echo gumcp_asset_version(); ?>" type="text/javascript"></script>
 </head>
 
 <body>

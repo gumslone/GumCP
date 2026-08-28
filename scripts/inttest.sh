@@ -110,7 +110,7 @@ esac
 # whole vulnerability back again.
 ungated=""
 for page in index.php buttons.php actions.php check.php gpio.php docker.php \
-            rpi.php packages.php logs.php cron.php users.php iframe.php; do
+            rpi.php packages.php logs.php cron.php users.php iframe.php scripts.php; do
     [ -f "$TDIR/app/$page" ] || continue
     c=$(code "$BASE/$page")
     [ "$c" = "302" ] || [ "$c" = "401" ] || ungated="$ungated $page($c)"
@@ -216,6 +216,33 @@ echo "Button API"
 [ "$(code "$BASE/api.php?hash=deadbeefdeadbeefdeadbeefdeadbeef")" = "403" ] \
     && pass "Button API is disabled unless switched on" \
     || fail "api.php answered while the module is disabled"
+
+# ── Script editor ─────────────────────────────────────────────────────────────
+echo "Script editor"
+
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=script_save" -d "name=int-test.sh" -d "csrf_token=$atoken" \
+       --data-urlencode "content=#!/bin/bash
+echo hello")
+case "$body" in *success*) pass "script saves" ;; *) fail "script save failed: ${body:0:100}" ;; esac
+
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=script_load" -d "name=int-test.sh" -d "csrf_token=$atoken")
+case "$body" in *"echo hello"*) pass "script loads back" ;; *) fail "script load failed" ;; esac
+
+# Traversal must be refused by name validation, not by luck.
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=script_load" -d "name=../include/config.php" -d "csrf_token=$atoken")
+case "$body" in *error*) pass "path traversal in a script name is refused" ;; *) fail "traversal was accepted" ;; esac
+
+# The bundled examples are listed as templates and load read-only.
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=script_list" -d "csrf_token=$atoken")
+case "$body" in *system-info.sh*) pass "Raspberry Pi examples are offered" ;; *) fail "no examples in script_list" ;; esac
+
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=script_delete" -d "name=int-test.sh" -d "csrf_token=$atoken")
+case "$body" in *success*) pass "script deletes" ;; *) fail "script delete failed" ;; esac
 
 # ── Recovery updater ──────────────────────────────────────────────────────────
 # update.php can run git reset --hard, so it must sit behind the same rules as

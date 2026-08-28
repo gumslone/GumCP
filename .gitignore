@@ -8,6 +8,8 @@ buttons/*
 !buttons/.htaccess
 command_logs/*
 !command_logs/.htaccess
+user_scripts/*
+!user_scripts/.htaccess
 
 # CPU stat cache written by ajax.php for accurate polling.
 gumcp_cpu_stat

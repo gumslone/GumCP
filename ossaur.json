@@ -1,0 +1,26 @@
+{
+    "packages": [
+        {
+            "name": "gumslone/GumCP",
+            "ecosystem": "github",
+            "repository_url": "https://github.com/gumslone/GumCP",
+            "declared_license": "MIT"
+        },
+        {
+            "name": "vrana/adminer",
+            "version": "5.5.1",
+            "ecosystem": "composer",
+            "repository_url": "https://github.com/vrana/adminer",
+            "declared_license": "Apache-2.0 OR GPL-2.0-only",
+            "scope": "optional-module"
+        },
+        {
+            "name": "prasathmani/tinyfilemanager",
+            "version": "2.6",
+            "ecosystem": "github",
+            "repository_url": "https://github.com/prasathmani/tinyfilemanager",
+            "declared_license": "GPL-3.0-only",
+            "scope": "optional-module"
+        }
+    ]
+}

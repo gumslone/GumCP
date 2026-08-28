@@ -580,3 +580,123 @@ function getUrlVars() {
     });
     return vars;
 }
+
+/* ── Script Editor (scripts.php) ─────────────────────────────────────────── */
+
+var _scriptCurrent = '';
+
+function scriptAjax(data, done, btn, busyHtml) {
+    var $b = btn ? $(btn) : null, orig = $b ? $b.html() : '';
+    if ($b) $b.prop('disabled', true).html(busyHtml || '<i class="fa fa-spinner fa-spin"></i>');
+    data.csrf_token = CSRF_TOKEN;
+    $.ajax({ type: 'POST', url: 'ajax.php', dataType: 'json', data: data })
+        .done(function (d) { done(d || {}); })
+        .fail(function () { done({ type: 'error', message: 'Request failed — could not reach the server.' }); })
+        .always(function () { if ($b) $b.prop('disabled', false).html(orig); });
+}
+
+function scriptStatus(msg, isError) {
+    $('#script-status').text(msg)
+        .toggleClass('text-danger', !!isError)
+        .toggleClass('text-muted', !isError);
+}
+
+function scriptModeFor(name) {
+    return /\.py$/.test(name) ? 'python' : 'shell';
+}
+
+function scriptRefreshList(selectName) {
+    scriptAjax({ action: 'script_list' }, function (d) {
+        var esc = function (s) { return $('<div>').text(s == null ? '' : s).html(); };
+        var $l = $('#script-list').empty();
+        if (d.type !== 'success') {
+            $l.append('<span class="list-group-item text-danger">' + esc(d.message || 'Failed') + '</span>');
+            return;
+        }
+        if (!d.files.length) {
+            $l.append('<span class="list-group-item text-muted">No scripts yet — try an example below.</span>');
+        }
+        d.files.forEach(function (f) {
+            var kb = (f.size / 1024).toFixed(1);
+            $('<a class="list-group-item"></a>')
+                .toggleClass('active', f.name === selectName)
+                .html('<i class="fa ' + (/\.py$/.test(f.name) ? 'fa-file-code-o' : 'fa-terminal') + '"></i> '
+                      + esc(f.name) + ' <small>' + kb + ' KB</small>')
+                .on('click', function () { scriptLoad(f.name, 'user'); })
+                .appendTo($l);
+        });
+        var $t = $('#template-list').empty();
+        (d.templates || []).forEach(function (name) {
+            $('<a class="list-group-item"></a>')
+                .html('<i class="fa fa-magic"></i> ' + esc(name))
+                .on('click', function () { scriptLoad(name, 'template'); })
+                .appendTo($t);
+        });
+        if (d.writable === false) {
+            scriptStatus('user_scripts/ is not writable by the web server — saving will fail.', true);
+        }
+    });
+}
+
+function scriptLoad(name, from) {
+    scriptAjax({ action: 'script_load', name: name, from: from }, function (d) {
+        if (d.type !== 'success') { scriptStatus(d.message || 'Load failed', true); return; }
+        _scriptCurrent = from === 'user' ? name : '';
+        $('#script-name').val(name);
+        scriptEditor.setOption('mode', scriptModeFor(name));
+        scriptEditor.setValue(d.content);
+        $('#script-output-wrap').hide();
+        scriptStatus(from === 'template' ? 'Loaded example — Save stores your own copy.' : '');
+        scriptRefreshList(_scriptCurrent);
+    });
+}
+
+function scriptNew() {
+    _scriptCurrent = '';
+    $('#script-name').val('');
+    scriptEditor.setValue('#!/bin/bash\n\n');
+    scriptEditor.setOption('mode', 'shell');
+    $('#script-output-wrap').hide();
+    scriptStatus('');
+    scriptRefreshList('');
+}
+
+function scriptSave(then) {
+    var name = $.trim($('#script-name').val());
+    scriptAjax({ action: 'script_save', name: name, content: scriptEditor.getValue() }, function (d) {
+        if (d.type !== 'success') { scriptStatus(d.message || 'Save failed', true); return; }
+        _scriptCurrent = name;
+        scriptEditor.setOption('mode', scriptModeFor(name));
+        scriptStatus('Saved.');
+        scriptRefreshList(name);
+        if (then) then();
+    }, document.getElementById('script-save-btn'));
+}
+
+function scriptRun() {
+    scriptSave(function () {
+        scriptAjax({ action: 'script_run', name: _scriptCurrent }, function (d) {
+            var ok = d.type === 'success';
+            $('#script-output')
+                .css('color', ok ? '#e0e0e0' : '#f2a5a5')
+                .text(ok ? ((d.output || '').trim() || '(no output)') : (d.message || 'Run failed'));
+            $('#script-output-wrap').show();
+        }, document.getElementById('script-run-btn'),
+           '<i class="fa fa-spinner fa-spin"></i> Running…');
+    });
+}
+
+function scriptDelete() {
+    var name = _scriptCurrent || $.trim($('#script-name').val());
+    if (!name) return;
+    if (!confirm('Delete ' + name + '?')) return;
+    scriptAjax({ action: 'script_delete', name: name }, function (d) {
+        if (d.type !== 'success') { scriptStatus(d.message || 'Delete failed', true); return; }
+        scriptNew();
+    }, document.getElementById('script-delete-btn'));
+}
+
+// js.php is loaded in <head>, so the element check must wait for DOM ready.
+$(function () {
+    if (document.getElementById('script-list')) scriptRefreshList('');
+});

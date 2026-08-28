@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once(__DIR__ . '/include/session.php');
+require_once(__DIR__ . '/include/assets.php');
 gumcp_start_session();
 
 // Redirect to dashboard if already authenticated.
@@ -55,7 +56,7 @@ switch ($action) {
     <link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png">
     <link rel="icon"          href="./static/images/raspberry.png" type="image/png">
     <title>Sign In &mdash; GumCP</title>
-    <link href="./static/css.php" rel="stylesheet" type="text/css">
+    <link href="./static/css.php?v=<?php echo gumcp_asset_version(); ?>" rel="stylesheet" type="text/css">
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -196,7 +197,7 @@ switch ($action) {
         </div>
     </footer>
 
-    <script src="./static/js.php" type="text/javascript"></script>
+    <script src="./static/js.php?v=<?php echo gumcp_asset_version(); ?>" type="text/javascript"></script>
     <script>
     document.getElementById('login-form').addEventListener('submit', function(e) {
         var user = document.getElementById('login_user').value.trim();

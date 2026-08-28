@@ -426,6 +426,32 @@ else
     pass "all stylesheets and scripts are served from this origin"
 fi
 
+# ── Script editor ─────────────────────────────────────────────────────────────
+# The filename check is the only gate between a POST parameter and a filesystem
+# path under user_scripts/ — it must reject traversal, dot-files and odd
+# extensions outright.
+echo "Script editor"
+php -r "
+\$src = file_get_contents('$ROOT/ajax.php');
+preg_match('/\nfunction gumcp_script_name_valid\(.*?\n}\n/s', \$src, \$m); eval(\$m[0]);
+\$f = 0;
+foreach ([
+    'backup.sh' => true, 'temp_alert.py' => true, 'notes.txt' => true, 'a.b-c_d.sh' => true,
+    '../evil.sh' => false, '..' => false, '.htaccess' => false, '.hidden.sh' => false,
+    'x.php' => false, 'x.sh.php' => false, 'x' => false, '' => false,
+    'dir/x.sh' => false, \"x\\0.sh\" => false, str_repeat('a', 62) . '.sh' => false,
+] as \$n => \$want) {
+    if (gumcp_script_name_valid((string)\$n) !== \$want) \$f++;
+}
+exit(\$f === 0 ? 0 : 1);
+" 2>/dev/null && pass "script filename validation rejects traversal and odd extensions" \
+              || fail "script filename validation"
+
+grep -qE "Deny from all|Require all denied" "$ROOT/user_scripts/.htaccess" \
+    && grep -q "user_scripts" "$ROOT/deploy/gumcp-apache.conf" \
+    && pass "user_scripts/ denied by .htaccess and the server config" \
+    || fail "user_scripts/ is not web-denied"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise

@@ -45,8 +45,8 @@ $module_path  = htmlspecialchars($module_path_raw, ENT_QUOTES, 'UTF-8');
     <link rel="shortcut icon" href="./static/images/raspberry.png" type="image/png">
     <link rel="icon"          href="./static/images/raspberry.png" type="image/png">
     <title><?php echo $module_title; ?> &mdash; GumCP</title>
-    <link href="./static/css.php" rel="stylesheet" type="text/css">
-    <script src="./static/js.php" type="text/javascript"></script>
+    <link href="./static/css.php?v=<?php echo gumcp_asset_version(); ?>" rel="stylesheet" type="text/css">
+    <script src="./static/js.php?v=<?php echo gumcp_asset_version(); ?>" type="text/javascript"></script>
     <style>
         .iframe-container { position:relative; width:100%; min-height:500px; }
         .iframe-container iframe { display:block; width:100%; min-height:500px; border:none; background:#fff; }

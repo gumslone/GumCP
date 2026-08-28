@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Added — Script Editor with syntax highlighting and Raspberry Pi examples
+New **System → Scripts** page: write shell and Python scripts in the browser
+with CodeMirror highlighting (bundled locally — the CSP forbids CDNs, and the
+panel stays fully offline-capable), save them to `user_scripts/`, and run them
+over SSH with the output shown inline. Ships with twelve example scripts to
+start from: GPIO LED blink and button input, servo and DC-motor control
+(gpiozero), DS18B20 and HC-SR04 sensor readouts, system info, config backup,
+WiFi scan, disk cleanup, and a CPU-temperature alert suited to a cron job.
+
+- Script names are strictly validated (no dot-files, no traversal, only
+  `.sh`/`.py`/`.txt`); the interpreter is chosen by extension, never by request.
+- `user_scripts/` is web-denied by `.htaccess` and `deploy/gumcp-apache.conf`.
+- Saved scripts can be wired to Command Buttons or cron jobs by path.
+
+### Fixed — browser cache kept serving month-old JS/CSS after updates
+`static/js.php` and `static/css.php` are cached for 30 days but their URLs
+never changed, so after any GumCP update browsers kept running the old bundle —
+pages "half worked" until a hard refresh. The bundle links now carry a version
+derived from the newest source file's mtime, so every update busts the cache
+exactly once.
+
 ### Fixed — icons and loading spinners disappeared under the CSP (2.7.0 regression)
 FontAwesome was still loaded from `maxcdn.bootstrapcdn.com`, and the
 Content-Security-Policy introduced in 2.7.0 (`style-src 'self'`) rightly blocks

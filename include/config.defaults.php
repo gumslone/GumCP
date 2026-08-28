@@ -76,6 +76,7 @@ $_gumcp_new_modules = [
     'logs'     => ['module_title' => 'Logs',         'module_index_file_relative_path' => './logs.php',     'module_active' => 1, 'module_group' => 'System'],
     'cron'     => ['module_title' => 'Cron',         'module_index_file_relative_path' => './cron.php',     'module_active' => 1, 'module_group' => 'System'],
     'users'    => ['module_title' => 'Users',        'module_index_file_relative_path' => './users.php',    'module_active' => 1, 'module_group' => 'System'],
+    'scripts'  => ['module_title' => 'Scripts',      'module_index_file_relative_path' => './scripts.php',  'module_active' => 1, 'module_group' => 'System'],
 ];
 foreach ($_gumcp_new_modules as $_k => $_m) {
     if (!isset($gumcp_modules[$_k])) {

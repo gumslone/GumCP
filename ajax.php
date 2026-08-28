@@ -698,6 +698,109 @@ switch ($action) {
         break;
 
     // ── Cron: list user crontab + /etc/crontab (via SSH) ──────────────────────
+    // ── Script Editor: list user scripts and bundled examples ─────────────────
+    case 'script_list':
+        $files = [];
+        $dir = gumcp_scripts_dir();
+        if (is_dir($dir)) {
+            foreach (array_diff(scandir($dir) ?: [], ['.', '..']) as $f) {
+                if (!gumcp_script_name_valid($f)) continue;
+                $p = $dir . '/' . $f;
+                if (!is_file($p)) continue;
+                $files[] = ['name' => $f, 'size' => (int)filesize($p), 'mtime' => (int)filemtime($p)];
+            }
+            usort($files, function ($a, $b) { return strcmp($a['name'], $b['name']); });
+        }
+        $templates = [];
+        foreach (glob(__DIR__ . '/scripts/examples/*') ?: [] as $p) {
+            $f = basename($p);
+            if (gumcp_script_name_valid($f)) $templates[] = $f;
+        }
+        $out = ok('ok', ['files' => $files, 'templates' => $templates,
+                         'writable' => is_dir($dir) && is_writable($dir)]);
+        break;
+
+    // ── Script Editor: load one script (or an example as a template) ──────────
+    case 'script_load':
+        $name = (string)($_POST['name'] ?? '');
+        $from = (string)($_POST['from'] ?? 'user');   // 'user' | 'template'
+        if (!gumcp_script_name_valid($name)) {
+            $out = err('Invalid script name');
+            break;
+        }
+        $path = ($from === 'template' ? __DIR__ . '/scripts/examples' : gumcp_scripts_dir()) . '/' . $name;
+        if (!is_file($path)) {
+            $out = err('Script not found');
+            break;
+        }
+        $out = ok('ok', ['name' => $name, 'content' => (string)file_get_contents($path)]);
+        break;
+
+    // ── Script Editor: save ───────────────────────────────────────────────────
+    case 'script_save':
+        $name    = (string)($_POST['name'] ?? '');
+        $content = (string)($_POST['content'] ?? '');
+        if (!gumcp_script_name_valid($name)) {
+            $out = err('Script names: letters, digits, . _ -, ending in .sh, .py or .txt');
+            break;
+        }
+        if (strlen($content) > 262144) {
+            $out = err('Script too large (max 256 KB)');
+            break;
+        }
+        $dir = gumcp_scripts_dir();
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
+            $out = err('Could not create ' . $dir);
+            break;
+        }
+        if (@file_put_contents($dir . '/' . $name, $content, LOCK_EX) === false) {
+            $out = err('Could not write the file — is user_scripts/ writable by the web server?');
+            break;
+        }
+        $out = ok('Saved', ['name' => $name]);
+        break;
+
+    // ── Script Editor: delete ─────────────────────────────────────────────────
+    case 'script_delete':
+        $name = (string)($_POST['name'] ?? '');
+        if (!gumcp_script_name_valid($name)) {
+            $out = err('Invalid script name');
+            break;
+        }
+        $path = gumcp_scripts_dir() . '/' . $name;
+        if (!is_file($path)) {
+            $out = err('Script not found');
+            break;
+        }
+        $out = @unlink($path) ? ok('Deleted') : err('Could not delete the file');
+        break;
+
+    // ── Script Editor: run over SSH, like everything else ─────────────────────
+    // The interpreter comes from the extension, never from the request — .txt
+    // is edit-only. The SSH user needs read access to user_scripts/.
+    case 'script_run':
+        $name = (string)($_POST['name'] ?? '');
+        if (!gumcp_script_name_valid($name)) {
+            $out = err('Invalid script name');
+            break;
+        }
+        $path = gumcp_scripts_dir() . '/' . $name;
+        if (!is_file($path)) {
+            $out = err('Save the script first');
+            break;
+        }
+        $ext = strtolower((string)substr($name, (int)strrpos($name, '.')));
+        $interp = $ext === '.sh' ? 'bash' : ($ext === '.py' ? 'python3' : '');
+        if ($interp === '') {
+            $out = err('Only .sh and .py scripts can be run');
+            break;
+        }
+        $result = ssh_run($interp . ' ' . escapeshellarg($path) . ' 2>&1');
+        $out = $result['success']
+            ? ok('Finished', ['output' => (string)$result['output']])
+            : err((string)($result['error'] ?? 'Run failed'));
+        break;
+
     case 'cron_list':
         $r1 = ssh_run('crontab -l 2>/dev/null');
         $r2 = ssh_run('cat /etc/crontab 2>/dev/null');
@@ -1047,6 +1150,23 @@ function gumcp_rrmdir(string $dir): bool {
 // ── Cron schedule validation ──────────────────────────────────────────────────
 // Accepts an @keyword or five fields (min hour dom mon dow), each validated
 // against its allowed range and supporting *, lists, ranges and /steps.
+/** Directory holding the user's editable scripts. Web access is denied. */
+function gumcp_scripts_dir(): string {
+    return __DIR__ . '/user_scripts';
+}
+
+/**
+ * One flat, boring filename — no dots at the start (hides the file and covers
+ * "..", .htaccess), no separators, and an extension the editor knows. This is
+ * the only gate between a POST parameter and a filesystem path, so it stays
+ * strict rather than clever.
+ */
+function gumcp_script_name_valid(string $name): bool {
+    if ($name === '' || strlen($name) > 64) return false;
+    if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $name)) return false;
+    return (bool)preg_match('/\.(sh|py|txt)$/', $name);
+}
+
 function cron_validate_schedule(string $s): bool {
     $s = trim($s);
     if ($s === '') return false;
