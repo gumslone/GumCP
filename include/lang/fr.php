@@ -178,4 +178,6 @@ return [
     'scripts.insert'  => 'Insérer un script enregistré…',
     'scripts.unsaved' => 'Abandonner les modifications non enregistrées de ce script ?',
     'scripts.note'    => 'Les scripts s\'exécutent via SSH sous l\'utilisateur SSH configuré, comme sur la page Actions. Les fichiers .txt peuvent être modifiés mais pas exécutés. Pour lancer un script enregistré depuis un bouton ou cron, utilisez :',
+    'scripts.schedule'       => 'Planifier',
+    'scripts.schedule_title' => 'Planifier le script',
 ];

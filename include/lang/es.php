@@ -178,4 +178,6 @@ return [
     'scripts.insert'  => 'Insertar un script guardado…',
     'scripts.unsaved' => '¿Descartar los cambios sin guardar de este script?',
     'scripts.note'    => 'Los scripts se ejecutan por SSH como el usuario SSH configurado, igual que en la página de Acciones. Los archivos .txt se pueden editar pero no ejecutar. Para ejecutar un script guardado desde un botón o cron, use:',
+    'scripts.schedule'       => 'Programar',
+    'scripts.schedule_title' => 'Programar script',
 ];

@@ -178,4 +178,6 @@ return [
     'scripts.insert'  => 'Gespeichertes Skript einfügen…',
     'scripts.unsaved' => 'Ungespeicherte Änderungen an diesem Skript verwerfen?',
     'scripts.note'    => 'Skripte laufen über SSH als der konfigurierte SSH-Benutzer, genau wie auf der Aktionen-Seite. .txt-Dateien lassen sich bearbeiten, aber nicht ausführen. Ein gespeichertes Skript per Schaltfläche oder Cron ausführen mit:',
+    'scripts.schedule'       => 'Planen',
+    'scripts.schedule_title' => 'Skript planen',
 ];

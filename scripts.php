@@ -18,6 +18,7 @@ require_once('./include/header.php');
 
 <script>
     var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var GUMCP_DIR  = <?php echo json_encode(__DIR__); ?>;
     var GUMCP_I18N = {
         scripts_unsaved: <?php echo json_encode(t('scripts.unsaved', 'Discard unsaved changes to this script?')); ?>
     };
@@ -73,6 +74,9 @@ require_once('./include/header.php');
             <button type="button" class="btn btn-success" id="script-run-btn" onclick="scriptRun()">
                 <i class="fa fa-play"></i> <?php echo htmlspecialchars(t('scripts.run', 'Save & Run'), ENT_QUOTES, 'UTF-8'); ?>
             </button>
+            <button type="button" class="btn btn-default" id="script-schedule-btn" onclick="scriptScheduleOpen()">
+                <i class="fa fa-clock-o"></i> <?php echo htmlspecialchars(t('scripts.schedule', 'Schedule'), ENT_QUOTES, 'UTF-8'); ?>
+            </button>
             <button type="button" class="btn btn-default" onclick="scriptNew()">
                 <i class="fa fa-file-o"></i> <?php echo htmlspecialchars(t('scripts.new', 'New'), ENT_QUOTES, 'UTF-8'); ?>
             </button>
@@ -111,5 +115,48 @@ var scriptEditor = CodeMirror.fromTextArea(document.getElementById('script-edito
     viewportMargin: Infinity
 });
 </script>
+
+<!-- Schedule the current script as a cron job -->
+<div class="modal fade" id="schedule-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title"><i class="fa fa-clock-o"></i>
+                    <?php echo htmlspecialchars(t('scripts.schedule_title', 'Schedule script'), ENT_QUOTES, 'UTF-8'); ?>
+                </h4>
+            </div>
+            <div class="modal-body">
+                <p><code id="schedule-modal-script"></code></p>
+                <div class="form-group">
+                    <label for="schedule-preset"><?php echo htmlspecialchars(t('cron.when', 'When'), ENT_QUOTES, 'UTF-8'); ?></label>
+                    <select class="form-control" id="schedule-preset"
+                            onchange="$('#schedule-expr').val(this.value)">
+                        <option value="*/5 * * * *">Every 5 minutes</option>
+                        <option value="*/15 * * * *">Every 15 minutes</option>
+                        <option value="0 * * * *">Every hour</option>
+                        <option value="0 4 * * *" selected>Every day at 04:00</option>
+                        <option value="@daily">Every day (midnight)</option>
+                        <option value="0 0 * * 0">Every week (Sunday)</option>
+                        <option value="@reboot">At boot</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="schedule-expr"><?php echo htmlspecialchars(t('cron.expr', 'Schedule expression'), ENT_QUOTES, 'UTF-8'); ?></label>
+                    <input type="text" class="form-control" id="schedule-expr" value="0 4 * * *">
+                </div>
+                <p class="text-danger" id="schedule-error" style="display:none; margin:0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                    <?php echo htmlspecialchars(t('btn.cancel', 'Cancel'), ENT_QUOTES, 'UTF-8'); ?>
+                </button>
+                <button type="button" class="btn btn-success" id="schedule-add-btn" onclick="scriptScheduleAdd()">
+                    <i class="fa fa-plus"></i> <?php echo htmlspecialchars(t('cron.add', 'Add Cron Job'), ENT_QUOTES, 'UTF-8'); ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php require_once('./include/footer.php'); ?>

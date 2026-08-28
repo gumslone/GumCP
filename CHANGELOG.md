@@ -3,6 +3,12 @@
 ## Unreleased
 
 ### Script Editor polish
+- **Schedule button in the editor**: saves the current script and creates a
+  cron job for it in one dialog (preset or custom expression) — no need to
+  visit the Cron page and paste a path. Errors from crontab surface in the
+  dialog instead of it silently closing.
+- New example: `sound-play.sh` — set the volume and play a WAV (or a test
+  tone) through the jack/HDMI; pairs with buttons or cron for alerts.
 - The example list no longer dominates the sidebar: the seventeen Raspberry Pi
   examples sit in a collapsed panel (with a count badge) that expands on click,
   grouped into GPIO, Motors, Sensors and System.

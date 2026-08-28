@@ -182,4 +182,6 @@ return [
     'scripts.title'   => 'Script Editor',
     'scripts.insert'  => 'Insert a saved script…',
     'scripts.unsaved' => 'Discard unsaved changes to this script?',
+    'scripts.schedule'       => 'Schedule',
+    'scripts.schedule_title' => 'Schedule script',
 ];

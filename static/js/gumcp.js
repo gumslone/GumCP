@@ -761,6 +761,39 @@ function scriptRun() {
     });
 }
 
+/* Schedule the current script as a cron job — saves first so the file the
+ * crontab points at actually exists, then reuses the cron_add action. Only
+ * runnable extensions make sense here. */
+function scriptScheduleOpen() {
+    var name = $.trim($('#script-name').val());
+    if (!/\.(sh|py)$/.test(name)) {
+        scriptStatus('Only .sh and .py scripts can be scheduled.', true);
+        return;
+    }
+    scriptSave(function () {
+        $('#schedule-modal-script').text(gumcpScriptRunLine(_scriptCurrent));
+        $('#schedule-error').hide();
+        $('#schedule-modal').modal('show');
+    });
+}
+
+function scriptScheduleAdd() {
+    var expr = $.trim($('#schedule-expr').val());
+    scriptAjax({
+        action: 'cron_add',
+        schedule: expr,
+        command: gumcpScriptRunLine(_scriptCurrent)
+    }, function (d) {
+        if (d.type !== 'success') {
+            $('#schedule-error').text(d.message || 'Failed to add the cron job').show();
+            return;
+        }
+        $('#schedule-modal').modal('hide');
+        scriptStatus('Scheduled: ' + expr + ' — manage it on the Cron page.');
+    }, document.getElementById('schedule-add-btn'),
+       '<i class="fa fa-spinner fa-spin"></i>');
+}
+
 function scriptDelete() {
     var name = _scriptCurrent || $.trim($('#script-name').val());
     if (!name) return;
