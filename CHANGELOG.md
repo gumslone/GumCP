@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.8.0] — 2026-08-28
 
 ### Fixed — TinyFileManager no longer asks for a second login
 Opening the File Manager showed TFM's own login form (defaults
