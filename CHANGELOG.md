@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Fixed — "Installed, but NOT protected … reinstall the module" could never clear
+Installs made by older GumCP versions stored the module's upstream file as
+`vendor/<name>-<version>.php` — directly executable, bypassing the login guard,
+which the post-install verification rightly flags. But reinstalling wrote the
+new `.modulesrc` **next to** the stale `.php` instead of removing it, so the
+warning came back after every reinstall. The installer now deletes stale
+`vendor/*.php` copies (unmodified upstream files — nothing is lost), verified
+end-to-end by planting one and reinstalling.
+
 ### Upgrade gap closed — stale Apache deny rules are now detected and fixable
 The deny rules protecting `buttons/`, `command_logs/` and now `user_scripts/`
 live in a conf file **copied** to `/etc/apache2` at install time. A `git pull`

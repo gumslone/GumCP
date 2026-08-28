@@ -98,6 +98,13 @@ head -c 5 "$TMP" | grep -q '<?php' || { rm -f "$TMP"; fail "Downloaded file is n
 mv "$TMP" "$DEST/vendor/$VENDOR_FILE" || fail "Could not write $DEST/vendor/$VENDOR_FILE"
 chmod 644 "$DEST/vendor/$VENDOR_FILE"
 
+# Installs made by older GumCP versions stored the upstream file WITH its .php
+# extension — directly executable, which is exactly what the layout above
+# prevents. Left in place they fail verification forever, even after a
+# reinstall, so clean them out. (They are unmodified upstream copies; deleting
+# them loses nothing.)
+find "$DEST/vendor" -maxdepth 1 -type f -name '*.php' -delete 2>/dev/null || true
+
 # Block direct web access to the raw upstream file: it must only ever be reached
 # through the guarded entry file below.
 #

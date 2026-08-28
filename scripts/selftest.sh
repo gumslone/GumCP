@@ -452,6 +452,15 @@ grep -qE "Deny from all|Require all denied" "$ROOT/user_scripts/.htaccess" \
     && pass "user_scripts/ denied by .htaccess and the server config" \
     || fail "user_scripts/ is not web-denied"
 
+# ── Module installer ──────────────────────────────────────────────────────────
+# Old GumCP versions vendored modules as vendor/*.php — directly executable,
+# bypassing the login guard. The installer must clean those up, or an upgraded
+# install fails verification forever no matter how often it reinstalls.
+echo "Module installer"
+grep -q "name '\*.php' -delete" "$ROOT/scripts/install-module.sh" \
+    && pass "installer removes stale executable vendor files" \
+    || fail "install-module.sh does not clean vendor/*.php from old installs"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise
