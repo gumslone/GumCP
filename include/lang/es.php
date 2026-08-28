@@ -162,4 +162,20 @@ return [
     'rpi.tempchart'   => 'Temperatura y frecuencia de CPU',
     'rpi.interfaces'  => 'Interfaces',
     'rpi.bootconfig'  => 'Configuración de arranque',
+
+    // Editor de scripts
+    'nav.scripts'     => 'Scripts',
+    'scripts.title'   => 'Editor de scripts',
+    'scripts.intro'   => 'Escriba scripts de shell o Python con resaltado de sintaxis y ejecútelos por SSH. Los scripts se guardan en user_scripts/ (nunca se sirven por la web). Empiece con un ejemplo de Raspberry Pi o combine un script guardado con un botón o una tarea cron.',
+    'scripts.yours'   => 'Sus scripts',
+    'scripts.examples'=> 'Ejemplos de Raspberry Pi',
+    'scripts.loading' => 'Cargando…',
+    'scripts.save'    => 'Guardar',
+    'scripts.run'     => 'Guardar y ejecutar',
+    'scripts.new'     => 'Nuevo',
+    'scripts.delete'  => 'Eliminar',
+    'scripts.output'  => 'Salida',
+    'scripts.insert'  => 'Insertar un script guardado…',
+    'scripts.unsaved' => '¿Descartar los cambios sin guardar de este script?',
+    'scripts.note'    => 'Los scripts se ejecutan por SSH como el usuario SSH configurado, igual que en la página de Acciones. Los archivos .txt se pueden editar pero no ejecutar. Para ejecutar un script guardado desde un botón o cron, use:',
 ];

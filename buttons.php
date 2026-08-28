@@ -208,7 +208,7 @@ require_once('./include/header.php');
                             <span class="input-group-addon"><i class="fa fa-code"></i> Script</span>
                             <select class="form-control" id="modal-button-script"
                                     onchange="buttonInsertScript(this)">
-                                <option value="">Insert a saved script…</option>
+                                <option value=""><?php echo htmlspecialchars(t('scripts.insert', 'Insert a saved script…'), ENT_QUOTES, 'UTF-8'); ?></option>
                             </select>
                         </div>
                         <small class="help-block">Scripts from the <a href="./scripts.php">Script Editor</a> — selecting one fills the command with its run line</small>

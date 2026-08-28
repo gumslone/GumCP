@@ -288,9 +288,11 @@ function openButtonModal(title, buttonId) {
     $('#button-modal').modal('show');
 }
 
-/* Fill the modal's "Insert a saved script" picker from the Script Editor. */
-function buttonLoadScriptOptions() {
-    var $sel = $('#modal-button-script');
+/* ── Saved-script pickers (buttons.php, cron.php) ─────────────────────────
+ * Fill a <select> with the runnable scripts from the Script Editor, and turn
+ * a selection into the command line that runs it. */
+function gumcpLoadScriptPicker(selId) {
+    var $sel = $('#' + selId);
     if (!$sel.length) return;
     $.ajax({
         type: 'POST', url: 'ajax.php', dataType: 'json',
@@ -305,14 +307,20 @@ function buttonLoadScriptOptions() {
     });
 }
 
-function buttonInsertScript(sel) {
-    var name = sel.value;
-    if (!name) return;
+function gumcpScriptRunLine(name) {
     var interp = /\.py$/.test(name) ? 'python3' : 'bash';
     // The name is server-validated to [A-Za-z0-9._-]+, so quoting is enough.
-    $('#modal-button-command').val(interp + " '" + GUMCP_DIR + "/user_scripts/" + name + "'");
+    return interp + " '" + GUMCP_DIR + "/user_scripts/" + name + "'";
+}
+
+function gumcpInsertScript(sel, targetId) {
+    if (!sel.value) return;
+    $('#' + targetId).val(gumcpScriptRunLine(sel.value));
     sel.value = '';
 }
+
+function buttonLoadScriptOptions() { gumcpLoadScriptPicker('modal-button-script'); }
+function buttonInsertScript(sel)   { gumcpInsertScript(sel, 'modal-button-command'); }
 
 function addButton() {
     openButtonModal('Add Command Button');
@@ -611,6 +619,21 @@ function getUrlVars() {
 /* ── Script Editor (scripts.php) ─────────────────────────────────────────── */
 
 var _scriptCurrent = '';
+var _scriptSavedContent = null;   // editor content as of the last load/save
+
+function scriptDirty() {
+    return _scriptSavedContent !== null
+        && typeof scriptEditor !== 'undefined'
+        && scriptEditor.getValue() !== _scriptSavedContent;
+}
+
+/* Losing a half-written script to a stray click is the worst thing this page
+ * can do — confirm before discarding, and warn on navigation. */
+function scriptConfirmDiscard() {
+    return !scriptDirty()
+        || confirm((window.GUMCP_I18N && GUMCP_I18N.scripts_unsaved)
+                   || 'Discard unsaved changes to this script?');
+}
 
 function scriptAjax(data, done, btn, busyHtml) {
     var $b = btn ? $(btn) : null, orig = $b ? $b.html() : '';
@@ -666,12 +689,14 @@ function scriptRefreshList(selectName) {
 }
 
 function scriptLoad(name, from) {
+    if (!scriptConfirmDiscard()) return;
     scriptAjax({ action: 'script_load', name: name, from: from }, function (d) {
         if (d.type !== 'success') { scriptStatus(d.message || 'Load failed', true); return; }
         _scriptCurrent = from === 'user' ? name : '';
         $('#script-name').val(name);
         scriptEditor.setOption('mode', scriptModeFor(name));
         scriptEditor.setValue(d.content);
+        _scriptSavedContent = d.content;
         $('#script-output-wrap').hide();
         scriptStatus(from === 'template' ? 'Loaded example — Save stores your own copy.' : '');
         scriptRefreshList(_scriptCurrent);
@@ -679,9 +704,11 @@ function scriptLoad(name, from) {
 }
 
 function scriptNew() {
+    if (!scriptConfirmDiscard()) return;
     _scriptCurrent = '';
     $('#script-name').val('');
     scriptEditor.setValue('#!/bin/bash\n\n');
+    _scriptSavedContent = scriptEditor.getValue();
     scriptEditor.setOption('mode', 'shell');
     $('#script-output-wrap').hide();
     scriptStatus('');
@@ -693,6 +720,7 @@ function scriptSave(then) {
     scriptAjax({ action: 'script_save', name: name, content: scriptEditor.getValue() }, function (d) {
         if (d.type !== 'success') { scriptStatus(d.message || 'Save failed', true); return; }
         _scriptCurrent = name;
+        _scriptSavedContent = scriptEditor.getValue();
         scriptEditor.setOption('mode', scriptModeFor(name));
         scriptStatus('Saved.');
         scriptRefreshList(name);
@@ -725,5 +753,19 @@ function scriptDelete() {
 
 // js.php is loaded in <head>, so the element check must wait for DOM ready.
 $(function () {
-    if (document.getElementById('script-list')) scriptRefreshList('');
+    if (!document.getElementById('script-list')) return;
+    scriptRefreshList('');
+    _scriptSavedContent = '';
+
+    // Ctrl+S / Cmd+S saves instead of opening the browser's save dialog.
+    $(document).on('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && String.fromCharCode(e.which).toLowerCase() === 's') {
+            e.preventDefault();
+            scriptSave();
+        }
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+        if (scriptDirty()) { e.preventDefault(); e.returnValue = ''; }
+    });
 });

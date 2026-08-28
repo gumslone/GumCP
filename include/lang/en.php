@@ -176,4 +176,10 @@ return [
     'rpi.tempchart'   => 'Temperature & CPU Frequency',
     'rpi.interfaces'  => 'Interfaces',
     'rpi.bootconfig'  => 'Boot Configuration',
+
+    // Script editor
+    'nav.scripts'     => 'Scripts',
+    'scripts.title'   => 'Script Editor',
+    'scripts.insert'  => 'Insert a saved script…',
+    'scripts.unsaved' => 'Discard unsaved changes to this script?',
 ];

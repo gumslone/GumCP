@@ -162,4 +162,20 @@ return [
     'rpi.tempchart'   => 'Temperatur & CPU-Takt',
     'rpi.interfaces'  => 'Schnittstellen',
     'rpi.bootconfig'  => 'Boot-Konfiguration',
+
+    // Script-Editor
+    'nav.scripts'     => 'Skripte',
+    'scripts.title'   => 'Skript-Editor',
+    'scripts.intro'   => 'Shell- oder Python-Skripte mit Syntaxhervorhebung schreiben und über SSH ausführen. Skripte liegen in user_scripts/ (nie über das Web erreichbar). Mit einem Raspberry-Pi-Beispiel starten oder ein gespeichertes Skript mit einer Schaltfläche oder einem Cronjob verbinden.',
+    'scripts.yours'   => 'Ihre Skripte',
+    'scripts.examples'=> 'Raspberry-Pi-Beispiele',
+    'scripts.loading' => 'Lädt…',
+    'scripts.save'    => 'Speichern',
+    'scripts.run'     => 'Speichern & Ausführen',
+    'scripts.new'     => 'Neu',
+    'scripts.delete'  => 'Löschen',
+    'scripts.output'  => 'Ausgabe',
+    'scripts.insert'  => 'Gespeichertes Skript einfügen…',
+    'scripts.unsaved' => 'Ungespeicherte Änderungen an diesem Skript verwerfen?',
+    'scripts.note'    => 'Skripte laufen über SSH als der konfigurierte SSH-Benutzer, genau wie auf der Aktionen-Seite. .txt-Dateien lassen sich bearbeiten, aber nicht ausführen. Ein gespeichertes Skript per Schaltfläche oder Cron ausführen mit:',
 ];

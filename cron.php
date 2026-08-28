@@ -11,6 +11,8 @@ require_once('./include/header.php');
 
 <script>
     var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var GUMCP_DIR  = <?php echo json_encode(__DIR__); ?>;
+    $(function () { gumcpLoadScriptPicker('cron-script-picker'); });
     var T_CRON_NONE    = <?php echo json_encode(t('cron.none', 'No cron jobs for this user.')); ?>;
     var T_CRON_CUSTOM  = <?php echo json_encode(t('cron.custom', 'Custom schedule')); ?>;
     var T_CRON_INVALID = <?php echo json_encode(t('cron.invalid', 'Invalid schedule expression.')); ?>;
@@ -49,6 +51,13 @@ require_once('./include/header.php');
                     <label for="cron-command"><?php echo htmlspecialchars(t('cron.command', 'Command to run'), ENT_QUOTES, 'UTF-8'); ?></label>
                     <input type="text" class="form-control" id="cron-command"
                            placeholder="/usr/bin/backup.sh">
+                    <div class="input-group input-group-sm" style="margin-top:6px">
+                        <span class="input-group-addon"><i class="fa fa-code"></i></span>
+                        <select class="form-control" id="cron-script-picker"
+                                onchange="gumcpInsertScript(this, 'cron-command')">
+                            <option value=""><?php echo htmlspecialchars(t('scripts.insert', 'Insert a saved script…'), ENT_QUOTES, 'UTF-8'); ?></option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <p id="cron-desc" class="text-info" style="margin:0 0 8px"></p>

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Script Editor polish
+- The **Cron** page gained the same *Insert a saved script* picker as the
+  Command Button dialog — schedule a saved script without typing its path.
+- The editor warns before discarding unsaved changes (loading another script,
+  New, or leaving the page), and **Ctrl+S / Cmd+S** saves.
+- All Script Editor strings are translated into German, Ukrainian, Spanish
+  and French.
+
 ### Script Editor — symlink containment, and Command Button integration
 - A symlink planted inside `user_scripts/` (a restored backup, another local
   process) could have turned the editor into a read/write primitive against any

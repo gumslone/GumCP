@@ -18,6 +18,9 @@ require_once('./include/header.php');
 
 <script>
     var CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+    var GUMCP_I18N = {
+        scripts_unsaved: <?php echo json_encode(t('scripts.unsaved', 'Discard unsaved changes to this script?')); ?>
+    };
 </script>
 
 <div class="page-header">
