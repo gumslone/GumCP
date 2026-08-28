@@ -202,10 +202,10 @@ echo "Runtime data"
 # 200 here is expected and is exactly why the server-level config must ship.
 # What is testable is that the shipped rules actually deny these paths.
 denied=""
-for f in "$ROOT/buttons/.htaccess" "$ROOT/command_logs/.htaccess"; do
+for f in "$ROOT/buttons/.htaccess" "$ROOT/command_logs/.htaccess" "$ROOT/user_scripts/.htaccess"; do
     grep -qE "Deny from all|Require all denied" "$f" || denied="$denied $f"
 done
-for path in buttons command_logs "include" ; do
+for path in buttons command_logs user_scripts "include" ; do
     grep -q "$path" "$ROOT/deploy/gumcp-apache.conf" || denied="$denied conf:$path"
 done
 [ -z "$denied" ] && pass "runtime data denied by both .htaccess and the server config" \

@@ -381,6 +381,7 @@ switch ($action) {
         $gumcp = rtrim(__DIR__, '/');
         $btns  = $gumcp . '/buttons';
         $logs  = $gumcp . '/command_logs';
+        $uscr  = $gumcp . '/user_scripts';
 
         // All fix commands are pre-defined here — no user-supplied shell strings.
         $allowed = [
@@ -390,6 +391,16 @@ switch ($action) {
             'logs_dir'           => 'sudo mkdir -p ' . escapeshellarg($logs)
                                   . ' && sudo chown www-data:www-data ' . escapeshellarg($logs)
                                   . ' && sudo chmod 755 ' . escapeshellarg($logs),
+            'scripts_dir'        => 'sudo mkdir -p ' . escapeshellarg($uscr)
+                                  . ' && sudo chown www-data:www-data ' . escapeshellarg($uscr)
+                                  . ' && sudo chmod 755 ' . escapeshellarg($uscr),
+            // Re-install the server-level deny rules. The copy under
+            // /etc/apache2 is made at install time, so a git pull that adds a
+            // protected directory (user_scripts/) leaves the live conf stale.
+            'apache_conf'        => 'sudo sed "s|@GUMCP_DIR@|' . $gumcp . '|g" '
+                                  . escapeshellarg($gumcp . '/deploy/gumcp-apache.conf')
+                                  . ' | sudo tee /etc/apache2/conf-available/gumcp.conf >/dev/null'
+                                  . ' && sudo a2enconf gumcp && sudo systemctl reload apache2',
             'gumcp_chown'        => 'sudo chown -R www-data:www-data ' . escapeshellarg($gumcp),
             'install_ssh2'       => 'sudo apt-get install -y php-ssh2 && sudo systemctl restart apache2',
             'install_sqlite3'    => 'sudo apt-get install -y php-sqlite3 && sudo systemctl restart apache2',

@@ -177,6 +177,30 @@ else
         try_fix "chown GumCP directory" "sudo chown -R $WEB_USER:$WEB_USER $GUMCP_DIR"
     fi
 
+    # user_scripts/ directory (Script Editor)
+    USCRIPTS_DIR="$GUMCP_DIR/user_scripts"
+    if [ ! -d "$USCRIPTS_DIR" ]; then
+        fail "user_scripts/ directory missing"
+        try_fix "create user_scripts/" "sudo mkdir -p $USCRIPTS_DIR && sudo chown $WEB_USER:$WEB_USER $USCRIPTS_DIR && sudo chmod 755 $USCRIPTS_DIR"
+    else
+        pass "user_scripts/ directory exists"
+    fi
+
+    # Apache deny rules: the conf under /etc/apache2 is a copy made at install
+    # time, so a git pull that adds a protected directory leaves it stale and
+    # the new directory web-readable. Compare against the shipped conf.
+    HARDEN_SRC="$GUMCP_DIR/deploy/gumcp-apache.conf"
+    HARDEN_DST="/etc/apache2/conf-available/gumcp.conf"
+    if [ -f "$HARDEN_SRC" ] && [ -d /etc/apache2/conf-available ]; then
+        if [ -f "$HARDEN_DST" ] && sed "s|@GUMCP_DIR@|$GUMCP_DIR|g" "$HARDEN_SRC" | cmp -s - "$HARDEN_DST"; then
+            pass "Apache deny rules are current"
+        else
+            fail "Apache deny rules missing or outdated — protected directories may be web-readable"
+            try_fix "re-install gumcp-apache.conf" \
+                "sudo sed 's|@GUMCP_DIR@|$GUMCP_DIR|g' $HARDEN_SRC | sudo tee $HARDEN_DST >/dev/null && sudo a2enconf gumcp && sudo systemctl reload apache2"
+        fi
+    fi
+
     # buttons/ directory
     BUTTONS_DIR="$GUMCP_DIR/buttons"
     if [ ! -d "$BUTTONS_DIR" ]; then

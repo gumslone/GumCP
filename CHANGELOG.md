@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Upgrade gap closed — stale Apache deny rules are now detected and fixable
+The deny rules protecting `buttons/`, `command_logs/` and now `user_scripts/`
+live in a conf file **copied** to `/etc/apache2` at install time. A `git pull`
+that adds a protected directory (as the Script Editor did) leaves that copy
+stale — and since `.htaccess` is inert on default Raspberry Pi OS Apache, the
+new directory is web-readable. Saved scripts can contain credentials the user
+wrote into them, so this mattered.
+
+- **System Check** now probes `user_scripts/` over HTTP (a real script file
+  when one exists — an empty directory would 404 and look protected), and every
+  exposure row gained a one-click **Fix** that re-renders
+  `deploy/gumcp-apache.conf`, re-installs it and reloads Apache.
+- **check.sh** compares the installed conf against the shipped one and
+  `--fix` re-installs it when they differ; it also creates `user_scripts/`.
+- System Check also verifies `user_scripts/` is writable, with a Fix button.
+
 ### Script Editor polish
 - **Schedule button in the editor**: saves the current script and creates a
   cron job for it in one dialog (preset or custom expression) — no need to

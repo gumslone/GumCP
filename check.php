@@ -96,6 +96,17 @@ $probe_buttons = gumcp_probe_path(
     is_file($gumcp_dir . '/buttons/buttons.json') ? 'buttons/buttons.json' : 'buttons/'
 );
 $probe_logs = gumcp_probe_path('command_logs/');
+// Probe a real script when one exists — an empty directory 404s and would
+// look protected even when the deny rules are missing.
+$scripts_dir = $gumcp_dir . '/user_scripts';
+$_first_script = '';
+foreach (glob($scripts_dir . '/*.{sh,py,txt}', GLOB_BRACE) ?: [] as $_p) {
+    $_first_script = basename($_p);
+    break;
+}
+$probe_scripts = gumcp_probe_path(
+    $_first_script !== '' ? 'user_scripts/' . $_first_script : 'user_scripts/'
+);
 
 $sections = [];
 
@@ -175,6 +186,14 @@ $sections['Security'] = [
 
 $sections['Directories'] = [
     chk(
+        is_dir($scripts_dir) && is_writable($scripts_dir),
+        'user_scripts/ writable by web server',
+        is_dir($scripts_dir)
+            ? (is_writable($scripts_dir) ? 'writable' : 'not writable — the Script Editor cannot save')
+            : 'directory missing — the Script Editor cannot save',
+        'scripts_dir'
+    ),
+    chk(
         is_dir($buttons_dir),
         'buttons/ exists',
         $buttons_dir,
@@ -212,22 +231,37 @@ $sections['Directories'] = [
         $probe_buttons !== 'EXPOSED',
         'buttons/ not readable over HTTP',
         $probe_buttons === 'EXPOSED'
-            ? 'buttons.json IS downloadable — it contains each button\'s API hash, which triggers commands without a login. Run: sudo a2enconf gumcp && sudo systemctl reload apache2'
+            ? 'buttons.json IS downloadable — it contains each button\'s API hash, which triggers commands without a login. Fix re-installs deploy/gumcp-apache.conf and reloads Apache.'
             : ($probe_buttons === 'protected'
                 ? 'verified by request — the web server refuses it'
                 : 'could not test (needs php-curl); .htaccess '
                   . (file_exists($buttons_dir . '/.htaccess') ? 'present' : 'MISSING')
-                  . ' — note .htaccess is ignored when Apache uses AllowOverride None')
+                  . ' — note .htaccess is ignored when Apache uses AllowOverride None'),
+        $probe_buttons === 'EXPOSED' ? 'apache_conf' : ''
     ),
     chk(
         $probe_logs !== 'EXPOSED',
         'command_logs/ not readable over HTTP',
         $probe_logs === 'EXPOSED'
-            ? 'command output IS downloadable — it may contain anything your commands printed. Run: sudo a2enconf gumcp && sudo systemctl reload apache2'
+            ? 'command output IS downloadable — it may contain anything your commands printed. Fix re-installs deploy/gumcp-apache.conf and reloads Apache.'
             : ($probe_logs === 'protected'
                 ? 'verified by request — the web server refuses it'
                 : 'could not test (needs php-curl); .htaccess '
-                  . (file_exists($logs_dir . '/.htaccess') ? 'present' : 'MISSING'))
+                  . (file_exists($logs_dir . '/.htaccess') ? 'present' : 'MISSING')),
+        $probe_logs === 'EXPOSED' ? 'apache_conf' : ''
+    ),
+    chk(
+        $probe_scripts !== 'EXPOSED',
+        'user_scripts/ not readable over HTTP',
+        $probe_scripts === 'EXPOSED'
+            ? 'saved scripts ARE downloadable — they may contain credentials you wrote into them. '
+              . 'The Apache conf copied at install time predates user_scripts/; Fix re-installs '
+              . 'deploy/gumcp-apache.conf and reloads Apache.'
+            : ($probe_scripts === 'protected'
+                ? 'verified by request — the web server refuses it'
+                : 'could not test (needs php-curl); .htaccess '
+                  . (file_exists($scripts_dir . '/.htaccess') ? 'present' : 'MISSING')),
+        $probe_scripts === 'EXPOSED' ? 'apache_conf' : ''
     ),
     chk(
         file_exists(__DIR__ . '/include/config.defaults.php'),
