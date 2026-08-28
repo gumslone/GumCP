@@ -9,7 +9,10 @@ panel stays fully offline-capable), save them to `user_scripts/`, and run them
 over SSH with the output shown inline. Ships with twelve example scripts to
 start from: GPIO LED blink and button input, servo and DC-motor control
 (gpiozero), DS18B20 and HC-SR04 sensor readouts, system info, config backup,
-WiFi scan, disk cleanup, and a CPU-temperature alert suited to a cron job.
+WiFi scan, disk cleanup, and a CPU-temperature alert suited to a cron job —
+plus common sensor examples: DHT11/DHT22, BME280 (with an I2C bus scan), PIR
+motion and an LDR light sensor. The examples that need a library fail with the
+exact one-line install command instead of a stack trace.
 
 - Script names are strictly validated (no dot-files, no traversal, only
   `.sh`/`.py`/`.txt`); the interpreter is chosen by extension, never by request.
