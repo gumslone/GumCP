@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.9.0] — 2026-11-05
 
 ### Added
 - **Background runs for scripts.** *Background* in the Script Editor detaches
