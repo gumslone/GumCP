@@ -50,7 +50,10 @@ define('SESSION_ABSOLUTE_TIMEOUT', 0);
 define('GUMCP_UPDATE_KEY', 'recovery-key-for-tests');
 define('LOGIN_MAX_FAILURES', 3);
 // The Button API runs a command with no login, so it stays off here.
-$gumcp_modules = ['button_api' => ['module_active' => 0]];
+$gumcp_modules = [
+    'button_api' => ['module_active' => 0],
+    'docker'     => ['module_title' => 'Docker', 'module_index_file_relative_path' => './docker.php', 'module_active' => 0],
+];
 CFG
 
 # The login password is stored hashed, exactly as setup.php writes it — so the
@@ -263,6 +266,85 @@ after=$(cat "$TDIR/app/include/config.php")
                          || fail "script_save wrote through a symlink and clobbered config.php"
 rm -f "$TDIR/app/user_scripts/evil.sh"
 
+# ── Disabled modules ──────────────────────────────────────────────────────────
+# module_active => 0 must switch the page AND its endpoints off, not just hide
+# the navbar link.
+echo "Disabled modules"
+[ "$(code -b "$JAR" "$BASE/docker.php")" = "403" ] \
+    && pass "a disabled module's page is refused (403)" \
+    || fail "docker.php loads although the module is disabled"
+[ "$(code -b "$JAR" -X POST "$BASE/ajax.php" -d "action=docker_ps" -d "csrf_token=$atoken")" = "403" ] \
+    && pass "a disabled module's AJAX actions are refused" \
+    || fail "docker_ps answered although the module is disabled"
+[ "$(code -b "$JAR" "$BASE/scripts.php")" = "200" ] \
+    && pass "enabled modules still load" \
+    || fail "scripts.php was refused"
+
+# ── Command log viewer ────────────────────────────────────────────────────────
+echo "Command logs"
+echo "hello from a log" > "$TDIR/app/command_logs/2026-01-01_test.log"
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=command_log_view" -d "log_file=2026-01-01_test.log" -d "csrf_token=$atoken")
+case "$body" in *"hello from a log"*) pass "command logs are readable through the panel" ;; *) fail "command_log_view failed: ${body:0:100}" ;; esac
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=command_log_view" -d "log_file=auth.log" -d "csrf_token=$atoken")
+case "$body" in *error*) pass "the audit log is not served by the log viewer" ;; *) fail "auth.log was served" ;; esac
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" \
+       -d "action=command_log_view" -d "log_file=../include/config.php" -d "csrf_token=$atoken")
+case "$body" in *LOGIN_USER*) fail "log viewer read a file outside command_logs/" ;; *) pass "log viewer cannot leave command_logs/" ;; esac
+
+# ── Backup & restore ──────────────────────────────────────────────────────────
+echo "Backup & restore"
+curl -s -o /dev/null -b "$JAR" -X POST "$BASE/ajax.php" \
+     -d "action=script_save" -d "name=keep-me.sh" -d "csrf_token=$atoken" \
+     --data-urlencode "content=echo original"
+curl -s -b "$JAR" -X POST "$BASE/backup.php" -d "action=download" -d "csrf_token=$atoken" \
+     -o "$TDIR/backup.json"
+grep -q '"gumcp_backup":1' "$TDIR/backup.json" && grep -q 'user_scripts' "$TDIR/backup.json" \
+    && pass "backup downloads and contains the scripts" \
+    || fail "backup download is not a bundle"
+[ "$(code -X POST "$BASE/backup.php" -d "action=download")" = "302" ] \
+    && pass "backup refuses an anonymous request" \
+    || fail "backup.php answered without a login"
+
+# Change the script, restore, and expect the original back.
+curl -s -o /dev/null -b "$JAR" -X POST "$BASE/ajax.php" \
+     -d "action=script_save" -d "name=keep-me.sh" -d "csrf_token=$atoken" \
+     --data-urlencode "content=echo CHANGED"
+curl -s -o /dev/null -b "$JAR" -X POST "$BASE/backup.php" \
+     -F "action=restore" -F "csrf_token=$atoken" -F "bundle=@$TDIR/backup.json"
+grep -q "echo original" "$TDIR/app/user_scripts/keep-me.sh" \
+    && pass "restore brings the saved script back" \
+    || fail "restore did not restore the script"
+
+# config.php is only replaced when explicitly asked for.
+cfg_before=$(cat "$TDIR/app/include/config.php")
+echo "// marker-after-backup" >> "$TDIR/app/include/config.php"
+curl -s -o /dev/null -b "$JAR" -X POST "$BASE/backup.php" \
+     -F "action=restore" -F "csrf_token=$atoken" -F "bundle=@$TDIR/backup.json"
+grep -q "marker-after-backup" "$TDIR/app/include/config.php" \
+    && pass "restore leaves config.php alone unless asked" \
+    || fail "restore replaced config.php without the checkbox"
+printf '%s\n' "$cfg_before" > "$TDIR/app/include/config.php"
+
+# A hostile bundle must not write outside the whitelist.
+php -r "
+    echo json_encode(['gumcp_backup' => 1, 'files' => [
+        '../evil.php'            => base64_encode('<?php echo 1;'),
+        'include/auth.php'       => base64_encode('<?php // PWNED-MARKER-7731'),
+        'user_scripts/x.php'     => base64_encode('<?php echo 1;'),
+        'user_scripts/../../y.sh'=> base64_encode('echo'),
+    ]]);
+" > "$TDIR/evil.json"
+curl -s -o /dev/null -b "$JAR" -X POST "$BASE/backup.php" \
+     -F "action=restore" -F "csrf_token=$atoken" -F "bundle=@$TDIR/evil.json"
+if [ -e "$TDIR/evil.php" ] || [ -e "$TDIR/app/user_scripts/x.php" ] || [ -e "$TDIR/y.sh" ] \
+   || grep -q "PWNED-MARKER-7731" "$TDIR/app/include/auth.php"; then
+    fail "a crafted backup wrote outside the allowed paths"
+else
+    pass "a crafted backup cannot write outside the allowed paths"
+fi
+
 # ── Recovery updater ──────────────────────────────────────────────────────────
 # update.php can run git reset --hard, so it must sit behind the same rules as
 # everything else: no anonymous access, throttled key guessing, expiring sessions.
@@ -318,6 +400,56 @@ if [ -f "$log" ]; then
 else
     fail "command_logs/auth.log was never created"
 fi
+
+# ── Two-factor login, end to end ──────────────────────────────────────────────
+# Last, because it changes what a login needs.
+echo "Two-factor login"
+rm -f "$JAR"
+token=$(login_token -c "$JAR")
+curl -s -o /dev/null -b "$JAR" -c "$JAR" -X POST "$BASE/index.php" \
+     -d "gumcp_login_user=tester" -d "gumcp_login_pass=correct-horse" -d "csrf_token=$token"
+atoken=$(curl -s -b "$JAR" "$BASE/index.php" | tr '\n' ' ' \
+         | grep -o "CSRF_TOKEN *= *['\"][a-f0-9]*" | head -1 | sed "s/.*['\"]//")
+secret=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" -d "action=totp_new" -d "csrf_token=$atoken" \
+         | grep -o '"secret":"[A-Z2-7]*' | sed 's/.*"//')
+totp_now() { php -r "require '$ROOT/include/totp.php'; echo gumcp_totp_code('$secret', (int)floor(time()/30));"; }
+
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" -d "action=totp_enable" -d "code=000000" -d "csrf_token=$atoken")
+case "$body" in *error*) pass "a wrong code does not enable 2FA" ;; *) fail "2FA enabled with a wrong code" ;; esac
+
+# The failed attempt consumed the pending secret's attempt, not the secret.
+body=$(curl -s -b "$JAR" -X POST "$BASE/ajax.php" -d "action=totp_enable" -d "code=$(totp_now)" -d "csrf_token=$atoken")
+case "$body" in *success*) pass "a correct code enables 2FA" ;; *) fail "2FA enable failed: ${body:0:120}" ;; esac
+grep -q "LOGIN_TOTP_SECRET', '$secret'" "$TDIR/app/include/config.php" \
+    && pass "the secret is saved to config.php" \
+    || fail "config.php has no LOGIN_TOTP_SECRET"
+
+curl -s "$BASE/login.php" | grep -q 'name="gumcp_login_totp"' \
+    && pass "the login form now asks for a code" \
+    || fail "login form has no code field"
+
+rm -f "$JAR"; token=$(login_token -c "$JAR")
+curl -s -o /dev/null -b "$JAR" -c "$JAR" -X POST "$BASE/index.php" \
+     -d "gumcp_login_user=tester" -d "gumcp_login_pass=correct-horse" -d "csrf_token=$token"
+[ "$(code -b "$JAR" "$BASE/index.php")" = "302" ] \
+    && pass "the password alone no longer signs in" \
+    || fail "signed in without a 2FA code"
+
+rm -f "$JAR"; token=$(login_token -c "$JAR"); codeval=$(totp_now)
+curl -s -o /dev/null -b "$JAR" -c "$JAR" -X POST "$BASE/index.php" \
+     -d "gumcp_login_user=tester" -d "gumcp_login_pass=correct-horse" \
+     -d "gumcp_login_totp=$codeval" -d "csrf_token=$token"
+[ "$(code -b "$JAR" "$BASE/index.php")" = "200" ] \
+    && pass "password + code signs in" \
+    || fail "correct password and code were refused"
+
+rm -f "$JAR"; token=$(login_token -c "$JAR")
+curl -s -o /dev/null -b "$JAR" -c "$JAR" -X POST "$BASE/index.php" \
+     -d "gumcp_login_user=tester" -d "gumcp_login_pass=correct-horse" \
+     -d "gumcp_login_totp=$codeval" -d "csrf_token=$token"
+[ "$(code -b "$JAR" "$BASE/index.php")" = "302" ] \
+    && pass "a code cannot be used twice" \
+    || fail "a used 2FA code was accepted again"
 
 echo ""
 echo "$PASS passed, $FAIL failed."

@@ -90,6 +90,12 @@ $gumcp_cur   = gumcp_current_lang();
 // Rebuild the current query string with lang replaced.
 $gumcp_qs = $_GET;
 ?>
+<li>
+    <a href="#" onclick="gumcpToggleTheme(); return false;"
+       title="<?php echo htmlspecialchars(t('nav.theme', 'Light / dark theme'), ENT_QUOTES, 'UTF-8'); ?>">
+        <i class="fa fa-moon-o" id="theme-toggle-icon"></i>
+    </a>
+</li>
 <li class="dropdown">
     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
        aria-haspopup="true" aria-expanded="false" title="<?php echo htmlspecialchars(t('nav.language', 'Language'), ENT_QUOTES, 'UTF-8'); ?>">

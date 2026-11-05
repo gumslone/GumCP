@@ -624,6 +624,18 @@ require_once('./include/header.php');
         </div>
     </div>
 
+    <!-- Backup & restore -->
+    <div class="panel panel-default" style="margin-top:10px">
+        <div class="panel-body">
+            <a href="./backup.php" class="btn btn-default">
+                <i class="fa fa-life-ring"></i> <?php echo htmlspecialchars(t('backup.title', 'Backup & Restore'), ENT_QUOTES, 'UTF-8'); ?>
+            </a>
+            <span class="text-muted" style="margin-left:8px">
+                Download config, buttons and scripts as one file — or restore them after an SD card failure.
+            </span>
+        </div>
+    </div>
+
     <!-- Optional third-party modules -->
     <div class="panel panel-default" style="margin-top:10px">
         <div class="panel-heading">
@@ -725,7 +737,7 @@ require_once('./include/header.php');
                         <?php foreach ($log_files as $log): ?>
                             <tr class="log-entry">
                                 <td>
-                                    <a href="./command_logs/<?php echo htmlspecialchars($log['name'], ENT_QUOTES, 'UTF-8'); ?>">
+                                    <a href="#" onclick="gumcpViewLog(<?php echo htmlspecialchars(json_encode($log['name']), ENT_QUOTES, 'UTF-8'); ?>, 'action-log-viewer'); return false;">
                                         <?php echo htmlspecialchars($log['name'], ENT_QUOTES, 'UTF-8'); ?>
                                     </a>
                                 </td>
@@ -741,6 +753,7 @@ require_once('./include/header.php');
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <pre id="action-log-viewer" style="display:none; max-height:360px; overflow:auto; background:#1e1e1e; color:#e0e0e0; white-space:pre-wrap; word-break:break-word"></pre>
             </div>
         </div>
     <?php endif; ?>

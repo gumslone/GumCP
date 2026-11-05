@@ -360,27 +360,41 @@ function gumcp_process_login() {
     $valid_csrf = isset($_SESSION['csrf_token'])
                && hash_equals($_SESSION['csrf_token'], (string)($_POST['csrf_token'] ?? ''));
 
+    $reason = $valid_csrf ? 'user: ' . $user : 'stale CSRF token';
+
     if ($valid_csrf) {
-        // Against the real system account, when that mode is switched on…
+        // Which credential, if any, did the password satisfy?
+        $mode = '';
         if (gumcp_system_login($user, $pass)) {
-            gumcp_login_clear($ip);
-            session_regenerate_id(true);          // prevent session fixation
-            $_SESSION['GUMCP_SYS_USER'] = $user;
-            gumcp_mark_login_time();
-            gumcp_auth_log('login_ok', 'system account: ' . $user);
-            header('Location: ./index.php');
-            exit();
-        }
-        // …otherwise against the credentials configured in config.php.
-        if (!gumcp_check_system_user()
+            $mode = 'system';      // the real system account, when that mode is on
+        } elseif (!gumcp_check_system_user()
             && defined('LOGIN_USER') && defined('LOGIN_PASS')
             && hash_equals(LOGIN_USER, $user) && gumcp_password_matches(LOGIN_PASS, $pass)) {
+            $mode = 'config';      // the credentials configured in config.php
+        }
+
+        // Second factor. Checked only after the password is right, and a wrong
+        // code counts as a failed attempt like any other — otherwise the six
+        // digits could be guessed without ever tripping the lockout.
+        if ($mode !== '') {
+            require_once(__DIR__ . '/totp.php');
+            if (!gumcp_totp_verify_login((string)($_POST['gumcp_login_totp'] ?? ''))) {
+                $mode   = '';
+                $reason = 'user: ' . $user . ' (wrong or reused 2FA code)';
+            }
+        }
+
+        if ($mode !== '') {
             gumcp_login_clear($ip);
-            session_regenerate_id(true);
-            $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
-            $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
+            session_regenerate_id(true);          // prevent session fixation
+            if ($mode === 'system') {
+                $_SESSION['GUMCP_SYS_USER'] = $user;
+            } else {
+                $_SESSION['LOGIN_USER'] = md5(LOGIN_USER);
+                $_SESSION['LOGIN_PASS'] = md5(LOGIN_PASS);
+            }
             gumcp_mark_login_time();
-            gumcp_auth_log('login_ok', 'config account: ' . $user);
+            gumcp_auth_log('login_ok', $mode . ' account: ' . $user);
             header('Location: ./index.php');
             exit();
         }
@@ -388,7 +402,15 @@ function gumcp_process_login() {
 
     gumcp_login_record_failure($ip);
     // The username is logged; the password never is.
-    gumcp_auth_log('login_failed', $valid_csrf ? 'user: ' . $user : 'stale CSRF token');
+    gumcp_auth_log('login_failed', $reason);
+
+    // Tell the administrator when an address has just been locked out — that
+    // is what a password-guessing attempt looks like from the inside.
+    if (gumcp_login_locked_for($ip) > 0) {
+        require_once(__DIR__ . '/alerts.php');
+        gumcp_alert_once('lockout:' . $ip, 'Login lockout',
+            'Address ' . $ip . ' was locked out after repeated failed logins.', 900);
+    }
     header('Location: ./login.php?action=incorrect_login');
     exit();
 }

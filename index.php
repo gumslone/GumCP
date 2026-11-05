@@ -246,6 +246,9 @@ require_once('./include/header.php');
         </div>
     </div>
 
+    <!-- Pinned scripts (filled by gumcp.js; hidden when nothing is pinned) -->
+    <div class="row" id="script-tiles" style="display:none"></div>
+
     <!-- System info + resource bars -->
     <div class="row">
         <div class="col-md-6">

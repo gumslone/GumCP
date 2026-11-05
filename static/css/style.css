@@ -225,3 +225,111 @@ body {
   color: #999;
   cursor: default;
 }
+
+
+/* ── Dark theme ───────────────────────────────────────────────────────────────
+ * Toggled from the navbar (stored in localStorage; the class is applied in
+ * <head> before first paint). Overrides Bootstrap 3 surface by surface — there
+ * are no CSS variables to flip in this Bootstrap version. */
+html.gumcp-dark,
+html.gumcp-dark body { background: #1b1d21; color: #d6d8dc; }
+html.gumcp-dark a { color: #6cb2f7; }
+html.gumcp-dark a:hover, html.gumcp-dark a:focus { color: #9ccaff; }
+html.gumcp-dark h1, html.gumcp-dark h2, html.gumcp-dark h3,
+html.gumcp-dark h4, html.gumcp-dark h5, html.gumcp-dark label { color: #e6e8eb; }
+html.gumcp-dark .text-muted, html.gumcp-dark .help-block, html.gumcp-dark small { color: #8d939c; }
+html.gumcp-dark hr, html.gumcp-dark .page-header { border-color: #33373e; }
+
+html.gumcp-dark .navbar-default { background: #25282e; border-color: #33373e; box-shadow: none; }
+html.gumcp-dark .navbar-default .navbar-brand,
+html.gumcp-dark .navbar-default .navbar-nav > li > a { color: #c9ccd1; text-shadow: none; }
+html.gumcp-dark .navbar-default .navbar-nav > li > a:hover,
+html.gumcp-dark .navbar-default .navbar-nav > li > a:focus { color: #fff; }
+html.gumcp-dark .navbar-default .navbar-nav > .active > a,
+html.gumcp-dark .navbar-default .navbar-nav > .open > a,
+html.gumcp-dark .navbar-default .navbar-nav > .active > a:hover,
+html.gumcp-dark .navbar-default .navbar-nav > .open > a:hover { background: #33373e; color: #fff; box-shadow: none; }
+html.gumcp-dark .navbar-default .navbar-toggle { border-color: #454a52; }
+html.gumcp-dark .navbar-default .navbar-toggle .icon-bar { background: #c9ccd1; }
+
+html.gumcp-dark .dropdown-menu { background: #25282e; border-color: #3a3f47; }
+html.gumcp-dark .dropdown-menu > li > a { color: #c9ccd1; }
+html.gumcp-dark .dropdown-menu > li > a:hover,
+html.gumcp-dark .dropdown-menu > .active > a { background: #3a3f47; color: #fff; }
+html.gumcp-dark .dropdown-menu .divider { background: #3a3f47; }
+
+html.gumcp-dark .panel, html.gumcp-dark .well, html.gumcp-dark .thumbnail,
+html.gumcp-dark .modal-content, html.gumcp-dark .list-group-item,
+html.gumcp-dark .jumbotron { background: #25282e; border-color: #33373e; color: #d6d8dc; box-shadow: none; }
+html.gumcp-dark .panel > .panel-heading,
+html.gumcp-dark .panel-default > .panel-heading { background: #2d3138; border-color: #33373e; color: #e6e8eb; background-image: none; }
+html.gumcp-dark .panel-primary > .panel-heading { background: #24507a; border-color: #24507a; }
+html.gumcp-dark .panel-success > .panel-heading { background: #2c5a3a; border-color: #2c5a3a; color: #dff3e4; }
+html.gumcp-dark .panel-info > .panel-heading { background: #235a6b; border-color: #235a6b; color: #dcf2f8; }
+html.gumcp-dark .panel-warning > .panel-heading { background: #6b5320; border-color: #6b5320; color: #f8eed6; }
+html.gumcp-dark .panel-danger > .panel-heading { background: #6e2c2a; border-color: #6e2c2a; color: #f8dedd; }
+html.gumcp-dark .panel-primary, html.gumcp-dark .panel-success, html.gumcp-dark .panel-info,
+html.gumcp-dark .panel-warning, html.gumcp-dark .panel-danger { border-color: #33373e; }
+html.gumcp-dark .panel-footer, html.gumcp-dark .modal-header,
+html.gumcp-dark .modal-footer { background: #2d3138; border-color: #33373e; }
+html.gumcp-dark .close { color: #fff; text-shadow: none; opacity: 0.6; }
+html.gumcp-dark a.list-group-item:hover, html.gumcp-dark a.list-group-item:focus { background: #2d3138; color: #fff; }
+html.gumcp-dark .list-group-item.active { background: #24507a; border-color: #24507a; }
+html.gumcp-dark .list-group-item.disabled { background: #202328 !important; color: #8d939c; }
+
+html.gumcp-dark .table > thead > tr > th, html.gumcp-dark .table > tbody > tr > td,
+html.gumcp-dark .table > tbody > tr > th { border-color: #33373e; }
+html.gumcp-dark .table-striped > tbody > tr:nth-of-type(odd) { background: #22252a; }
+html.gumcp-dark .table-hover > tbody > tr:hover { background: #2d3138; }
+
+html.gumcp-dark .form-control { background: #1b1d21; border-color: #454a52; color: #e6e8eb; box-shadow: none; }
+html.gumcp-dark .form-control::placeholder { color: #6f757e; }
+html.gumcp-dark .form-control[disabled], html.gumcp-dark .form-control[readonly] { background: #25282e; }
+html.gumcp-dark .input-group-addon { background: #2d3138; border-color: #454a52; color: #c9ccd1; }
+html.gumcp-dark .btn-default { background: #2d3138; border-color: #454a52; color: #d6d8dc; text-shadow: none; background-image: none; }
+html.gumcp-dark .btn-default:hover, html.gumcp-dark .btn-default:focus,
+html.gumcp-dark .btn-default.active { background: #3a3f47; border-color: #575d66; color: #fff; }
+
+html.gumcp-dark pre { background: #16181b; border-color: #33373e; color: #d6d8dc; }
+html.gumcp-dark code { background: #2d3138; color: #f0a8b4; }
+html.gumcp-dark .progress { background: #33373e; box-shadow: none; }
+html.gumcp-dark .alert-success { background: #1f3a28; border-color: #2c5a3a; color: #bfe6c9; }
+html.gumcp-dark .alert-info    { background: #1c3a45; border-color: #235a6b; color: #bfe3ee; }
+html.gumcp-dark .alert-warning { background: #453718; border-color: #6b5320; color: #f0deb0; }
+html.gumcp-dark .alert-danger  { background: #452120; border-color: #6e2c2a; color: #f0c3c1; }
+html.gumcp-dark .text-success { color: #6fcf8a; }
+html.gumcp-dark .text-danger  { color: #f08a86; }
+html.gumcp-dark .text-warning { color: #e6b955; }
+html.gumcp-dark .text-info    { color: #6cc4dc; }
+html.gumcp-dark .badge { background: #454a52; }
+html.gumcp-dark footer, html.gumcp-dark .footer { border-color: #33373e; }
+
+/* Script Editor (CodeMirror) */
+html.gumcp-dark .CodeMirror { background: #16181b; color: #d6d8dc; border-color: #33373e; }
+html.gumcp-dark .CodeMirror-gutters { background: #1b1d21; border-color: #33373e; }
+html.gumcp-dark .CodeMirror-linenumber { color: #6f757e; }
+html.gumcp-dark .CodeMirror-cursor { border-left-color: #e6e8eb; }
+html.gumcp-dark .CodeMirror-selected { background: #33506e; }
+html.gumcp-dark .cm-s-default .cm-keyword  { color: #c792ea; }
+html.gumcp-dark .cm-s-default .cm-string   { color: #c3e88d; }
+html.gumcp-dark .cm-s-default .cm-comment  { color: #7f8791; }
+html.gumcp-dark .cm-s-default .cm-number   { color: #f78c6c; }
+html.gumcp-dark .cm-s-default .cm-def,
+html.gumcp-dark .cm-s-default .cm-variable-2 { color: #82aaff; }
+html.gumcp-dark .cm-s-default .cm-builtin  { color: #ffcb6b; }
+html.gumcp-dark .cm-s-default .cm-meta,
+html.gumcp-dark .cm-s-default .cm-operator { color: #89ddff; }
+
+/* Page-local surfaces that set their own white background */
+html.gumcp-dark .stat-box { background: #25282e; box-shadow: none; border: 1px solid #33373e; }
+html.gumcp-dark .stat-box p { color: #8d939c; }
+html.gumcp-dark .login-panel { background: #25282e; color: #d6d8dc; box-shadow: none; border: 1px solid #33373e; }
+html.gumcp-dark .text-primary { color: #6cb2f7; }
+html.gumcp-dark #menu-sortable-list li { background: #2d3138; border-color: #454a52; }
+/* Contextual table rows (System Check pass/fail) */
+html.gumcp-dark .table > tbody > tr.danger  > td, html.gumcp-dark .table > tbody > tr.danger  > th { background: #452120; color: #f0c3c1; }
+html.gumcp-dark .table > tbody > tr.warning > td, html.gumcp-dark .table > tbody > tr.warning > th { background: #453718; color: #f0deb0; }
+html.gumcp-dark .table > tbody > tr.success > td, html.gumcp-dark .table > tbody > tr.success > th { background: #1f3a28; color: #bfe6c9; }
+html.gumcp-dark .table > tbody > tr.info    > td, html.gumcp-dark .table > tbody > tr.info    > th { background: #1c3a45; color: #bfe3ee; }
+html.gumcp-dark .table > tbody > tr.danger > td .text-muted,
+html.gumcp-dark .table > tbody > tr.warning > td .text-muted { color: inherit; opacity: 0.8; }

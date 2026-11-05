@@ -467,6 +467,42 @@ grep -q "FM_EMBED" "$ROOT/scripts/install-module.sh" \
     && pass "TinyFileManager entry point disables the redundant second login" \
     || fail "TFM entry point does not define FM_EMBED — users get a second login"
 
+# ── Two-factor login ──────────────────────────────────────────────────────────
+echo "Two-factor (TOTP)"
+out=$(php -r "
+    require '$ROOT/include/totp.php';
+    \$s = gumcp_base32_encode('12345678901234567890');     // RFC 6238 test key
+    \$r  = gumcp_totp_code(\$s, (int)floor(59 / 30)) === '287082' ? 'a' : '-';
+    \$r .= gumcp_totp_code(\$s, (int)floor(1111111109 / 30)) === '081804' ? 'b' : '-';
+    \$r .= gumcp_totp_code(\$s, (int)floor(20000000000 / 30)) === '353130' ? 'c' : '-';
+    \$now = 1700000000;
+    \$good = gumcp_totp_code(\$s, (int)floor(\$now / 30));
+    \$r .= gumcp_totp_match(\$s, \$good, \$now) > 0 ? 'd' : '-';
+    // one step of clock drift is tolerated, two are not
+    \$r .= gumcp_totp_match(\$s, gumcp_totp_code(\$s, (int)floor(\$now / 30) - 1), \$now) > 0 ? 'e' : '-';
+    \$r .= gumcp_totp_match(\$s, gumcp_totp_code(\$s, (int)floor(\$now / 30) - 3), \$now) === 0 ? 'f' : '-';
+    \$r .= gumcp_totp_match(\$s, 'abcdef', \$now) === 0 ? 'g' : '-';
+    echo \$r;
+" 2>/dev/null)
+[ "$out" = "abcdefg" ] && pass "RFC 6238 vectors, drift window, garbage rejected" \
+                       || fail "TOTP (got '$out', want 'abcdefg')"
+
+# ── Alerts ────────────────────────────────────────────────────────────────────
+echo "Alerts"
+out=$(php -r "
+    require '$ROOT/include/alerts.php';
+    // Nothing configured: nothing may be sent, anywhere.
+    echo gumcp_alert_configured() ? '-' : 'a';
+    echo gumcp_alert_once('selftest', 't', 'm') === false ? 'b' : '-';
+    echo gumcp_alert_post('file:///etc/passwd', '', []) === false ? 'c' : '-';
+" 2>/dev/null)
+[ "$out" = "abc" ] && pass "no channel configured means nothing is sent; only http(s) targets" \
+                   || fail "alerts (got '$out', want 'abc')"
+
+head -12 "$ROOT/scripts/alert-check.php" | grep -q "PHP_SAPI !== 'cli'" \
+    && pass "alert-check.php refuses to run over HTTP" \
+    || fail "alert-check.php can be triggered by URL"
+
 # ── Upgrade safety ────────────────────────────────────────────────────────────
 # include/config.php is user-owned and never overwritten, so any setting added to
 # config.example.php MUST also have a fallback in config.defaults.php — otherwise

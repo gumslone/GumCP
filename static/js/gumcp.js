@@ -705,6 +705,8 @@ function scriptRefreshList(selectName) {
         if (d.writable === false) {
             scriptStatus('user_scripts/ is not writable by the web server — saving will fail.', true);
         }
+        _scriptPins = d.pins || [];
+        scriptUpdatePinButton();
     });
 }
 
@@ -794,6 +796,75 @@ function scriptScheduleAdd() {
        '<i class="fa fa-spinner fa-spin"></i>');
 }
 
+/* Run detached: output goes to a log in command_logs/, which the panel tails
+ * for a while so a slow script still shows progress. */
+var _scriptLogTimer = null;
+
+function scriptRunBackground() {
+    scriptSave(function () {
+        scriptAjax({ action: 'script_run', name: _scriptCurrent, background: 1 }, function (d) {
+            if (d.type !== 'success') {
+                $('#script-output').css('color', '#f2a5a5').text(d.message || 'Run failed');
+                $('#script-output-wrap').show();
+                return;
+            }
+            scriptStatus('Running in background — log: ' + d.log + ' (also listed on the Actions page)');
+            $('#script-output').css('color', '#e0e0e0').text('');
+            $('#script-output-wrap').show();
+            var polls = 0;
+            clearInterval(_scriptLogTimer);
+            _scriptLogTimer = setInterval(function () {
+                gumcpViewLog(d.log, 'script-output', true);
+                if (++polls >= 150) clearInterval(_scriptLogTimer);   // ~5 minutes
+            }, 2000);
+            gumcpViewLog(d.log, 'script-output', true);
+        }, document.getElementById('script-bg-btn'),
+           '<i class="fa fa-spinner fa-spin"></i>');
+    });
+}
+
+/* Show a command log in a <pre>. command_logs/ is web-denied, so logs are
+ * read through ajax.php rather than linked to directly. */
+function gumcpViewLog(name, targetId, quiet) {
+    var $t = $('#' + targetId);
+    if (!quiet) $t.show().text('Loading…');
+    $.ajax({
+        type: 'POST', url: 'ajax.php', dataType: 'json',
+        data: { action: 'command_log_view', log_file: name, csrf_token: CSRF_TOKEN }
+    }).done(function (d) {
+        if (!d || d.type !== 'success') { if (!quiet) $t.text((d && d.message) || 'Could not read the log'); return; }
+        var atBottom = $t[0].scrollTop + $t[0].clientHeight >= $t[0].scrollHeight - 20;
+        $t.show().text((d.truncated ? '[… showing the last part of a ' + d.size + '-byte log …]\n' : '') + d.content);
+        if (atBottom) $t[0].scrollTop = $t[0].scrollHeight;
+    }).fail(function () { if (!quiet) $t.text('Request failed'); });
+}
+
+/* ── Dashboard pins ──────────────────────────────────────────────────────── */
+var _scriptPins = [];
+
+function scriptUpdatePinButton() {
+    var pinned = _scriptPins.indexOf(_scriptCurrent) !== -1;
+    $('#script-pin-btn').toggleClass('active', pinned);
+    $('#script-pin-label').text(pinned ? 'Pinned' : 'Pin');
+}
+
+function scriptTogglePin() {
+    var name = $.trim($('#script-name').val());
+    if (!/\.(sh|py)$/.test(name)) {
+        scriptStatus('Only .sh and .py scripts can be pinned.', true);
+        return;
+    }
+    scriptSave(function () {
+        var pinned = _scriptPins.indexOf(_scriptCurrent) !== -1;
+        scriptAjax({ action: 'script_pin', name: _scriptCurrent, pinned: pinned ? 0 : 1 }, function (d) {
+            if (d.type !== 'success') { scriptStatus(d.message || 'Failed', true); return; }
+            _scriptPins = d.pins || [];
+            scriptUpdatePinButton();
+            scriptStatus(pinned ? 'Removed from the dashboard.' : 'Pinned — its output now shows on the dashboard.');
+        }, document.getElementById('script-pin-btn'));
+    });
+}
+
 function scriptDelete() {
     var name = _scriptCurrent || $.trim($('#script-name').val());
     if (!name) return;
@@ -822,3 +893,132 @@ $(function () {
         if (scriptDirty()) { e.preventDefault(); e.returnValue = ''; }
     });
 });
+
+/* ── Dashboard script tiles (index.php) ──────────────────────────────────── */
+
+function dashTileLoad(name, force) {
+    var id = 'tile-' + name.replace(/[^A-Za-z0-9]/g, '_');
+    var $pre = $('#' + id + ' pre'), $meta = $('#' + id + ' .tile-meta');
+    var $btn = $('#' + id + ' button');
+    $btn.prop('disabled', true).find('i').addClass('fa-spin');
+    $.ajax({
+        type: 'POST', url: 'ajax.php', dataType: 'json',
+        // Background: a tile refresh is not user activity for the idle timeout.
+        data: { action: 'script_tile', name: name, force: force ? 1 : 0,
+                csrf_token: CSRF_TOKEN, gumcp_background: force ? 0 : 1 }
+    }).done(function (d) {
+        if (!d || d.type !== 'success') {
+            $pre.css('color', '#a94442').text((d && d.message) || 'Failed');
+            return;
+        }
+        $pre.css('color', d.failed ? '#a94442' : '').text(d.output);
+        var t = new Date(d.time * 1000);
+        $meta.text(('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2));
+    }).fail(function () {
+        $pre.css('color', '#a94442').text('Request failed');
+    }).always(function () {
+        $btn.prop('disabled', false).find('i').removeClass('fa-spin');
+    });
+}
+
+$(function () {
+    var $row = $('#script-tiles');
+    if (!$row.length) return;
+    $.ajax({
+        type: 'POST', url: 'ajax.php', dataType: 'json',
+        data: { action: 'script_list', csrf_token: CSRF_TOKEN, gumcp_background: 1 }
+    }).done(function (d) {
+        var pins = (d && d.type === 'success' && d.pins) || [];
+        if (!pins.length) return;
+        var esc = function (s) { return $('<div>').text(s).html(); };
+        pins.forEach(function (name) {
+            var id = 'tile-' + name.replace(/[^A-Za-z0-9]/g, '_');
+            $row.append(
+                '<div class="col-md-4 col-sm-6" id="' + id + '">'
+              + '<div class="panel panel-default">'
+              + '<div class="panel-heading"><i class="fa fa-code"></i> ' + esc(name)
+              + ' <button type="button" class="btn btn-xs btn-default pull-right" title="Run again">'
+              + '<i class="fa fa-refresh"></i></button>'
+              + '<small class="tile-meta text-muted pull-right" style="margin-right:8px"></small></div>'
+              + '<pre class="panel-body" style="margin:0; border:0; border-radius:0; max-height:180px; '
+              + 'overflow:auto; white-space:pre-wrap; font-size:12px">…</pre>'
+              + '</div></div>');
+            $('#' + id + ' button').on('click', function () { dashTileLoad(name, true); });
+            dashTileLoad(name, false);
+        });
+        $row.show();
+    });
+});
+
+/* ── System Check: two-factor and alerts (check.php) ─────────────────────── */
+
+function checkAjax(data, btn, msgId, done) {
+    var $b = $(btn), orig = $b.html();
+    $b.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+    data.csrf_token = CSRF_TOKEN;
+    $.ajax({ type: 'POST', url: 'ajax.php', dataType: 'json', data: data })
+        .done(function (d) {
+            d = d || {};
+            var ok = d.type === 'success';
+            if (d.message && d.message !== 'ok') {
+                $('#' + msgId).show().text(d.message)
+                    .toggleClass('text-success', ok).toggleClass('text-danger', !ok);
+            }
+            if (done) done(d, ok);
+        })
+        .fail(function () {
+            $('#' + msgId).show().addClass('text-danger').text('Request failed — could not reach the server.');
+        })
+        .always(function () { $b.prop('disabled', false).html(orig); });
+}
+
+function totpStart(btn) {
+    checkAjax({ action: 'totp_new' }, btn, 'totp-msg', function (d, ok) {
+        if (!ok) return;
+        // Grouped in fours: far easier to type into a phone without mistakes.
+        $('#totp-secret').text(d.secret.replace(/(.{4})/g, '$1 ').trim());
+        $('#totp-uri').text(d.uri);
+        $('#totp-setup').show();
+        $('#totp-start-btn').hide();
+    });
+}
+
+function totpEnable(btn) {
+    checkAjax({ action: 'totp_enable', code: $('#totp-code').val() }, btn, 'totp-msg', function (d, ok) {
+        if (ok) setTimeout(function () { location.reload(); }, 1500);
+    });
+}
+
+function totpDisable(btn) {
+    if (!confirm('Turn off two-factor login?')) return;
+    checkAjax({ action: 'totp_disable', code: $('#totp-code').val() }, btn, 'totp-msg', function (d, ok) {
+        if (ok) setTimeout(function () { location.reload(); }, 1500);
+    });
+}
+
+function alertTest(btn) {
+    checkAjax({ action: 'alert_test' }, btn, 'alert-msg');
+}
+
+function alertCron(btn) {
+    checkAjax({ action: 'cron_add', schedule: '*/5 * * * *', command: GUMCP_ALERT_CMD }, btn, 'alert-msg');
+}
+
+/* ── Theme ───────────────────────────────────────────────────────────────── */
+
+function gumcpToggleTheme() {
+    var root = document.documentElement;
+    var dark = !/\bgumcp-dark\b/.test(root.className);
+    root.className = dark
+        ? root.className + ' gumcp-dark'
+        : root.className.replace(/\s*\bgumcp-dark\b/g, '');
+    try { localStorage.setItem('gumcp-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    gumcpThemeIcon();
+}
+
+function gumcpThemeIcon() {
+    var dark = /\bgumcp-dark\b/.test(document.documentElement.className);
+    $('#theme-toggle-icon').toggleClass('fa-moon-o', !dark).toggleClass('fa-sun-o', dark);
+}
+
+$(gumcpThemeIcon);

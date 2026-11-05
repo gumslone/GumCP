@@ -27,6 +27,14 @@ defined('LOGIN_CHECK_SYSTEM_USER') || define('LOGIN_CHECK_SYSTEM_USER', false);
 
 // Login throttling: lock a client address out after this many failures within
 // the window, for the lockout period (all in seconds).
+// Two-factor login (TOTP). Empty = off. Set up from System Check.
+defined('LOGIN_TOTP_SECRET')    || define('LOGIN_TOTP_SECRET',    '');
+// Alerts (ntfy / Telegram). Empty = nothing is ever sent.
+defined('ALERT_NTFY_URL')       || define('ALERT_NTFY_URL',       '');
+defined('ALERT_TELEGRAM_TOKEN') || define('ALERT_TELEGRAM_TOKEN', '');
+defined('ALERT_TELEGRAM_CHAT')  || define('ALERT_TELEGRAM_CHAT',  '');
+defined('ALERT_TEMP_THRESHOLD') || define('ALERT_TEMP_THRESHOLD', 75);
+defined('ALERT_DISK_THRESHOLD') || define('ALERT_DISK_THRESHOLD', 95);
 defined('SESSION_IDLE_TIMEOUT')     || define('SESSION_IDLE_TIMEOUT',     3600);
 defined('SESSION_ABSOLUTE_TIMEOUT') || define('SESSION_ABSOLUTE_TIMEOUT', 43200);
 defined('LOGIN_MAX_FAILURES')   || define('LOGIN_MAX_FAILURES',   5);

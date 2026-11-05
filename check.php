@@ -442,6 +442,92 @@ require_once('./include/header.php');
         </div>
     <?php endforeach; ?>
 
+    <?php
+    require_once(__DIR__ . '/include/totp.php');
+    require_once(__DIR__ . '/include/alerts.php');
+    $totp_on   = gumcp_totp_enabled();
+    $alerts_on = gumcp_alert_configured();
+    ?>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><i class="fa fa-mobile"></i> Two-factor authentication
+                        <span class="label label-<?php echo $totp_on ? 'success' : 'default'; ?> pull-right"><?php echo $totp_on ? 'ON' : 'OFF'; ?></span>
+                    </h3>
+                </div>
+                <div class="panel-body" id="totp-panel">
+                    <?php if ($totp_on): ?>
+                        <p>The login page asks for a six-digit code from your authenticator app.</p>
+                        <div class="form-inline">
+                            <input type="text" class="form-control input-sm" id="totp-code" placeholder="Current code" maxlength="7" style="width:130px">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="totpDisable(this)">Turn off</button>
+                        </div>
+                    <?php else: ?>
+                        <p>Add a second factor to the login page: a six-digit code from an authenticator
+                           app (Aegis, Google Authenticator, 1Password…). Worth it if this panel is ever
+                           reachable from outside your home network.</p>
+                        <button type="button" class="btn btn-sm btn-primary" id="totp-start-btn" onclick="totpStart(this)">
+                            <i class="fa fa-plus"></i> Set up
+                        </button>
+                        <div id="totp-setup" style="display:none; margin-top:12px">
+                            <p><strong>1.</strong> In your app choose <em>enter a setup key</em> and type:</p>
+                            <p><code id="totp-secret" style="font-size:15px; letter-spacing:1px"></code></p>
+                            <p class="text-muted" style="font-size:12px; word-break:break-all">
+                                or open this link on the phone: <span id="totp-uri"></span></p>
+                            <p><strong>2.</strong> Enter the code the app shows:</p>
+                            <div class="form-inline">
+                                <input type="text" class="form-control input-sm" id="totp-code" placeholder="6-digit code" maxlength="7" style="width:130px">
+                                <button type="button" class="btn btn-sm btn-success" onclick="totpEnable(this)">Verify and turn on</button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <p id="totp-msg" style="margin:10px 0 0; display:none"></p>
+                    <p class="text-muted" style="font-size:12px; margin:10px 0 0">
+                        Lost the phone? Remove the <code>LOGIN_TOTP_SECRET</code> line from
+                        <code>include/config.php</code> over SSH.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><i class="fa fa-bell"></i> Alerts
+                        <span class="label label-<?php echo $alerts_on ? 'success' : 'default'; ?> pull-right"><?php echo $alerts_on ? 'CONFIGURED' : 'OFF'; ?></span>
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <?php if ($alerts_on): ?>
+                        <p>A message is pushed on high CPU temperature (≥ <?php echo (int)ALERT_TEMP_THRESHOLD; ?> °C),
+                           under-voltage, throttling, a nearly full disk (≥ <?php echo (int)ALERT_DISK_THRESHOLD; ?>%)
+                           and login lockouts.</p>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="alertTest(this)">
+                            <i class="fa fa-paper-plane"></i> Send test alert
+                        </button>
+                        <button type="button" class="btn btn-sm btn-default" onclick="alertCron(this)"
+                                title="Adds a cron job that runs scripts/alert-check.php every 5 minutes">
+                            <i class="fa fa-clock-o"></i> Enable periodic checks
+                        </button>
+                        <p class="text-muted" style="font-size:12px; margin:10px 0 0">
+                            Lockout alerts are sent immediately. Temperature, power and disk need the
+                            periodic check — the button adds its cron job (once is enough; see System → Cron).</p>
+                    <?php else: ?>
+                        <p>Get a push message on your phone when the Pi runs hot, loses voltage, fills its
+                           disk, or locks someone out after failed logins.</p>
+                        <p class="text-muted" style="font-size:13px">Set <code>ALERT_NTFY_URL</code>
+                           (the <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a> app, no account needed)
+                           or <code>ALERT_TELEGRAM_TOKEN</code> + <code>ALERT_TELEGRAM_CHAT</code> in
+                           <code>include/config.php</code>, then reload this page.</p>
+                    <?php endif; ?>
+                    <p id="alert-msg" style="margin:10px 0 0; display:none"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    var GUMCP_ALERT_CMD = <?php echo json_encode('php ' . escapeshellarg(__DIR__ . '/scripts/alert-check.php') . ' >/dev/null 2>&1'); ?>;
+    </script>
+
     <?php $auth_events = gumcp_auth_log_recent(10); ?>
     <div class="panel panel-default">
         <div class="panel-heading">

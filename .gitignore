@@ -21,3 +21,6 @@ include/menu_order.json
 # never vendored into the repo (a bundled copy ships its vulnerabilities and goes stale).
 modules/adminer/
 modules/tinyfilemanager/
+
+# Local tooling state.
+.serena/

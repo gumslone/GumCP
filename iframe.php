@@ -85,6 +85,10 @@ $module_path  = htmlspecialchars($module_path_raw, ENT_QUOTES, 'UTF-8');
         setTimeout(function() { $loading.fadeOut(300); }, 10000);
     });
     </script>
+    <script>
+    // Apply the saved theme before first paint, so dark mode never flashes white.
+    try { if (localStorage.getItem('gumcp-theme') === 'dark') document.documentElement.className += ' gumcp-dark'; } catch (e) {}
+    </script>
 </head>
 
 <body>

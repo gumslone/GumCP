@@ -95,6 +95,22 @@ function sanitize_button(array $post): array {
 
 // ── Dispatch ──────────────────────────────────────────────────────────────────
 $action = trim((string)($_POST['action'] ?? ''));
+
+// A disabled module's actions are refused too — hiding the page while leaving
+// its endpoints live would make the switch cosmetic.
+$_module_of_action = [
+    'script_' => 'scripts', 'docker_' => 'docker', 'cron_' => 'cron',
+    'pkg_'    => 'packages', 'rpi_'   => 'rpi',    'log_view' => 'logs',
+];
+foreach ($_module_of_action as $_prefix => $_mod) {
+    if (strpos($action, $_prefix) === 0
+        && isset($gumcp_modules[$_mod]) && empty($gumcp_modules[$_mod]['module_active'])) {
+        http_response_code(403);
+        echo json_encode(err('The ' . $_mod . ' module is disabled in include/config.php'));
+        exit();
+    }
+}
+unset($_module_of_action, $_prefix, $_mod);
 $out    = err('Unknown action');
 
 switch ($action) {
@@ -709,6 +725,79 @@ switch ($action) {
         break;
 
     // ── Cron: list user crontab + /etc/crontab (via SSH) ──────────────────────
+    // ── Alerts: send a test message through every configured channel ──────────
+    case 'alert_test':
+        require_once(__DIR__ . '/include/alerts.php');
+        if (!gumcp_alert_configured()) {
+            $out = err('No alert channel is configured — set ALERT_NTFY_URL or ALERT_TELEGRAM_* in include/config.php');
+            break;
+        }
+        $res = gumcp_alert_send('Test alert', 'If you can read this, GumCP alerts are working.');
+        $bad = array_keys(array_filter($res, function ($ok) { return !$ok; }));
+        $out = empty($bad)
+            ? ok('Test alert sent via ' . implode(' and ', array_keys($res)))
+            : err('Sending failed for: ' . implode(', ', $bad) . ' — check the URL/token and that this Pi has internet access');
+        break;
+
+    // ── Two-factor: start setup (the secret stays in the session until proven) ─
+    case 'totp_new':
+        require_once(__DIR__ . '/include/totp.php');
+        if (gumcp_totp_enabled()) {
+            $out = err('Two-factor login is already enabled');
+            break;
+        }
+        $_SESSION['totp_pending'] = gumcp_totp_new_secret();
+        $label = rawurlencode('GumCP ' . (php_uname('n') ?: 'pi') . ':' . (defined('LOGIN_USER') ? LOGIN_USER : 'admin'));
+        $out = ok('ok', [
+            'secret' => $_SESSION['totp_pending'],
+            'uri'    => 'otpauth://totp/' . $label . '?secret=' . $_SESSION['totp_pending'] . '&issuer=GumCP',
+        ]);
+        break;
+
+    // ── Two-factor: confirm a code from the app, then switch it on ────────────
+    // Nothing is saved until a code generated from the new secret verifies, so
+    // a mistyped secret can never lock the administrator out.
+    case 'totp_enable':
+        require_once(__DIR__ . '/include/totp.php');
+        $secret = (string)($_SESSION['totp_pending'] ?? '');
+        if ($secret === '') {
+            $out = err('Start the setup again');
+            break;
+        }
+        if (gumcp_totp_match($secret, (string)($_POST['code'] ?? '')) === 0) {
+            $out = err('That code does not match — check the time on this Pi and on your phone');
+            break;
+        }
+        $werr = gumcp_config_define('LOGIN_TOTP_SECRET', var_export($secret, true));
+        unset($_SESSION['totp_pending']);
+        if ($werr !== '') {
+            $out = err($werr);
+            break;
+        }
+        gumcp_auth_log('totp', 'two-factor login enabled');
+        $out = ok('Two-factor login is on. You will be asked for a code at the next sign-in.');
+        break;
+
+    // ── Two-factor: switch off (needs a current code, not just a session) ─────
+    case 'totp_disable':
+        require_once(__DIR__ . '/include/totp.php');
+        if (!gumcp_totp_enabled()) {
+            $out = err('Two-factor login is not enabled');
+            break;
+        }
+        if (gumcp_totp_match((string)LOGIN_TOTP_SECRET, (string)($_POST['code'] ?? '')) === 0) {
+            $out = err('That code does not match');
+            break;
+        }
+        $werr = gumcp_config_define('LOGIN_TOTP_SECRET', "''");
+        if ($werr !== '') {
+            $out = err($werr);
+            break;
+        }
+        gumcp_auth_log('totp', 'two-factor login disabled');
+        $out = ok('Two-factor login is off.');
+        break;
+
     // ── Script Editor: list user scripts and bundled examples ─────────────────
     case 'script_list':
         $files = [];
@@ -728,6 +817,7 @@ switch ($action) {
             if (gumcp_script_name_valid($f)) $templates[] = $f;
         }
         $out = ok('ok', ['files' => $files, 'templates' => $templates,
+                         'pins' => gumcp_script_pins(),
                          'writable' => is_dir($dir) && is_writable($dir)]);
         break;
 
@@ -801,6 +891,57 @@ switch ($action) {
         $out = @unlink($path) ? ok('Deleted') : err('Could not delete the file');
         break;
 
+    // ── Script Editor: pin / unpin a script as a dashboard tile ───────────────
+    case 'script_pin':
+        $name = (string)($_POST['name'] ?? '');
+        $on   = !empty($_POST['pinned']);
+        if (!preg_match('/\.(sh|py)$/', $name) || gumcp_script_path($name, true) === '') {
+            $out = err('Only saved .sh and .py scripts can be pinned');
+            break;
+        }
+        $pins = array_values(array_diff(gumcp_script_pins(), [$name]));
+        if ($on) {
+            if (count($pins) >= 6) {
+                $out = err('At most 6 scripts can be pinned to the dashboard');
+                break;
+            }
+            $pins[] = $name;
+        }
+        if (@file_put_contents(gumcp_scripts_dir() . '/.pins.json', json_encode($pins), LOCK_EX) === false) {
+            $out = err('Could not save — is user_scripts/ writable by the web server?');
+            break;
+        }
+        $out = ok($on ? 'Pinned to the dashboard' : 'Unpinned', ['pins' => $pins]);
+        break;
+
+    // ── Dashboard: output of one pinned script ────────────────────────────────
+    // Only pinned scripts run here, each capped at 15 s, and the result is
+    // cached for a minute so reloading the dashboard does not hammer SSH (or a
+    // sensor that dislikes being read too often).
+    case 'script_tile':
+        $name = (string)($_POST['name'] ?? '');
+        if (!in_array($name, gumcp_script_pins(), true)) {
+            $out = err('Not a pinned script');
+            break;
+        }
+        $cache = __DIR__ . '/command_logs/.tile_' . md5($name) . '.json';
+        $hit   = json_decode((string)@file_get_contents($cache), true);
+        if (empty($_POST['force']) && is_array($hit) && time() - (int)($hit['time'] ?? 0) < 60) {
+            $out = ok('ok', ['output' => (string)$hit['output'], 'failed' => !empty($hit['failed']),
+                             'time' => (int)$hit['time'], 'cached' => true]);
+            break;
+        }
+        $interp = substr($name, -3) === '.py' ? 'python3' : 'bash';
+        $result = ssh_run('timeout 15 ' . $interp . ' '
+                        . escapeshellarg(gumcp_script_path($name, true)) . ' 2>&1');
+        $text = $result['success'] ? trim((string)$result['output']) : (string)($result['error'] ?? 'Run failed');
+        if (strlen($text) > 4000) $text = substr($text, 0, 4000) . "\n…";
+        $tile = ['output' => $text === '' ? '(no output)' : $text,
+                 'failed' => !$result['success'], 'time' => time()];
+        @file_put_contents($cache, json_encode($tile), LOCK_EX);
+        $out = ok('ok', $tile + ['cached' => false]);
+        break;
+
     // ── Script Editor: run over SSH, like everything else ─────────────────────
     // The interpreter comes from the extension, never from the request — .txt
     // is edit-only. The SSH user needs read access to user_scripts/.
@@ -821,10 +962,60 @@ switch ($action) {
             $out = err('Only .sh and .py scripts can be run');
             break;
         }
+        // Background: long-running scripts (a motor loop, a sensor watch) would
+        // hit the request timeout, so detach and write to a log instead. The
+        // log is created here, world-writable, because the SSH user is usually
+        // not the web-server user and could not create it in command_logs/.
+        if (!empty($_POST['background'])) {
+            $log_name = date('Y-m-d_H-i-s') . '_' . preg_replace('/[^A-Za-z0-9_-]/', '-', $name) . '.log';
+            $log_path = __DIR__ . '/command_logs/' . $log_name;
+            if (@file_put_contents($log_path, '$ ' . $interp . ' ' . $name . "\n") === false) {
+                $out = err('Could not create a log file in command_logs/');
+                break;
+            }
+            @chmod($log_path, 0666);
+            $result = ssh_run('nohup ' . $interp . ' ' . escapeshellarg($path)
+                            . ' >> ' . escapeshellarg($log_path) . ' 2>&1 < /dev/null &');
+            $out = $result['success']
+                ? ok('Started in background', ['log' => $log_name])
+                : err((string)($result['error'] ?? 'Run failed'));
+            break;
+        }
+
         $result = ssh_run($interp . ' ' . escapeshellarg($path) . ' 2>&1');
         $out = $result['success']
             ? ok('Finished', ['output' => (string)$result['output']])
             : err((string)($result['error'] ?? 'Run failed'));
+        break;
+
+    // ── Command logs: read one (the directory itself is web-denied) ───────────
+    case 'command_log_view':
+        $file = basename(trim((string)($_POST['log_file'] ?? '')));
+        $ext  = substr($file, -4);
+        if ($file === '' || $file[0] === '.' || ($ext !== '.log' && $ext !== '.txt')
+            || in_array($file, gumcp_reserved_logs(), true)) {
+            $out = err('Invalid filename');
+            break;
+        }
+        $path = __DIR__ . '/command_logs/' . $file;
+        if (!is_file($path) || is_link($path)) {
+            $out = err('File not found');
+            break;
+        }
+        // Tail only: a runaway script can write a very large log.
+        $size = (int)filesize($path);
+        $max  = 200000;
+        $fh   = fopen($path, 'rb');
+        if ($size > $max) fseek($fh, $size - $max);
+        $content = (string)stream_get_contents($fh);
+        fclose($fh);
+        // Command output is arbitrary bytes; json_encode() refuses invalid UTF-8.
+        if (!preg_match('//u', $content)) {
+            $content = function_exists('iconv')
+                ? (string)@iconv('UTF-8', 'UTF-8//IGNORE', $content)
+                : (string)preg_replace('/[^\x09\x0A\x0D\x20-\x7E]/', '?', $content);
+        }
+        $out = ok('ok', ['content' => $content, 'truncated' => $size > $max, 'size' => $size]);
         break;
 
     case 'cron_list':
@@ -1176,6 +1367,52 @@ function gumcp_rrmdir(string $dir): bool {
 // ── Cron schedule validation ──────────────────────────────────────────────────
 // Accepts an @keyword or five fields (min hour dom mon dow), each validated
 // against its allowed range and supporting *, lists, ranges and /steps.
+/**
+ * Set define('NAME', <value>) in include/config.php, replacing an existing line
+ * or appending one. $value_php must already be valid PHP (use var_export).
+ * Returns '' on success, or a message containing the line to add by hand.
+ */
+function gumcp_config_define(string $name, string $value_php): string {
+    $file = __DIR__ . '/include/config.php';
+    $line = "define('" . $name . "', " . $value_php . ");";
+
+    if (!is_file($file) || !is_writable($file)) {
+        return 'include/config.php is not writable by the web server. Add this line yourself: ' . $line;
+    }
+    $src     = (string)file_get_contents($file);
+    $pattern = "/define\s*\(\s*'" . preg_quote($name, '/') . "'\s*,.*?\)\s*;/s";
+    if (preg_match($pattern, $src)) {
+        $src = (string)preg_replace_callback($pattern, function ($m) use ($line) {
+            return $line;
+        }, $src, 1);
+    } else {
+        $src = (string)preg_replace('/\?>\s*$/', '', $src);
+        $src = rtrim($src) . "\n\n" . $line . "\n";
+    }
+    @copy($file, $file . '.bak');
+    if (@file_put_contents($file, $src, LOCK_EX) === false) {
+        return 'Could not write include/config.php. Add this line yourself: ' . $line;
+    }
+    // A cached compiled copy would keep serving the old value.
+    if (function_exists('opcache_invalidate')) @opcache_invalidate($file, true);
+    return '';
+}
+
+/** Scripts pinned to the dashboard (names only), stored beside the scripts. */
+function gumcp_script_pins(): array {
+    $raw = @file_get_contents(gumcp_scripts_dir() . '/.pins.json');
+    $pins = is_string($raw) ? json_decode($raw, true) : null;
+    if (!is_array($pins)) return [];
+    $out = [];
+    foreach ($pins as $n) {
+        // Only names that are still valid, runnable and present.
+        if (is_string($n) && preg_match('/\\.(sh|py)$/', $n) && gumcp_script_path($n, true) !== '') {
+            $out[] = $n;
+        }
+    }
+    return array_values(array_unique($out));
+}
+
 /** Directory holding the user's editable scripts. Web access is denied. */
 function gumcp_scripts_dir(): string {
     return __DIR__ . '/user_scripts';

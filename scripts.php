@@ -52,8 +52,8 @@ require_once('./include/header.php');
                  data-toggle="collapse" data-target="#template-collapse"
                  aria-expanded="false" aria-controls="template-collapse">
                 <i class="fa fa-magic"></i> <?php echo htmlspecialchars(t('scripts.examples', 'Raspberry Pi examples'), ENT_QUOTES, 'UTF-8'); ?>
-                <span class="badge pull-right" id="template-count"></span>
-                <i class="fa fa-caret-down pull-right" style="margin:2px 8px 0 0"></i>
+                <span class="badge" id="template-count"></span>
+                <i class="fa fa-caret-down pull-right" style="margin-top:2px"></i>
             </div>
             <div class="collapse" id="template-collapse">
                 <div class="list-group" id="template-list" style="margin-bottom:0"></div>
@@ -74,8 +74,16 @@ require_once('./include/header.php');
             <button type="button" class="btn btn-success" id="script-run-btn" onclick="scriptRun()">
                 <i class="fa fa-play"></i> <?php echo htmlspecialchars(t('scripts.run', 'Save & Run'), ENT_QUOTES, 'UTF-8'); ?>
             </button>
+            <button type="button" class="btn btn-default" id="script-bg-btn" onclick="scriptRunBackground()"
+                    title="<?php echo htmlspecialchars(t('scripts.bg_hint', 'For long-running scripts: detaches and writes output to a log'), ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="fa fa-rocket"></i> <?php echo htmlspecialchars(t('scripts.bg', 'Background'), ENT_QUOTES, 'UTF-8'); ?>
+            </button>
             <button type="button" class="btn btn-default" id="script-schedule-btn" onclick="scriptScheduleOpen()">
                 <i class="fa fa-clock-o"></i> <?php echo htmlspecialchars(t('scripts.schedule', 'Schedule'), ENT_QUOTES, 'UTF-8'); ?>
+            </button>
+            <button type="button" class="btn btn-default" id="script-pin-btn" onclick="scriptTogglePin()"
+                    title="<?php echo htmlspecialchars(t('scripts.pin_hint', 'Show this script\'s output as a tile on the dashboard'), ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="fa fa-thumb-tack"></i> <span id="script-pin-label"><?php echo htmlspecialchars(t('scripts.pin', 'Pin'), ENT_QUOTES, 'UTF-8'); ?></span>
             </button>
             <button type="button" class="btn btn-default" onclick="scriptNew()">
                 <i class="fa fa-file-o"></i> <?php echo htmlspecialchars(t('scripts.new', 'New'), ENT_QUOTES, 'UTF-8'); ?>

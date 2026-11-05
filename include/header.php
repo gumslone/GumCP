@@ -28,6 +28,10 @@ $show_menu_reorder = !empty($show_menu_reorder);
     <title>GumCP <?php echo htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8'); ?></title>
     <link href="./static/css.php?v=<?php echo gumcp_asset_version(); ?>" rel="stylesheet" type="text/css">
     <script src="./static/js.php?v=<?php echo gumcp_asset_version(); ?>" type="text/javascript"></script>
+    <script>
+    // Apply the saved theme before first paint, so dark mode never flashes white.
+    try { if (localStorage.getItem('gumcp-theme') === 'dark') document.documentElement.className += ' gumcp-dark'; } catch (e) {}
+    </script>
 </head>
 
 <body>

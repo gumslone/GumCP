@@ -37,3 +37,22 @@ if (session_status() === PHP_SESSION_ACTIVE && !isset($_SESSION['csrf_token'])) 
 require_once(__DIR__ . '/auth.php');
 gumcp_process_login();   // handle a submitted login form first…
 gumcp_enforce_access();  // …then decide whether this request may proceed
+
+// ── Disabled modules ──────────────────────────────────────────────────────────
+// module_active => 0 used to hide only the navbar link; the page still loaded
+// for anyone who typed its URL. Every page sets $active_page to its module key
+// before including this file, so one check here makes "disabled" mean disabled.
+if (isset($active_page) && is_string($active_page)
+    && isset($gumcp_modules[$active_page])
+    && empty($gumcp_modules[$active_page]['module_active'])) {
+    http_response_code(403);
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!DOCTYPE html><meta charset="utf-8"><title>Module disabled</title>'
+       . '<body style="font-family:sans-serif;max-width:560px;margin:60px auto;padding:0 16px">'
+       . '<h2>This module is disabled</h2>'
+       . '<p>Enable it in <code>include/config.php</code>: '
+       . '<code>$gumcp_modules[\'' . htmlspecialchars($active_page, ENT_QUOTES, 'UTF-8')
+       . '\'][\'module_active\'] = 1;</code></p>'
+       . '<p><a href="./index.php">Back to the dashboard</a></p></body>';
+    exit();
+}

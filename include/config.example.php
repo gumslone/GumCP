@@ -50,6 +50,27 @@ define('LOGIN_PASS', 'raspberry'); // CHANGE THIS (and SSH_PASS above)
 //   Requires the php-ssh2 extension.
 define('LOGIN_CHECK_SYSTEM_USER', false);
 
+// ── Two-factor login (TOTP) ───────────────────────────────────────────────────
+// When set, the login form also asks for a six-digit code from an authenticator
+// app. Leave empty to disable. The easy way to turn it on is System Check →
+// Two-factor authentication, which generates the secret and verifies a code
+// before saving it here. Applies to the login page only — HTTP Basic Auth and
+// the update.php emergency key cannot carry a second factor.
+define('LOGIN_TOTP_SECRET', '');
+
+// ── Alerts ────────────────────────────────────────────────────────────────────
+// Push a message to your phone on high CPU temperature, under-voltage, a nearly
+// full disk, or a login lockout. Configure either channel (or both); with both
+// empty nothing is ever sent. System Check has a "Send test alert" button and
+// can add the cron job that runs the periodic checks.
+//   ntfy:     install the ntfy app, pick a hard-to-guess topic name
+//   Telegram: create a bot with @BotFather, then find your chat id
+define('ALERT_NTFY_URL', '');          // e.g. 'https://ntfy.sh/my-pi-7f3a9c'
+define('ALERT_TELEGRAM_TOKEN', '');
+define('ALERT_TELEGRAM_CHAT', '');
+define('ALERT_TEMP_THRESHOLD', 75);    // °C
+define('ALERT_DISK_THRESHOLD', 95);    // % of / used
+
 // ── Session lifetime ──────────────────────────────────────────────────────────
 // A signed-in session is shell access, and the cookie otherwise lasts until the
 // browser is closed. Sessions end after SESSION_IDLE_TIMEOUT seconds without

@@ -38,6 +38,11 @@ More screenshots in the [screenshots folder](screenshots/).
 - **phpinfo** — view PHP configuration directly from the browser
 - **System Check** — built-in diagnostic page (`check.php`) that verifies PHP extensions, directory permissions, SSH connectivity and GPIO tools; Fix buttons repair common issues over SSH without touching the terminal
 - **Script Editor** — write shell and Python scripts in the browser with syntax highlighting (bundled CodeMirror, works offline), run them over SSH, and start from Raspberry Pi examples: GPIO LED blink, button input, servo and DC motor control, DHT11/DHT22, BME280, DS18B20, HC-SR04, PIR and LDR sensors plus an I2C scan, sound playback, backups, WiFi scan, disk cleanup. Scripts live in `user_scripts/` (never served over the web) and pair with Command Buttons or cron jobs
+- **Dashboard script tiles** — pin up to six scripts and their latest output shows on the dashboard (cached for a minute, refresh on demand): a live readout for your sensors
+- **Backup & Restore** — download config, buttons, menu order and all scripts as one file; restore them after an SD card failure
+- **Alerts** — push a message to your phone via ntfy or Telegram on high CPU temperature, under-voltage, a nearly full disk or a login lockout
+- **Two-factor login** — optional TOTP codes from any authenticator app, set up from System Check
+- **Dark theme** — toggle from the navbar, remembered per browser
 - **Menu reorder** — drag and drop navbar items into any order; preference saved automatically
 - **Multilanguage** — English, German, Ukrainian, Spanish and French; set the default in `config.php` and switch from the navbar (remembered per session). Untranslated strings fall back to English; add a language by dropping a file into `include/lang/`
 - **Authentication** — login page (required by default), HTTP Basic Auth, or both with separate credentials; optional check against the real system account (`LOGIN_CHECK_SYSTEM_USER`); passwords storable as `password_hash()` values; brute-force throttling, expiring sessions, and a sign-in audit log surfaced on System Check

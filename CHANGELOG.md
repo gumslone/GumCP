@@ -1,5 +1,38 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Background runs for scripts.** *Background* in the Script Editor detaches
+  the script and writes its output to a log, tailed live in the editor — for
+  motor loops, sensor watches and anything else that would hit the request
+  timeout.
+- **Dashboard script tiles.** *Pin* a script and its latest output appears on
+  the dashboard (up to six). Each tile runs with a 15 s cap, is cached for a
+  minute and has a refresh button; tile refreshes do not count as activity for
+  the idle timeout.
+- **Backup & Restore** (Actions → Backup & Restore). One JSON file with
+  `config.php`, buttons, menu order, scripts and dashboard pins. Restore writes
+  only whitelisted paths, skips `config.php` unless you tick the box (keeping
+  the old one as `.restore.bak`), and refuses symlinked targets.
+- **Alerts** via ntfy and/or Telegram: login lockouts immediately; CPU
+  temperature, under-voltage, throttling and disk usage through
+  `scripts/alert-check.php`, which System Check can add to cron. Each alert has
+  a cooldown so a hot afternoon is one message, not fifty. Nothing is sent
+  unless a channel is configured.
+- **Two-factor login (TOTP).** Set up from System Check: the secret is saved
+  only after a code generated from it verifies, so a typo cannot lock you out.
+  A wrong code counts toward the login lockout, and a code cannot be reused.
+  Applies to the login page — Basic Auth and the `update.php` emergency key
+  cannot carry a second factor.
+- **Dark theme**, toggled from the navbar and applied before first paint.
+
+### Fixed
+- **Disabled modules were only hidden.** `module_active => 0` removed the
+  navbar link, but the page and its AJAX actions still worked for anyone who
+  typed the URL. Both are now refused with 403.
+- **Command log links on the Actions page returned 403** — they pointed into
+  `command_logs/`, which is web-denied. Logs now open in an inline viewer.
 ## [2.8.0] — 2026-08-28
 
 ### Fixed — TinyFileManager no longer asks for a second login

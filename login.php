@@ -11,6 +11,13 @@ if (isset($_SESSION['LOGIN_USER'], $_SESSION['LOGIN_PASS'])) {
     exit;
 }
 
+// Is two-factor login on? Read straight from the config text rather than
+// including config.php, which this page deliberately never loads.
+$totp_on = (bool)preg_match(
+    "/define\\(\\s*'LOGIN_TOTP_SECRET'\\s*,\\s*'[^']+'\\s*\\)/",
+    (string)@file_get_contents(__DIR__ . '/include/config.php')
+);
+
 // Ensure a CSRF token exists for the login form.
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -96,6 +103,10 @@ switch ($action) {
         .logo-text { display:flex; align-items:center; gap:10px; }
         .logo-text img { width:32px; height:32px; }
     </style>
+    <script>
+    // Apply the saved theme before first paint, so dark mode never flashes white.
+    try { if (localStorage.getItem('gumcp-theme') === 'dark') document.documentElement.className += ' gumcp-dark'; } catch (e) {}
+    </script>
 </head>
 
 <body>
@@ -154,6 +165,19 @@ switch ($action) {
                                    placeholder="Enter your password"
                                    required autocomplete="current-password" maxlength="100">
                         </div>
+
+                        <?php if ($totp_on): ?>
+                        <div class="form-group">
+                            <label for="login_totp">
+                                <i class="fa fa-mobile"></i> Authenticator code
+                            </label>
+                            <input type="text" class="form-control"
+                                   name="gumcp_login_totp" id="login_totp"
+                                   placeholder="6-digit code" inputmode="numeric"
+                                   pattern="[0-9 ]{6,7}" maxlength="7"
+                                   required autocomplete="one-time-code">
+                        </div>
+                        <?php endif; ?>
 
                         <button type="submit" class="btn btn-primary btn-login">
                             <i class="fa fa-sign-in"></i> Sign In
